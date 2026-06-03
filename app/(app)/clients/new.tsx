@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ScrollView, View, Text, Switch, StyleSheet, Alert } from 'react-native'
+import { ScrollView, View, Text, Switch, StyleSheet } from 'react-native'
 import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -29,10 +29,12 @@ export default function NewClientScreen() {
   const [medicalNotes, setMedicalNotes] = useState('')
   const [doterraId, setDoterraId] = useState('')
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function handleSave() {
-    if (!fullName.trim()) { Alert.alert(t('common.error'), t('clients.fields.full_name') + ' requis'); return }
-    if (!session) return
+    setErrorMsg(null)
+    if (!fullName.trim()) { setErrorMsg(t('clients.fields.full_name') + ' requis'); return }
+    if (!session) { setErrorMsg('Session expirée, reconnectez-vous'); return }
     setLoading(true)
     try {
       await createClient(session.user.id, {
@@ -56,7 +58,9 @@ export default function NewClientScreen() {
       })
       router.back()
     } catch (e: unknown) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : '')
+      const msg = e instanceof Error ? e.message : t('common.error')
+      setErrorMsg(msg)
+      console.error('[createClient]', e)
     } finally {
       setLoading(false)
     }
@@ -102,6 +106,7 @@ export default function NewClientScreen() {
         <Text style={styles.section}>{t('clients.sections.doterra')}</Text>
         <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
 
+        {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
         <Button label={t('common.save')} onPress={handleSave} loading={loading} />
       </ScrollView>
     </>
@@ -115,4 +120,5 @@ const styles = StyleSheet.create({
   statusRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   switchRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
   switchLabel:{ fontSize: 16, color: colors.text },
+  error:      { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 8, backgroundColor: '#fef2f2', borderRadius: 8 },
 })
