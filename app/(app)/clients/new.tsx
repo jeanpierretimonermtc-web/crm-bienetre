@@ -16,10 +16,12 @@ export default function NewClientScreen() {
   const { t } = useTranslation()
   const { session } = useAuth()
 
+  const [firstName, setFirstName] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [status, setStatus] = useState<ClientStatus>('prospect')
+  const [inscriptionDate, setInscriptionDate] = useState(new Date().toISOString().split('T')[0])
   const [birthDate, setBirthDate] = useState('')
   const [profession, setProfession] = useState('')
   const [children, setChildren] = useState('')
@@ -31,17 +33,25 @@ export default function NewClientScreen() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  // Auto-compose full_name from first + last
+  const displayName = [firstName.trim(), fullName.trim()].filter(Boolean).join(' ') || firstName.trim() || fullName.trim()
+
   async function handleSave() {
     setErrorMsg(null)
-    if (!fullName.trim()) { setErrorMsg(t('clients.fields.full_name') + ' requis'); return }
+    if (!firstName.trim() && !fullName.trim()) {
+      setErrorMsg('Prénom ou Nom requis')
+      return
+    }
     if (!session) { setErrorMsg('Session expirée, reconnectez-vous'); return }
     setLoading(true)
     try {
       await createClient(session.user.id, {
-        full_name: fullName.trim(),
+        first_name: firstName.trim() || null,
+        full_name: displayName,
         email: email || null,
         phone: phone || null,
         status,
+        inscription_date: inscriptionDate || null,
         birth_date: birthDate || null,
         profession: profession || null,
         children: children || null,
@@ -72,9 +82,31 @@ export default function NewClientScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         <Text style={styles.section}>{t('clients.sections.personal')}</Text>
-        <Input label={t('clients.fields.full_name')} value={fullName} onChangeText={setFullName} autoCapitalize="words" />
+        <Input
+          label="Prénom"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+          placeholder="Marie"
+        />
+        <Input
+          label={`${t('clients.fields.full_name')} (Nom)`}
+          value={fullName}
+          onChangeText={setFullName}
+          autoCapitalize="words"
+          placeholder="Dupont"
+        />
+        {displayName ? (
+          <Text style={styles.namePreview}>Affiché : <Text style={styles.namePreviewBold}>{displayName}</Text></Text>
+        ) : null}
         <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Input
+          label="Date d'inscription"
+          value={inscriptionDate}
+          onChangeText={setInscriptionDate}
+          placeholder="AAAA-MM-JJ"
+        />
         <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="AAAA-MM-JJ" />
         <Input label={`${t('clients.fields.profession')} (${t('common.optional')})`} value={profession} onChangeText={setProfession} />
         <Input label={`${t('clients.fields.children')} (${t('common.optional')})`} value={children} onChangeText={setChildren} />
@@ -114,11 +146,13 @@ export default function NewClientScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: colors.bg },
-  content:    { padding: 16, gap: 12, paddingBottom: 40 },
-  section:    { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
-  statusRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  switchRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
-  switchLabel:{ fontSize: 16, color: colors.text },
-  error:      { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 8, backgroundColor: '#fef2f2', borderRadius: 8 },
+  container:       { flex: 1, backgroundColor: colors.bg },
+  content:         { padding: 16, gap: 12, paddingBottom: 40 },
+  section:         { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
+  statusRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  switchRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
+  switchLabel:     { fontSize: 16, color: colors.text },
+  namePreview:     { fontSize: 13, color: colors.textSecondary, paddingHorizontal: 4 },
+  namePreviewBold: { fontWeight: '600', color: colors.primary },
+  error:           { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 10, backgroundColor: '#fef2f2', borderRadius: 8 },
 })

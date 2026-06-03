@@ -16,12 +16,14 @@ export interface Client {
   id: string
   user_id: string
   full_name: string
+  first_name: string | null
   email: string | null
   phone: string | null
   status: ClientStatus
   source: string | null
   language: string | null
   birth_date: string | null
+  inscription_date: string | null
   profession: string | null
   children: string | null
   interests: string[]
