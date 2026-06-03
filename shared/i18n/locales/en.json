@@ -1,0 +1,109 @@
+{
+  "clients": {
+    "title": "Clients",
+    "search": "Search a client...",
+    "empty": "No clients yet",
+    "add": "Add a client",
+    "status": {
+      "prospect": "Prospect",
+      "active": "Active",
+      "inactive": "Inactive",
+      "vip": "VIP",
+      "advisor": "Advisor"
+    },
+    "fields": {
+      "full_name": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "birth_date": "Date of birth",
+      "profession": "Profession",
+      "children": "Children and ages",
+      "interests": "Interests",
+      "client_type": "Client type",
+      "particularities": "Particularities",
+      "medical_treatment": "Medical treatment",
+      "medical_notes": "Medical notes",
+      "doterra_id": "doTERRA ID",
+      "next_lrp_date": "Next LRP date",
+      "welcome_email_sent": "Welcome email sent",
+      "source": "Source",
+      "language": "Language"
+    },
+    "sections": {
+      "personal": "Personal info",
+      "medical": "Medical",
+      "doterra": "doTERRA"
+    }
+  },
+  "appointments": {
+    "title": "Appointments",
+    "add": "Add appointment",
+    "number": "Appointment #{{number}}",
+    "date": "Date",
+    "themes": "Topics discussed",
+    "solutions": "Solutions proposed",
+    "recap_sent": "Summary sent",
+    "next_date": "Next appointment",
+    "empty": "No appointments yet"
+  },
+  "followups": {
+    "title": "Follow-ups",
+    "today": "Today",
+    "overdue": "Overdue",
+    "upcoming": "Upcoming",
+    "none": "No pending follow-ups",
+    "add": "Add a follow-up",
+    "done": "Done",
+    "title_label": "Title"
+  },
+  "notes": {
+    "title": "Notes",
+    "add": "Add a note...",
+    "empty": "No notes yet"
+  },
+  "recommendations": {
+    "title": "Recommended products",
+    "add": "Add a product",
+    "reason": "Reason",
+    "advised": "Advised",
+    "purchased": "Purchased",
+    "empty": "No recommendations yet"
+  },
+  "dashboard": {
+    "title": "Today",
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "no_tasks": "Nothing due today",
+    "upcoming_rdv": "Upcoming appointments",
+    "upcoming_lrp": "Upcoming LRP",
+    "stats": {
+      "total_clients": "Clients",
+      "active_clients": "Active",
+      "this_month": "This month",
+      "pending_followups": "Follow-ups"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "confirm_delete": "Are you sure you want to delete this?",
+    "optional": "optional"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "logout": "Log out",
+    "full_name": "Full name",
+    "confirm_email_title": "Check your email",
+    "confirm_email_body": "We sent a confirmation link to {{email}}. Click it to activate your account."
+  }
+}

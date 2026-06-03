@@ -1,0 +1,11 @@
+import '@/shared/i18n'
+import { Slot } from 'expo-router'
+import { AuthProvider } from '@/features/auth/AuthProvider'
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <Slot />
+    </AuthProvider>
+  )
+}

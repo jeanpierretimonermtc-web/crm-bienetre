@@ -1,0 +1,109 @@
+{
+  "clients": {
+    "title": "Clients",
+    "search": "Rechercher un client...",
+    "empty": "Aucun client pour l'instant",
+    "add": "Ajouter un client",
+    "status": {
+      "prospect": "Prospect",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "vip": "VIP",
+      "advisor": "Conseillère"
+    },
+    "fields": {
+      "full_name": "Nom complet",
+      "email": "Email",
+      "phone": "Téléphone",
+      "birth_date": "Date de naissance",
+      "profession": "Profession",
+      "children": "Enfants et âges",
+      "interests": "Intérêts",
+      "client_type": "Type de client",
+      "particularities": "Particularités",
+      "medical_treatment": "Traitement médical",
+      "medical_notes": "Précisions traitement",
+      "doterra_id": "Identifiant doTERRA",
+      "next_lrp_date": "Prochaine LRP",
+      "welcome_email_sent": "Mail d'accueil envoyé",
+      "source": "Source",
+      "language": "Langue"
+    },
+    "sections": {
+      "personal": "Infos personnelles",
+      "medical": "Médical",
+      "doterra": "doTERRA"
+    }
+  },
+  "appointments": {
+    "title": "Rendez-vous",
+    "add": "Ajouter un RDV",
+    "number": "RDV n°{{number}}",
+    "date": "Date",
+    "themes": "Thèmes abordés",
+    "solutions": "Solutions proposées",
+    "recap_sent": "Récap envoyé",
+    "next_date": "Prochain RDV",
+    "empty": "Aucun rendez-vous"
+  },
+  "followups": {
+    "title": "Relances",
+    "today": "Aujourd'hui",
+    "overdue": "En retard",
+    "upcoming": "À venir",
+    "none": "Aucune relance en attente",
+    "add": "Ajouter une relance",
+    "done": "Terminée",
+    "title_label": "Titre"
+  },
+  "notes": {
+    "title": "Notes",
+    "add": "Ajouter une note...",
+    "empty": "Aucune note"
+  },
+  "recommendations": {
+    "title": "Produits recommandés",
+    "add": "Ajouter un produit",
+    "reason": "Raison",
+    "advised": "Conseillé",
+    "purchased": "Acheté",
+    "empty": "Aucune recommandation"
+  },
+  "dashboard": {
+    "title": "Aujourd'hui",
+    "greeting_morning": "Bonjour",
+    "greeting_afternoon": "Bon après-midi",
+    "no_tasks": "Rien de prévu aujourd'hui",
+    "upcoming_rdv": "Prochains RDV",
+    "upcoming_lrp": "Prochaines LRP",
+    "stats": {
+      "total_clients": "Clients",
+      "active_clients": "Actifs",
+      "this_month": "Ce mois",
+      "pending_followups": "Relances"
+    }
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "back": "Retour",
+    "yes": "Oui",
+    "no": "Non",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer ceci ?",
+    "optional": "facultatif"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "register": "Créer un compte",
+    "email": "Email",
+    "password": "Mot de passe",
+    "logout": "Se déconnecter",
+    "full_name": "Nom complet",
+    "confirm_email_title": "Vérifiez votre email",
+    "confirm_email_body": "Un lien de confirmation a été envoyé à {{email}}. Cliquez dessus pour activer votre compte."
+  }
+}
