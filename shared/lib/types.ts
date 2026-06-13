@@ -1,5 +1,27 @@
 export type ClientStatus = 'prospect' | 'active' | 'inactive' | 'vip' | 'advisor'
 export type RecommendationStatus = 'advised' | 'purchased'
+export type CatalogType = 'official' | 'custom'
+
+export interface Catalog {
+  id: string
+  slug: string | null
+  name: string
+  brand: string | null
+  type: CatalogType
+  user_id: string | null
+  color: string
+  icon: string
+  created_at: string
+}
+
+export interface CatalogProduct {
+  id: string
+  catalog_id: string
+  sku: string | null
+  name: string
+  category: string | null
+  created_at: string
+}
 
 export interface Profile {
   id: string
@@ -79,6 +101,9 @@ export interface Recommendation {
   product_name: string
   reason: string | null
   status: RecommendationStatus
+  catalog_id: string | null
+  product_id: string | null
+  catalog?: Pick<Catalog, 'name' | 'color' | 'icon'>
   created_at: string
   updated_at: string | null
 }

@@ -4,7 +4,7 @@ import type { Recommendation, RecommendationStatus } from '@/shared/lib/types'
 export async function getRecommendationsByClient(clientId: string) {
   const { data, error } = await supabase
     .from('recommendations')
-    .select('*')
+    .select('*, catalog:catalogs(name, color, icon)')
     .eq('client_id', clientId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -16,12 +16,22 @@ export async function createRecommendation(
   clientId: string,
   productName: string,
   reason: string | null,
-  status: RecommendationStatus = 'advised'
+  status: RecommendationStatus = 'advised',
+  catalogId: string | null = null,
+  productId: string | null = null
 ) {
   const { data, error } = await supabase
     .from('recommendations')
-    .insert({ user_id: userId, client_id: clientId, product_name: productName, reason, status })
-    .select()
+    .insert({
+      user_id: userId,
+      client_id: clientId,
+      product_name: productName,
+      reason,
+      status,
+      catalog_id: catalogId,
+      product_id: productId,
+    })
+    .select('*, catalog:catalogs(name, color, icon)')
     .single()
   if (error) throw error
   return data as Recommendation

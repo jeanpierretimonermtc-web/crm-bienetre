@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useRecommendations } from '@/features/recommendations/useRecommendations'
 import { createRecommendation, updateRecommendationStatus, deleteRecommendation } from '@/features/recommendations/recommendationService'
-import { DoterraProductPicker } from '@/features/modules/doterra/DoterraProductPicker'
+import { CatalogProductPicker, type CatalogPickerResult } from '@/features/catalogs/CatalogProductPicker'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Button } from '@/shared/components/ui/Button'
 import { Card } from '@/shared/components/ui/Card'
@@ -21,14 +21,34 @@ export default function ClientRecommendationsScreen() {
   const [showPicker, setShowPicker] = useState(false)
   const [productName, setProductName] = useState('')
   const [reason, setReason] = useState('')
+  const [pickedCatalog, setPickedCatalog] = useState<CatalogPickerResult | null>(null)
   const [saving, setSaving] = useState(false)
+
+  function handlePickerSelect(result: CatalogPickerResult) {
+    setProductName(result.productName)
+    setPickedCatalog(result)
+  }
+
+  function resetModal() {
+    setShowModal(false)
+    setProductName('')
+    setReason('')
+    setPickedCatalog(null)
+  }
 
   async function handleSave() {
     if (!productName.trim() || !session) return
     setSaving(true)
     try {
-      await createRecommendation(session.user.id, id, productName.trim(), reason || null)
-      setShowModal(false); setProductName(''); setReason(''); refresh()
+      await createRecommendation(
+        session.user.id, id,
+        productName.trim(), reason || null,
+        'advised',
+        pickedCatalog?.catalogId ?? null,
+        pickedCatalog?.productId ?? null
+      )
+      resetModal()
+      refresh()
     } finally { setSaving(false) }
   }
 
@@ -61,6 +81,13 @@ export default function ClientRecommendationsScreen() {
                 <Card style={styles.recCard}>
                   <View style={styles.recRow}>
                     <View style={styles.recInfo}>
+                      {/* Catalog badge */}
+                      {item.catalog && (
+                        <View style={[styles.catalogBadge, { backgroundColor: item.catalog.color + '18' }]}>
+                          <Text style={styles.catalogIcon}>{item.catalog.icon}</Text>
+                          <Text style={[styles.catalogName, { color: item.catalog.color }]}>{item.catalog.name}</Text>
+                        </View>
+                      )}
                       <Text style={styles.recName}>{item.product_name}</Text>
                       {item.reason && <Text style={styles.recReason}>{item.reason}</Text>}
                     </View>
@@ -84,9 +111,10 @@ export default function ClientRecommendationsScreen() {
         }
       </View>
 
-      <Modal animationType="slide" presentationStyle="pageSheet" visible={showModal} onRequestClose={() => setShowModal(false)}>
+      {/* Add modal */}
+      <Modal animationType="slide" presentationStyle="pageSheet" visible={showModal} onRequestClose={resetModal}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => setShowModal(false)}><Text style={styles.modalCancel}>{t('common.cancel')}</Text></TouchableOpacity>
+          <TouchableOpacity onPress={resetModal}><Text style={styles.modalCancel}>{t('common.cancel')}</Text></TouchableOpacity>
           <Text style={styles.modalTitle}>{t('recommendations.add')}</Text>
           <Button label={t('common.save')} size="sm" onPress={handleSave} loading={saving} />
         </View>
@@ -96,10 +124,18 @@ export default function ClientRecommendationsScreen() {
               style={[styles.productInput, { flex: 1 }]}
               placeholder="Produit"
               value={productName}
-              onChangeText={setProductName}
+              onChangeText={text => { setProductName(text); setPickedCatalog(null) }}
               placeholderTextColor={colors.textTertiary}
             />
-            <Button label="doTERRA" variant="secondary" size="sm" onPress={() => setShowPicker(true)} />
+            <TouchableOpacity
+              style={[styles.catalogBtn, pickedCatalog && { borderColor: pickedCatalog.catalogColor, backgroundColor: pickedCatalog.catalogColor + '15' }]}
+              onPress={() => setShowPicker(true)}
+            >
+              {pickedCatalog
+                ? <Text style={{ fontSize: 13, color: pickedCatalog.catalogColor, fontWeight: '600' }}>{pickedCatalog.catalogIcon} {pickedCatalog.catalogName}</Text>
+                : <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>📦 Catalogue</Text>
+              }
+            </TouchableOpacity>
           </View>
           <TextInput
             style={styles.reasonInput}
@@ -112,9 +148,10 @@ export default function ClientRecommendationsScreen() {
         </ScrollView>
       </Modal>
 
+      {/* Catalog picker */}
       {showPicker && (
-        <DoterraProductPicker
-          onSelect={p => setProductName(p.name)}
+        <CatalogProductPicker
+          onSelect={handlePickerSelect}
           onClose={() => setShowPicker(false)}
         />
       )}
@@ -128,9 +165,13 @@ const styles = StyleSheet.create({
   loader:             { marginTop: 40 },
   addBtn:             { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   addBtnText:         { color: '#fff', fontSize: 22, lineHeight: 28 },
+
   recCard:            { },
   recRow:             { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  recInfo:            { flex: 1, gap: 3 },
+  recInfo:            { flex: 1, gap: 4 },
+  catalogBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  catalogIcon:        { fontSize: 11 },
+  catalogName:        { fontSize: 11, fontWeight: '600' },
   recName:            { fontSize: 15, fontWeight: '600', color: colors.text },
   recReason:          { fontSize: 13, color: colors.textSecondary },
   recActions:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -139,11 +180,13 @@ const styles = StyleSheet.create({
   statusBtnText:      { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
   statusBtnTextActive:{ color: colors.success },
   deleteIcon:         { fontSize: 16 },
+
   modalHeader:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle:         { fontSize: 17, fontWeight: '600', color: colors.text },
   modalCancel:        { fontSize: 16, color: colors.primary },
   modalContent:       { padding: 16 },
   productRow:         { flexDirection: 'row', gap: 8, alignItems: 'center' },
   productInput:       { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: colors.card, color: colors.text },
+  catalogBtn:         { borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
   reasonInput:        { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: colors.card, color: colors.text, minHeight: 80 },
 })
