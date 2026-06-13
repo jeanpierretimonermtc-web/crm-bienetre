@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumora — Plan Produit & Vision SaaS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fb;
+      color: #1a1a2e;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 48px;
+      background: white;
+    }
+
+    /* COVER */
+    .cover {
+      text-align: center;
+      padding: 60px 0 50px;
+      border-bottom: 2px solid #f0f0f5;
+      margin-bottom: 48px;
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #6C63FF, #A78BFA);
+      font-size: 36px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(108,99,255,0.25);
+    }
+
+    .cover h1 {
+      font-size: 42px;
+      font-weight: 800;
+      color: #1a1a2e;
+      letter-spacing: -1.5px;
+      margin-bottom: 8px;
+    }
+
+    .cover .tagline {
+      font-size: 18px;
+      color: #6C63FF;
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+
+    .cover .meta {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .cover .meta span { display: flex; align-items: center; gap: 6px; }
+
+    /* SECTION */
+    .section {
+      margin-bottom: 48px;
+      page-break-inside: avoid;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #6C63FF;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin: 28px 0 12px;
+    }
+
+    h3.sub {
+      font-size: 14px;
+      font-weight: 600;
+      color: #444;
+      margin: 20px 0 10px;
+    }
+
+    p { color: #444; margin-bottom: 12px; }
+
+    /* HIGHLIGHT BOX */
+    .highlight {
+      background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+      border-left: 4px solid #6C63FF;
+      border-radius: 0 12px 12px 0;
+      padding: 20px 24px;
+      margin: 20px 0;
+    }
+
+    .highlight strong { color: #6C63FF; font-size: 16px; }
+
+    /* NAME CARD */
+    .name-card {
+      background: linear-gradient(135deg, #1a1a2e, #2d2d5e);
+      border-radius: 16px;
+      padding: 32px 36px;
+      color: white;
+      margin: 24px 0;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .name-card .name-big {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #A78BFA, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .name-card .name-desc { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+    .name-card .name-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    .name-tag {
+      background: rgba(167,139,250,0.2);
+      border: 1px solid rgba(167,139,250,0.4);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #c4b5fd;
+    }
+
+    /* PRICING TABLE */
+    .pricing {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .plan {
+      border: 1px solid #e8e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .plan.featured {
+      border-color: #6C63FF;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.15);
+    }
+
+    .plan.featured::before {
+      content: 'Recommandé';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #6C63FF;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    .plan-name { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+    .plan-price {
+      font-size: 32px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin: 8px 0 4px;
+      letter-spacing: -1px;
+    }
+
+    .plan-price span { font-size: 14px; font-weight: 400; color: #888; }
+
+    .plan-features { margin-top: 16px; list-style: none; }
+
+    .plan-features li {
+      font-size: 13px;
+      color: #555;
+      padding: 5px 0;
+      border-bottom: 1px solid #f0f0f5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .plan-features li::before { content: '✓'; color: #6C63FF; font-weight: 700; font-size: 12px; }
+
+    .plan-features li.locked { color: #bbb; }
+    .plan-features li.locked::before { content: '—'; color: #ddd; }
+
+    /* SCREENS */
+    .screen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+    .screen-card {
+      background: #f8f9fb;
+      border: 1px solid #e8e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .screen-card-header {
+      background: #1a1a2e;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-red { background: #FF5F57; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #28CA41; }
+
+    .screen-card-title { color: rgba(255,255,255,0.7); font-size: 11px; margin-left: 6px; }
+
+    .screen-card-body { padding: 14px 16px; font-size: 12px; font-family: 'SF Mono', 'Monaco', monospace; color: #555; line-height: 1.7; }
+
+    .screen-card-body .highlight-line { color: #6C63FF; font-weight: 600; }
+
+    /* NAVIGATION DIAGRAM */
+    .nav-diagram {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 24px;
+      color: white;
+      font-family: 'SF Mono', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 2;
+      margin: 16px 0;
+    }
+
+    .nav-diagram .nav-title { color: #A78BFA; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+    .nav-diagram .active { color: #A78BFA; }
+    .nav-diagram .pro-label {
+      display: inline-block;
+      background: rgba(167,139,250,0.2);
+      border: 1px solid rgba(167,139,250,0.4);
+      border-radius: 4px;
+      padding: 0 6px;
+      font-size: 10px;
+      color: #A78BFA;
+      vertical-align: middle;
+    }
+
+    /* ROADMAP */
+    .roadmap { margin: 20px 0; }
+
+    .phase {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+
+    .phase-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 80px;
+    }
+
+    .phase-badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .phase-badge.done { background: #d1fae5; color: #059669; }
+    .phase-badge.next { background: #ede9fe; color: #6C63FF; }
+    .phase-badge.future { background: #f0f0f5; color: #888; }
+
+    .phase-line {
+      width: 2px;
+      flex: 1;
+      min-height: 20px;
+      background: #e8e8f0;
+      margin-top: 8px;
+    }
+
+    .phase-content {
+      flex: 1;
+      padding-bottom: 8px;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .phase-title { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+
+    .phase-duration {
+      font-size: 12px;
+      color: #888;
+      background: #f0f0f5;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    .phase-goal {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6C63FF;
+      margin-bottom: 12px;
+    }
+
+    .task-list { list-style: none; }
+
+    .task-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f5f5f8;
+      font-size: 13px;
+      color: #444;
+    }
+
+    .task-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    th {
+      background: #f5f3ff;
+      color: #6C63FF;
+      font-weight: 600;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f5;
+      color: #444;
+    }
+
+    tr:hover td { background: #fafafa; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag-green { background: #d1fae5; color: #059669; }
+    .tag-yellow { background: #fef3c7; color: #92400e; }
+    .tag-red { background: #fee2e2; color: #991b1b; }
+    .tag-blue { background: #dbeafe; color: #1e40af; }
+    .tag-purple { background: #ede9fe; color: #5b21b6; }
+
+    /* KPI GOAL */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .kpi-card {
+      border: 1px solid #e8e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .kpi-number {
+      font-size: 32px;
+      font-weight: 800;
+      color: #6C63FF;
+      letter-spacing: -1px;
+    }
+
+    .kpi-label { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .kpi-target { font-size: 11px; color: #bbb; margin-top: 8px; }
+
+    /* CTA */
+    .cta-box {
+      background: linear-gradient(135deg, #6C63FF, #A78BFA);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      color: white;
+      margin-top: 40px;
+    }
+
+    .cta-box h3 { color: white; font-size: 22px; margin-bottom: 8px; }
+    .cta-box p { color: rgba(255,255,255,0.8); margin-bottom: 0; }
+
+    .cta-action {
+      display: inline-block;
+      margin-top: 20px;
+      background: white;
+      color: #6C63FF;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 28px;
+      border-radius: 10px;
+    }
+
+    /* DIVIDER */
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f5;
+      margin: 40px 0;
+    }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      padding-top: 32px;
+      border-top: 1px solid #f0f0f5;
+      margin-top: 48px;
+    }
+
+    /* PRINT */
+    @media print {
+      body { background: white; }
+      .page { max-width: 100%; padding: 20px 32px; }
+      .section { page-break-inside: avoid; }
+      .phase { page-break-inside: avoid; }
+      .screen-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="logo-mark">🌟</div>
+    <h1>Lumora</h1>
+    <div class="tagline">Le CRM des praticiens du bien-être</div>
+    <div class="meta">
+      <span>📄 Plan Produit & Vision SaaS</span>
+      <span>📅 Juin 2026</span>
+      <span>🔒 Confidentiel</span>
+    </div>
+  </div>
+
+  <!-- NOM -->
+  <div class="section">
+    <div class="section-title">Identité</div>
+    <h2>Pourquoi "Lumora" ?</h2>
+    <div class="name-card">
+      <div>
+        <div class="name-big">Lumora</div>
+        <div class="name-desc">Lumen (lumière) + Aura — l'essence du bien-être en un mot</div>
+        <div class="name-tags">
+          <span class="name-tag">International</span>
+          <span class="name-tag">Mémorisable</span>
+          <span class="name-tag">Prononçable partout</span>
+          <span class="name-tag">Moderne</span>
+          <span class="name-tag">lumora.app</span>
+        </div>
+      </div>
+    </div>
+    <p>Aucun CRM dominant n'existe pour les praticiens du bien-être holistique à l'échelle mondiale. Salesforce est trop lourd. Jane App (Canada) couvre la kiné/ostéo. Mindbody cible gym/yoga. <strong>Lumora est ce créneau inexploité.</strong></p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- POSITIONNEMENT -->
+  <div class="section">
+    <div class="section-title">Marché</div>
+    <h2>Positionnement</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Concurrent</th>
+          <th>Cible</th>
+          <th>Lacune</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Salesforce / HubSpot</td>
+          <td>Entreprises</td>
+          <td>Trop complexe, trop cher pour solo</td>
+        </tr>
+        <tr>
+          <td>Jane App</td>
+          <td>Kinés, ostéos</td>
+          <td>Pas de modules bien-être / MLM</td>
+        </tr>
+        <tr>
+          <td>Mindbody</td>
+          <td>Gym, yoga studios</td>
+          <td>Pas adapté praticien solo</td>
+        </tr>
+        <tr>
+          <td>Synoria</td>
+          <td>MTC desktop</td>
+          <td>Local, non SaaS, non mobile</td>
+        </tr>
+        <tr>
+          <td style="color:#6C63FF;font-weight:700;">Lumora</td>
+          <td style="color:#6C63FF;font-weight:700;">Tous praticiens bien-être</td>
+          <td style="color:#6C63FF;font-weight:700;">✓ SaaS mobile/web, modulaire, multilingue</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- PLANS -->
+  <div class="section">
+    <div class="section-title">Modèle économique</div>
+    <h2>Plans tarifaires</h2>
+    <div class="pricing">
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">0€ <span>/ mois</span></div>
+        <ul class="plan-features">
+          <li>20 clients maximum</li>
+          <li>1 module actif</li>
+          <li>Agenda basique</li>
+          <li>Relances manuelles</li>
+          <li class="locked">Export PDF/Excel</li>
+          <li class="locked">IA résumés</li>
+          <li class="locked">Multi-praticiens</li>
+        </ul>
+      </div>
+      <div class="plan featured">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">29€ <span>/ mois</span></div>
+        <ul class="plan-features">
+          <li>Clients illimités</li>
+          <li>Tous les modules</li>
+          <li>Agenda complet</li>
+          <li>Relances automatiques</li>
+          <li>Export PDF / Excel</li>
+          <li>IA résumés de séance</li>
+          <li>Comptabilité + Factures</li>
+          <li>RGPD dashboard</li>
+        </ul>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Cabinet</div>
+        <div class="plan-price">79€ <span>/ mois</span></div>
+        <ul class="plan-features">
+          <li>Tout Pro</li>
+          <li>5 praticiens</li>
+          <li>Marque blanche</li>
+          <li>Rapport partagé</li>
+          <li>Support prioritaire</li>
+          <li>Onboarding dédié</li>
+          <li>API accès</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- UX FLOW -->
+  <div class="section">
+    <div class="section-title">UX</div>
+    <h2>Parcours utilisateur complet</h2>
+
+    <h3>1. Acquisition & Onboarding</h3>
+
+    <table>
+      <thead>
+        <tr><th>Étape</th><th>Écran</th><th>Objectif</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-blue">1</span></td>
+          <td>Landing page lumora.app</td>
+          <td>Convaincre → "Essai gratuit 14 jours"</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-blue">2</span></td>
+          <td>Inscription email/password</td>
+          <td>Créer le compte</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-blue">3</span></td>
+          <td>Onboarding : Mon profil</td>
+          <td>Nom, spécialité, pays, langue</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-blue">4</span></td>
+          <td>Onboarding : Mes modules</td>
+          <td>Sélectionner DoTerra / MTC / Naturo…</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-blue">5</span></td>
+          <td>Onboarding : Premier client</td>
+          <td>Ajouter un client ou voir la démo</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-green">6</span></td>
+          <td>Dashboard (données de démo)</td>
+          <td>Time-to-value immédiat</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2. Navigation principale</h3>
+
+    <div class="nav-diagram">
+      <div class="nav-title">🌟 LUMORA</div>
+      <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0 12px;"></div>
+      <div class="active">🏠 &nbsp;Tableau de bord</div>
+      <div>👥 &nbsp;Clients</div>
+      <div>📅 &nbsp;Agenda</div>
+      <div>🔔 &nbsp;Relances</div>
+      <div>📦 &nbsp;Modules &nbsp;▶</div>
+      <div style="padding-left:24px;color:rgba(255,255,255,0.5);">└ DoTerra</div>
+      <div style="padding-left:24px;color:rgba(255,255,255,0.5);">└ Zinzino</div>
+      <div style="padding-left:24px;color:rgba(255,255,255,0.5);">└ MTC</div>
+      <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+      <div>📊 &nbsp;Comptabilité &nbsp;<span class="pro-label">PRO</span></div>
+      <div>📄 &nbsp;Factures &nbsp;<span class="pro-label">PRO</span></div>
+      <div>🔒 &nbsp;RGPD &nbsp;<span class="pro-label">PRO</span></div>
+      <div>✨ &nbsp;IA Résumés &nbsp;<span class="pro-label">PRO</span></div>
+      <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+      <div>⚙️ &nbsp;Paramètres</div>
+      <div>❓ &nbsp;Support</div>
+    </div>
+
+    <h3>3. Écrans principaux</h3>
+
+    <div class="screen-grid">
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Tableau de bord</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">Bonjour Jean-Pierre 👋 Vendredi 13 juin</span>
+[+ Client]  [📅 RDV]  [🔔 Relance]
+
+┌──────────┬──────────┬──────────┬──────────┐
+│47 Clients│3 RDV/sem │8 Relances│2 430€/mo │
+└──────────┴──────────┴──────────┴──────────┘
+
+AGENDA DU JOUR
+09:00  Marie Dupont
+11:00  Luc Bernard
+14:30  Anna Klein
+
+RELANCES URGENTES
+■ Paul Martin    +5j 🔴
+■ Julie Cohen    +2j 🟡
+
+LRP À VENIR (DoTerra)
+Marie D.  J-3 🔴  Anna K.  J-12 🟡
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Liste Clients</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">[🔍 Rechercher un client…]</span>
+[Tous] [Prospect] [Actif] [VIP] [Advisor]
+
+● Marie Dupont    Actif    RDV 15 juin →
+● Paul Martin     Prospect Relance 🔴  →
+● Anna Klein      VIP      DoTerra ⭐  →
+● Luc Bernard     Actif               →
+● Julie Cohen     Prospect            →
+● Marc Dupuis     Inactif             →
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Fiche Client</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">[←] Marie Dupont          [✏️ Éditer]</span>
+marie@email.com  •  +33 6 12 34 56
+Actif  •  DoTerra  •  Inscrite 01/01/2025
+
+[📅 RDV] [🗒 Note] [🔔 Relance] [🌿 Reco]
+
+ONGLETS
+Aperçu │ RDV (4) │ Notes (7) │ Relances │ Reco
+
+Profession : Infirmière
+Naissance : 12/05/1985
+Particularités : Sensible au gluten
+Prochain RDV : 15 juin 2026 10h00
+
+✨ RÉSUMÉ IA  [Générer] [PRO]
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Agenda (Phase 2)</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">◀ Juin 2026 ▶  [Jour] [Semaine] [Mois]</span>
+      Lun 9  Mar 10  Mer 11  Jeu 12  Ven 13
+─────────────────────────────────────────────
+09:00  [Marie D.]
+10:00
+11:00          [Luc B.]
+14:00                                [Anna K.]
+15:00
+16:00
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Comptabilité (Phase 3)</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">Juin 2026              Total : 2 430€</span>
+─────────────────────────────────────────────
+● 01/06  Marie D.  Séance naturo   75€
+● 03/06  Luc B.   Séance MTC      75€
+● 05/06  Anna K.  DoTerra LRP    180€
+─────────────────────────────────────────────
+URSAF (23%)  :  558€
+Net estimé   : 1 872€
+
+[📊 Export Excel]  [📄 Export PDF]
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-card-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="screen-card-title">Facturation (Phase 3)</div>
+        </div>
+        <div class="screen-card-body">
+<span class="highlight-line">[+ Nouvelle facture]</span>
+
+N°2026-001  Marie Dupont     75€  ✅ Payée
+N°2026-002  Luc Bernard      75€  ⏳ En attente
+N°2026-003  Anna Klein      180€  ✅ Payée
+N°2026-004  Julie Cohen      75€  🔴 En retard
+
+Total mois :  405€
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ROADMAP -->
+  <div class="section">
+    <div class="section-title">Construction</div>
+    <h2>Plan de développement</h2>
+
+    <div class="roadmap">
+
+      <!-- Phase 1 -->
+      <div class="phase">
+        <div class="phase-left">
+          <div class="phase-badge done">✅<br>P1</div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <div class="phase-header">
+            <div class="phase-title">Phase 1 — Fondations</div>
+            <div class="phase-duration">Terminée</div>
+          </div>
+          <div class="phase-goal">Objectif : Avoir un CRM fonctionnel de A à Z</div>
+          <ul class="task-list">
+            <li><span class="task-icon">✅</span>Authentification (Supabase Auth)</li>
+            <li><span class="task-icon">✅</span>Fiche client complète (prénom, inscription, médical, statut)</li>
+            <li><span class="task-icon">✅</span>Notes, Relances, Rendez-vous</li>
+            <li><span class="task-icon">✅</span>Module DoTerra (50 produits + LRP tracker)</li>
+            <li><span class="task-icon">✅</span>Dashboard KPI redesigné</li>
+            <li><span class="task-icon">✅</span>Sidebar responsive web/tablette</li>
+            <li><span class="task-icon">✅</span>Multilingue FR/EN (i18next)</li>
+            <li><span class="task-icon">✅</span>Déployé sur Vercel (crm-bienetre.vercel.app)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase">
+        <div class="phase-left">
+          <div class="phase-badge next">🚀<br>P2</div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <div class="phase-header">
+            <div class="phase-title">Phase 2 — SaaS Core</div>
+            <div class="phase-duration">6–8 semaines</div>
+          </div>
+          <div class="phase-goal">Objectif : 10 praticiens payants à 29€/mois (290€ MRR)</div>
+          <ul class="task-list">
+            <li><span class="task-icon">🔲</span><strong>Stripe Checkout</strong> — abonnements Free/Pro/Cabinet</li>
+            <li><span class="task-icon">🔲</span>Webhook Stripe → activation plan dans Supabase</li>
+            <li><span class="task-icon">🔲</span>Gates sur fonctionnalités Pro (comptabilité, IA, export)</li>
+            <li><span class="task-icon">🔲</span>Landing page lumora.app (Hero, Features, Prix, CTA)</li>
+            <li><span class="task-icon">🔲</span>Onboarding guidé 3 étapes (profil → modules → premier client)</li>
+            <li><span class="task-icon">🔲</span>Données de démo au premier login</li>
+            <li><span class="task-icon">🔲</span>Email de bienvenue + facture (Resend)</li>
+            <li><span class="task-icon">🔲</span><strong>Agenda calendrier</strong> — vue semaine + jour</li>
+            <li><span class="task-icon">🔲</span>Rappel RDV automatique J-1 par email</li>
+            <li><span class="task-icon">🔲</span>Page Paramètres (profil, langue, timezone, facturation)</li>
+            <li><span class="task-icon">🔲</span>Support intégré (Crisp ou Intercom)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase">
+        <div class="phase-left">
+          <div class="phase-badge future">P3</div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <div class="phase-header">
+            <div class="phase-title">Phase 3 — Rétention & Valeur</div>
+            <div class="phase-duration">8–10 semaines</div>
+          </div>
+          <div class="phase-goal">Objectif : 50 praticiens payants (1 450€ MRR)</div>
+          <ul class="task-list">
+            <li><span class="task-icon">🔲</span>Export PDF fiche client (mise en page professionnelle)</li>
+            <li><span class="task-icon">🔲</span>Export Excel séances + historique</li>
+            <li><span class="task-icon">🔲</span>Comptabilité simple — revenus, URSAF, dépenses</li>
+            <li><span class="task-icon">🔲</span>Facturation — génération PDF + envoi par email</li>
+            <li><span class="task-icon">🔲</span>RGPD dashboard — consentements, registre Art.30</li>
+            <li><span class="task-icon">🔲</span>Résumé IA de fiche client (Claude API)</li>
+            <li><span class="task-icon">🔲</span>Transcription vocale de séance → fiche structurée</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase">
+        <div class="phase-left">
+          <div class="phase-badge future">P4</div>
+        </div>
+        <div class="phase-content">
+          <div class="phase-header">
+            <div class="phase-title">Phase 4 — Croissance mondiale</div>
+            <div class="phase-duration">3–4 mois</div>
+          </div>
+          <div class="phase-goal">Objectif : 200 praticiens payants (5 800€ MRR)</div>
+          <ul class="task-list">
+            <li><span class="task-icon">🔲</span>Module MTC complet (diagnostic énergétique, séances, tests)</li>
+            <li><span class="task-icon">🔲</span>Module Zinzino, Atomy, Amway</li>
+            <li><span class="task-icon">🔲</span>Marketplace praticiens — annuaire public Lumora</li>
+            <li><span class="task-icon">🔲</span>App mobile iOS + Android (stores)</li>
+            <li><span class="task-icon">🔲</span>Multilingue : ES, DE, PT, NL, AR (RTL natif)</li>
+            <li><span class="task-icon">🔲</span>White-label associations professionnelles</li>
+            <li><span class="task-icon">🔲</span>Plugin system — formulaires personnalisés par spécialité</li>
+            <li><span class="task-icon">🔲</span>Stripe Connect multi-devises (USD, CAD, GBP, CHF)</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- OBJECTIFS -->
+  <div class="section">
+    <div class="section-title">Métriques</div>
+    <h2>Objectifs de croissance</h2>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-number">10</div>
+        <div class="kpi-label">Praticiens payants</div>
+        <div class="kpi-target">Fin Phase 2 • 290€ MRR</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number">50</div>
+        <div class="kpi-label">Praticiens payants</div>
+        <div class="kpi-target">Fin Phase 3 • 1 450€ MRR</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number">200</div>
+        <div class="kpi-label">Praticiens payants</div>
+        <div class="kpi-target">Fin Phase 4 • 5 800€ MRR</div>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <strong>La règle des 10 premiers</strong><br><br>
+      Les SaaS wellness qui échouent ont toujours trop de features. Ceux qui réussissent ont des praticiens qui paient et parlent du produit à leurs collègues. L'objectif des 90 prochains jours n'est pas d'avoir 100 fonctionnalités — c'est d'avoir <strong>10 praticiens à 29€/mois</strong>. C'est la validation. Rien d'autre ne compte avant.
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- STACK -->
+  <div class="section">
+    <div class="section-title">Technique</div>
+    <h2>Stack technologique</h2>
+    <table>
+      <thead>
+        <tr><th>Couche</th><th>Technologie</th><th>Raison</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Frontend mobile/web</td>
+          <td><span class="tag tag-blue">Expo SDK 56 + React Native</span></td>
+          <td>iOS + Android + Web en une codebase</td>
+        </tr>
+        <tr>
+          <td>Navigation</td>
+          <td><span class="tag tag-blue">Expo Router v4</span></td>
+          <td>File-based routing, deep links natifs</td>
+        </tr>
+        <tr>
+          <td>Backend / BDD</td>
+          <td><span class="tag tag-green">Supabase</span></td>
+          <td>Auth, PostgreSQL, RLS multi-tenant, Edge Functions</td>
+        </tr>
+        <tr>
+          <td>Paiements</td>
+          <td><span class="tag tag-purple">Stripe</span></td>
+          <td>Abonnements, multi-devises, webhooks</td>
+        </tr>
+        <tr>
+          <td>Emails</td>
+          <td><span class="tag tag-yellow">Resend</span></td>
+          <td>Transactionnel (bienvenue, factures, rappels)</td>
+        </tr>
+        <tr>
+          <td>IA</td>
+          <td><span class="tag tag-purple">Claude API</span></td>
+          <td>Résumés séance, suggestions relance</td>
+        </tr>
+        <tr>
+          <td>Internationalisation</td>
+          <td><span class="tag tag-blue">i18next + expo-localization</span></td>
+          <td>FR/EN actuel → 6 langues Phase 4</td>
+        </tr>
+        <tr>
+          <td>Déploiement web</td>
+          <td><span class="tag tag-green">Vercel</span></td>
+          <td>CI/CD automatique depuis GitHub</td>
+        </tr>
+        <tr>
+          <td>Support</td>
+          <td><span class="tag tag-yellow">Crisp</span></td>
+          <td>Chat intégré in-app</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h3>Prochaine étape</h3>
+    <p>Réserver <strong>lumora.app</strong> ou <strong>lumora.io</strong> dès aujourd'hui.<br>
+    Puis choisir : Stripe + plans tarifaires, ou landing page en premier ?</p>
+    <div class="cta-action">→ Commencer la Phase 2</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>Lumora — Plan Produit Confidentiel — Juin 2026</p>
+    <p style="margin-top:4px;">Généré par Claude (Anthropic) pour Jean-Pierre Timoner</p>
+  </div>
+
+</div>
+</body>
+</html>
