@@ -9,6 +9,11 @@ import { Avatar } from '@/shared/components/ui/Avatar'
 import { colors } from '@/shared/theme/colors'
 import type { AppointmentWithClient, FollowupWithClient, Client } from '@/shared/lib/types'
 
+function useLocale() {
+  const { i18n } = useTranslation()
+  return i18n.language === 'fr' ? 'fr-FR' : 'en-US'
+}
+
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 function KpiCard({ icon, value, label, sub, accent, onPress }: {
   icon: string; value: number; label: string; sub?: string; accent: string; onPress?: () => void
@@ -39,6 +44,7 @@ function QuickAction({ icon, label, onPress, accent }: { icon: string; label: st
 function Section({ title, badge, accent = colors.textSecondary, onMore }: {
   title: string; badge?: number; accent?: string; onMore?: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <View style={styles.sectionRow}>
       <View style={styles.sectionLeft}>
@@ -49,7 +55,7 @@ function Section({ title, badge, accent = colors.textSecondary, onMore }: {
           </View>
         ) : null}
       </View>
-      {onMore && <TouchableOpacity onPress={onMore}><Text style={styles.seeAll}>Voir tout →</Text></TouchableOpacity>}
+      {onMore && <TouchableOpacity onPress={onMore}><Text style={styles.seeAll}>{t('dashboard.see_all')} →</Text></TouchableOpacity>}
     </View>
   )
 }
@@ -57,10 +63,11 @@ function Section({ title, badge, accent = colors.textSecondary, onMore }: {
 // ─── Appointment item ─────────────────────────────────────────────────────────
 function ApptItem({ appt, isToday }: { appt: AppointmentWithClient; isToday: boolean }) {
   const { t } = useTranslation()
+  const locale = useLocale()
   const date = new Date(appt.appointment_date)
   const dateStr = isToday
-    ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })
+    ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short' })
 
   return (
     <TouchableOpacity style={styles.apptItem} onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments`)} activeOpacity={0.75}>
@@ -76,8 +83,8 @@ function ApptItem({ appt, isToday }: { appt: AppointmentWithClient; isToday: boo
           <Text style={styles.apptSub}>{t('appointments.number', { number: appt.appointment_number })}</Text>
         </View>
         {appt.recap_sent
-          ? <View style={styles.recapBadge}><Text style={styles.recapText}>✉ envoyé</Text></View>
-          : <View style={[styles.recapBadge, styles.recapPending]}><Text style={[styles.recapText, { color: colors.warning }]}>récap</Text></View>
+          ? <View style={styles.recapBadge}><Text style={styles.recapText}>✉ {t('dashboard.recap_sent')}</Text></View>
+          : <View style={[styles.recapBadge, styles.recapPending]}><Text style={[styles.recapText, { color: colors.warning }]}>{t('dashboard.recap_pending')}</Text></View>
         }
       </View>
     </TouchableOpacity>
@@ -86,6 +93,7 @@ function ApptItem({ appt, isToday }: { appt: AppointmentWithClient; isToday: boo
 
 // ─── Followup item ─────────────────────────────────────────────────────────────
 function FollowupItem({ f }: { f: FollowupWithClient }) {
+  const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
   const isOverdue = f.due_date < today
   const daysLate = isOverdue
@@ -102,7 +110,7 @@ function FollowupItem({ f }: { f: FollowupWithClient }) {
       <View style={styles.fuMeta}>
         {isOverdue
           ? <Text style={[styles.fuDate, { color: colors.danger }]}>+{daysLate}j</Text>
-          : <Text style={[styles.fuDate, { color: colors.warning }]}>aujourd'hui</Text>
+          : <Text style={[styles.fuDate, { color: colors.warning }]}>{t('dashboard.followup_today')}</Text>
         }
       </View>
     </TouchableOpacity>
@@ -111,6 +119,8 @@ function FollowupItem({ f }: { f: FollowupWithClient }) {
 
 // ─── LRP item ─────────────────────────────────────────────────────────────────
 function LrpItem({ client }: { client: Client }) {
+  const { t } = useTranslation()
+  const locale = useLocale()
   const daysUntil = client.next_lrp_date
     ? Math.ceil((new Date(client.next_lrp_date).getTime() - Date.now()) / 86400000)
     : null
@@ -121,12 +131,12 @@ function LrpItem({ client }: { client: Client }) {
       <Avatar name={client.full_name} size={36} />
       <View style={styles.lrpInfo}>
         <Text style={styles.lrpName}>{client.full_name}</Text>
-        <Text style={styles.lrpDate}>{client.next_lrp_date && new Date(client.next_lrp_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}</Text>
+        <Text style={styles.lrpDate}>{client.next_lrp_date && new Date(client.next_lrp_date).toLocaleDateString(locale, { day: '2-digit', month: 'long' })}</Text>
       </View>
       {daysUntil !== null && (
         <View style={[styles.daysChip, urgent && styles.daysChipUrgent]}>
           <Text style={[styles.daysText, urgent && styles.daysTextUrgent]}>
-            {daysUntil <= 0 ? 'Aujourd\'hui' : `J-${daysUntil}`}
+            {daysUntil <= 0 ? t('dashboard.lrp_today') : t('dashboard.lrp_days', { days: daysUntil })}
           </Text>
         </View>
       )}
@@ -137,6 +147,7 @@ function LrpItem({ client }: { client: Client }) {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { t } = useTranslation()
+  const locale = useLocale()
   const { session } = useAuth()
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -148,16 +159,20 @@ export default function DashboardScreen() {
 
   const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? ''
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
+  const greeting = hour < 12
+    ? t('dashboard.greeting_morning')
+    : hour < 18
+    ? t('dashboard.greeting_afternoon')
+    : t('dashboard.greeting_evening')
 
   const todayStr = new Date().toISOString().split('T')[0]
-  const todayAppts   = appointments.filter(a => a.appointment_date.startsWith(todayStr))
+  const todayAppts    = appointments.filter(a => a.appointment_date.startsWith(todayStr))
   const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 4)
-  const overdueToday = followups.filter(f => f.due_date <= todayStr)
+  const overdueToday  = followups.filter(f => f.due_date <= todayStr)
 
   function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
 
-  const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const dateStr = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <>
@@ -174,50 +189,47 @@ export default function DashboardScreen() {
             <Text style={styles.heroDate}>{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</Text>
           </View>
           <View style={styles.quickActions}>
-            <QuickAction icon="+" label="Client"  accent={colors.primary} onPress={() => router.push('/(app)/clients/new')} />
-            <QuickAction icon="📅" label="RDV"     accent={colors.success} onPress={() => router.push('/(app)/appointments')} />
-            <QuickAction icon="🔔" label="Relance" accent={colors.warning} onPress={() => router.push('/(app)/followups')} />
+            <QuickAction icon="+" label={t('dashboard.quick_client')}      accent={colors.primary} onPress={() => router.push('/(app)/clients/new')} />
+            <QuickAction icon="📅" label={t('dashboard.quick_appointment')} accent={colors.success} onPress={() => router.push('/(app)/appointments')} />
+            <QuickAction icon="🔔" label={t('dashboard.quick_followup')}   accent={colors.warning} onPress={() => router.push('/(app)/followups')} />
           </View>
         </View>
 
         {/* ── KPIs ─────────────────────────────────────── */}
         <View style={[styles.kpiRow, isWide && styles.kpiRowWide]}>
-          <KpiCard icon="👥" value={stats.totalClients}     label="Clients"         accent={colors.primary} onPress={() => router.push('/(app)/clients')} />
-          <KpiCard icon="✅" value={stats.activeClients}    label="Actifs"          accent={colors.success} sub={`${stats.totalClients > 0 ? Math.round(stats.activeClients / stats.totalClients * 100) : 0}%`} />
-          <KpiCard icon="🆕" value={stats.newThisMonth}     label="Ce mois"         accent={colors.warning} />
-          <KpiCard icon="🔔" value={stats.pendingFollowups} label="Relances"        accent={overdueToday.length > 0 ? colors.danger : colors.textSecondary} onPress={() => router.push('/(app)/followups')} />
+          <KpiCard icon="👥" value={stats.totalClients}     label={t('dashboard.stats.total_clients')}    accent={colors.primary} onPress={() => router.push('/(app)/clients')} />
+          <KpiCard icon="✅" value={stats.activeClients}    label={t('dashboard.stats.active_clients')}   accent={colors.success} sub={`${stats.totalClients > 0 ? Math.round(stats.activeClients / stats.totalClients * 100) : 0}%`} />
+          <KpiCard icon="🆕" value={stats.newThisMonth}     label={t('dashboard.stats.this_month')}       accent={colors.warning} />
+          <KpiCard icon="🔔" value={stats.pendingFollowups} label={t('dashboard.stats.pending_followups')} accent={overdueToday.length > 0 ? colors.danger : colors.textSecondary} onPress={() => router.push('/(app)/followups')} />
         </View>
 
         <View style={isWide ? styles.twoCol : undefined}>
           {/* ── Colonne gauche ────────────────────────── */}
           <View style={isWide ? styles.col : undefined}>
 
-            {/* Agenda du jour */}
             {todayAppts.length > 0 && (
               <View style={styles.block}>
-                <Section title="Agenda du jour" badge={todayAppts.length} accent={colors.primary} onMore={() => router.push('/(app)/appointments')} />
+                <Section title={t('dashboard.today_agenda')} badge={todayAppts.length} accent={colors.primary} onMore={() => router.push('/(app)/appointments')} />
                 <View style={styles.timeline}>
                   {todayAppts.map(a => <ApptItem key={a.id} appt={a} isToday={true} />)}
                 </View>
               </View>
             )}
 
-            {/* Priorités */}
             {overdueToday.length > 0 && (
               <View style={styles.block}>
-                <Section title="À traiter en priorité" badge={overdueToday.length} accent={colors.danger} onMore={() => router.push('/(app)/followups')} />
+                <Section title={t('dashboard.priority')} badge={overdueToday.length} accent={colors.danger} onMore={() => router.push('/(app)/followups')} />
                 <View style={styles.fuList}>
                   {overdueToday.slice(0, 4).map(f => <FollowupItem key={f.id} f={f} />)}
                 </View>
               </View>
             )}
 
-            {/* Jour vide */}
             {todayAppts.length === 0 && overdueToday.length === 0 && (
               <View style={styles.emptyDay}>
                 <Text style={styles.emptyDayEmoji}>✨</Text>
-                <Text style={styles.emptyDayTitle}>Journée libre</Text>
-                <Text style={styles.emptyDaySub}>Aucun RDV ni relance aujourd'hui</Text>
+                <Text style={styles.emptyDayTitle}>{t('dashboard.free_day')}</Text>
+                <Text style={styles.emptyDaySub}>{t('dashboard.free_day_sub')}</Text>
               </View>
             )}
           </View>
@@ -225,20 +237,18 @@ export default function DashboardScreen() {
           {/* ── Colonne droite ────────────────────────── */}
           <View style={isWide ? styles.col : undefined}>
 
-            {/* Prochains RDV */}
             {upcomingAppts.length > 0 && (
               <View style={styles.block}>
-                <Section title="Prochains rendez-vous" accent={colors.primary} onMore={() => router.push('/(app)/appointments')} />
+                <Section title={t('dashboard.next_appointments')} accent={colors.primary} onMore={() => router.push('/(app)/appointments')} />
                 <View style={styles.timeline}>
                   {upcomingAppts.map(a => <ApptItem key={a.id} appt={a} isToday={false} />)}
                 </View>
               </View>
             )}
 
-            {/* LRP */}
             {lrpClients.length > 0 && (
               <View style={styles.block}>
-                <Section title="Prochaines LRP" accent="#6366f1" />
+                <Section title={t('dashboard.next_lrp')} accent="#6366f1" />
                 <View style={styles.lrpList}>
                   {lrpClients.map(c => <LrpItem key={c.id} client={c} />)}
                 </View>
@@ -256,7 +266,6 @@ const styles = StyleSheet.create({
   content:      { padding: 16, gap: 20, paddingBottom: 48 },
   contentWide:  { padding: 24, gap: 24 },
 
-  // Hero
   hero:         { backgroundColor: colors.card, borderRadius: 16, padding: 20, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   heroGreeting: { fontSize: 22, fontWeight: '800', color: colors.text },
   heroDate:     { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
@@ -265,7 +274,6 @@ const styles = StyleSheet.create({
   qaIcon:       { fontSize: 18 },
   qaLabel:      { fontSize: 12, fontWeight: '700' },
 
-  // KPIs
   kpiRow:     { flexDirection: 'row', gap: 10 },
   kpiRowWide: { gap: 14 },
   kpiCard:    { flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 14, borderTopWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, gap: 4 },
@@ -275,7 +283,6 @@ const styles = StyleSheet.create({
   kpiLabel:   { fontSize: 11, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.3 },
   kpiSub:     { fontSize: 12, color: colors.textTertiary },
 
-  // Section
   sectionRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle:{ fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -283,10 +290,8 @@ const styles = StyleSheet.create({
   badgeText:   { fontSize: 11, color: '#fff', fontWeight: '700' },
   seeAll:      { fontSize: 13, color: colors.primary, fontWeight: '500' },
 
-  // Block
   block: { gap: 0 },
 
-  // Timeline
   timeline: { gap: 0 },
   apptItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 6 },
   apptTimeCol: { alignItems: 'center', width: 44, paddingTop: 8 },
@@ -301,7 +306,6 @@ const styles = StyleSheet.create({
   recapText:  { fontSize: 11, fontWeight: '600', color: colors.success },
   recapPending:{ backgroundColor: colors.warningLight },
 
-  // Followups
   fuList:    { gap: 6 },
   fuItem:    { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
   fuAccent:  { width: 4, alignSelf: 'stretch' },
@@ -311,7 +315,6 @@ const styles = StyleSheet.create({
   fuMeta:    { paddingRight: 14 },
   fuDate:    { fontSize: 13, fontWeight: '700' },
 
-  // LRP
   lrpList:      { gap: 6 },
   lrpItem:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 10, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
   lrpInfo:      { flex: 1, gap: 2 },
@@ -322,13 +325,11 @@ const styles = StyleSheet.create({
   daysText:     { fontSize: 12, fontWeight: '700', color: '#6366f1' },
   daysTextUrgent:{ color: colors.danger },
 
-  // Empty
   emptyDay:      { alignItems: 'center', paddingVertical: 40, gap: 8, backgroundColor: colors.card, borderRadius: 16 },
   emptyDayEmoji: { fontSize: 36 },
   emptyDayTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   emptyDaySub:   { fontSize: 13, color: colors.textSecondary },
 
-  // 2-col layout (web)
   twoCol: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
   col:    { flex: 1, gap: 20 },
 })

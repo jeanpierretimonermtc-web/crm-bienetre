@@ -37,10 +37,9 @@ function Sidebar({ pathname }: { pathname: string }) {
     <View style={styles.sidebar}>
       <View style={styles.sidebarTop}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarLogo}>🌿</Text>
+          <Text style={styles.sidebarLogo}>🌟</Text>
           <View>
-            <Text style={styles.sidebarAppName}>CRM Bien-être</Text>
-            <Text style={styles.sidebarVersion}>Phase 1</Text>
+            <Text style={styles.sidebarAppName}>Lumora</Text>
           </View>
         </View>
 

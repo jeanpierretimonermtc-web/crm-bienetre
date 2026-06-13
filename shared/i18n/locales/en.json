@@ -4,6 +4,9 @@
     "search": "Search a client...",
     "empty": "No clients yet",
     "add": "Add a client",
+    "name_preview": "Displayed as",
+    "error_name_required": "First name or last name required",
+    "error_session": "Session expired, please log in again",
     "status": {
       "prospect": "Prospect",
       "active": "Active",
@@ -12,10 +15,13 @@
       "advisor": "Advisor"
     },
     "fields": {
+      "first_name": "First name",
+      "last_name": "Last name",
       "full_name": "Full name",
       "email": "Email",
       "phone": "Phone",
       "birth_date": "Date of birth",
+      "inscription_date": "Registration date",
       "profession": "Profession",
       "children": "Children and ages",
       "interests": "Interests",
@@ -32,7 +38,8 @@
     "sections": {
       "personal": "Personal info",
       "medical": "Medical",
-      "doterra": "doTERRA"
+      "doterra": "doTERRA",
+      "status": "Status"
     }
   },
   "appointments": {
@@ -73,13 +80,29 @@
     "title": "Today",
     "greeting_morning": "Good morning",
     "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "see_all": "See all",
+    "today_agenda": "Today's schedule",
+    "priority": "Priority",
+    "free_day": "Free day",
+    "free_day_sub": "No appointments or follow-ups today",
+    "next_appointments": "Upcoming appointments",
+    "next_lrp": "Upcoming LRP",
+    "quick_client": "Client",
+    "quick_appointment": "Appointment",
+    "quick_followup": "Follow-up",
+    "recap_sent": "sent",
+    "recap_pending": "recap",
+    "lrp_today": "Today",
+    "lrp_days": "D-{{days}}",
+    "followup_today": "today",
     "no_tasks": "Nothing due today",
     "upcoming_rdv": "Upcoming appointments",
     "upcoming_lrp": "Upcoming LRP",
     "stats": {
       "total_clients": "Clients",
       "active_clients": "Active",
-      "this_month": "This month",
+      "this_month": "New",
       "pending_followups": "Follow-ups"
     }
   },

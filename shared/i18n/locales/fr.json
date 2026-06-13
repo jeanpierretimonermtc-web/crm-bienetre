@@ -4,6 +4,9 @@
     "search": "Rechercher un client...",
     "empty": "Aucun client pour l'instant",
     "add": "Ajouter un client",
+    "name_preview": "Affiché",
+    "error_name_required": "Prénom ou Nom requis",
+    "error_session": "Session expirée, reconnectez-vous",
     "status": {
       "prospect": "Prospect",
       "active": "Actif",
@@ -12,10 +15,13 @@
       "advisor": "Conseillère"
     },
     "fields": {
+      "first_name": "Prénom",
+      "last_name": "Nom",
       "full_name": "Nom complet",
       "email": "Email",
       "phone": "Téléphone",
       "birth_date": "Date de naissance",
+      "inscription_date": "Date d'inscription",
       "profession": "Profession",
       "children": "Enfants et âges",
       "interests": "Intérêts",
@@ -32,7 +38,8 @@
     "sections": {
       "personal": "Infos personnelles",
       "medical": "Médical",
-      "doterra": "doTERRA"
+      "doterra": "doTERRA",
+      "status": "Statut"
     }
   },
   "appointments": {
@@ -73,6 +80,22 @@
     "title": "Aujourd'hui",
     "greeting_morning": "Bonjour",
     "greeting_afternoon": "Bon après-midi",
+    "greeting_evening": "Bonsoir",
+    "see_all": "Voir tout",
+    "today_agenda": "Agenda du jour",
+    "priority": "À traiter en priorité",
+    "free_day": "Journée libre",
+    "free_day_sub": "Aucun RDV ni relance aujourd'hui",
+    "next_appointments": "Prochains rendez-vous",
+    "next_lrp": "Prochaines LRP",
+    "quick_client": "Client",
+    "quick_appointment": "RDV",
+    "quick_followup": "Relance",
+    "recap_sent": "envoyé",
+    "recap_pending": "récap",
+    "lrp_today": "Aujourd'hui",
+    "lrp_days": "J-{{days}}",
+    "followup_today": "aujourd'hui",
     "no_tasks": "Rien de prévu aujourd'hui",
     "upcoming_rdv": "Prochains RDV",
     "upcoming_lrp": "Prochaines LRP",

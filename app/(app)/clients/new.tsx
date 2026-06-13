@@ -33,16 +33,15 @@ export default function NewClientScreen() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Auto-compose full_name from first + last
   const displayName = [firstName.trim(), fullName.trim()].filter(Boolean).join(' ') || firstName.trim() || fullName.trim()
 
   async function handleSave() {
     setErrorMsg(null)
     if (!firstName.trim() && !fullName.trim()) {
-      setErrorMsg('Prénom ou Nom requis')
+      setErrorMsg(t('clients.error_name_required'))
       return
     }
-    if (!session) { setErrorMsg('Session expirée, reconnectez-vous'); return }
+    if (!session) { setErrorMsg(t('clients.error_session')); return }
     setLoading(true)
     try {
       await createClient(session.user.id, {
@@ -83,36 +82,36 @@ export default function NewClientScreen() {
 
         <Text style={styles.section}>{t('clients.sections.personal')}</Text>
         <Input
-          label="Prénom"
+          label={t('clients.fields.first_name')}
           value={firstName}
           onChangeText={setFirstName}
           autoCapitalize="words"
           placeholder="Marie"
         />
         <Input
-          label={`${t('clients.fields.full_name')} (Nom)`}
+          label={t('clients.fields.last_name')}
           value={fullName}
           onChangeText={setFullName}
           autoCapitalize="words"
           placeholder="Dupont"
         />
         {displayName ? (
-          <Text style={styles.namePreview}>Affiché : <Text style={styles.namePreviewBold}>{displayName}</Text></Text>
+          <Text style={styles.namePreview}>{t('clients.name_preview')} : <Text style={styles.namePreviewBold}>{displayName}</Text></Text>
         ) : null}
         <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <Input
-          label="Date d'inscription"
+          label={t('clients.fields.inscription_date')}
           value={inscriptionDate}
           onChangeText={setInscriptionDate}
-          placeholder="AAAA-MM-JJ"
+          placeholder="YYYY-MM-DD"
         />
-        <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="AAAA-MM-JJ" />
+        <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD" />
         <Input label={`${t('clients.fields.profession')} (${t('common.optional')})`} value={profession} onChangeText={setProfession} />
         <Input label={`${t('clients.fields.children')} (${t('common.optional')})`} value={children} onChangeText={setChildren} />
         <Input label={`${t('clients.fields.source')} (${t('common.optional')})`} value={source} onChangeText={setSource} />
 
-        <Text style={styles.section}>Statut</Text>
+        <Text style={styles.section}>{t('clients.sections.status')}</Text>
         <View style={styles.statusRow}>
           {STATUSES.map(s => (
             <Button
