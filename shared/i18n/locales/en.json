@@ -109,7 +109,15 @@
       "total_clients": "Total clients",
       "active_clients": "Active",
       "this_month": "Sessions",
-      "pending_followups": "Follow-ups"
+      "pending_followups": "Follow-ups",
+      "sessions": "Sessions this month"
+    },
+    "kpi": {
+      "new_month": "+{{count}} this month",
+      "active_pct": "{{pct}}% active",
+      "overdue": "overdue",
+      "sessions_since": "Since the 1st",
+      "lrp_delta": "To monitor"
     }
   },
   "common": {

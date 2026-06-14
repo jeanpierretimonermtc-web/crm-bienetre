@@ -15,7 +15,7 @@ function useLocale() {
   return i18n.language === 'fr' ? 'fr-FR' : 'en-US'
 }
 
-// ── Quick card (large dark green CTA) ─────────────────────────────────────────
+// ── Quick card ────────────────────────────────────────────────────────────────
 function QuickCard({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.quickCard} onPress={onPress} activeOpacity={0.85}>
@@ -25,12 +25,34 @@ function QuickCard({ icon, label, onPress }: { icon: string; label: string; onPr
   )
 }
 
-// ── Section header (serif title + Tout voir) ──────────────────────────────────
-function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }) {
+// ── KPI card — icon square + serif value + label + delta ───────────────────
+function KpiCard({ icon, value, label, delta, accent, bg, onPress }: {
+  icon: string; value: number; label: string; delta?: string
+  accent: string; bg: string; onPress?: () => void
+}) {
+  return (
+    <TouchableOpacity style={styles.kpiCard} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+      <View style={styles.kpiTop}>
+        <Text style={styles.kpiLabel}>{label}</Text>
+        <View style={[styles.kpiIconBox, { backgroundColor: bg }]}>
+          <Text style={styles.kpiIconText}>{icon}</Text>
+        </View>
+      </View>
+      <Text style={[styles.kpiValue, { color: accent }]}>{value}</Text>
+      {delta ? <Text style={styles.kpiDelta}>{delta}</Text> : null}
+    </TouchableOpacity>
+  )
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+function SectionHeader({ title, sub, onMore }: { title: string; sub?: string; onMore?: () => void }) {
   const { t } = useTranslation()
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {sub ? <Text style={styles.sectionSub}>{sub}</Text> : null}
+      </View>
       {onMore && (
         <TouchableOpacity onPress={onMore}>
           <Text style={styles.sectionMore}>{t('dashboard.see_all')}</Text>
@@ -40,27 +62,38 @@ function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }
   )
 }
 
-// ── Appointment card ───────────────────────────────────────────────────────────
-function ApptCard({ appt }: { appt: AppointmentWithClient }) {
+// ── Appointment row (inside unified card) ────────────────────────────────────
+function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: boolean }) {
   const { t } = useTranslation()
   const locale = useLocale()
   const date = new Date(appt.appointment_date)
-  const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-  // Use first line of themes as session type, fall back to appointment number
+
+  // Time column: HH:mm for today, weekday+date for upcoming
+  const timeMain = isToday
+    ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString(locale, { weekday: 'short' })
+  const timeSub = isToday
+    ? `RDV ${appt.appointment_number}`
+    : date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
+
   const type = appt.themes_discussed?.split(/\n/)[0]?.trim()
     || t('appointments.number', { number: appt.appointment_number })
   const confirmed = appt.recap_sent
 
   return (
     <TouchableOpacity
-      style={styles.apptCard}
+      style={styles.apptRow}
       onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments`)}
-      activeOpacity={0.75}
+      activeOpacity={0.7}
     >
-      <Avatar name={appt.client?.full_name ?? '?'} size={44} />
+      <View style={styles.apptTimeCol}>
+        <Text style={styles.apptTimeMain}>{timeMain}</Text>
+        <Text style={styles.apptTimeSub}>{timeSub}</Text>
+      </View>
+      <Avatar name={appt.client?.full_name ?? '?'} size={38} />
       <View style={styles.apptInfo}>
-        <Text style={styles.apptName}>{appt.client?.full_name}</Text>
-        <Text style={styles.apptMeta}>{time} · {type}</Text>
+        <Text style={styles.apptName} numberOfLines={1}>{appt.client?.full_name}</Text>
+        <Text style={styles.apptType} numberOfLines={1}>{type}</Text>
       </View>
       <View style={[styles.statusBadge, confirmed ? styles.confirmedBadge : styles.pendingBadge]}>
         <Text style={[styles.statusText, confirmed ? styles.confirmedText : styles.pendingText]}>
@@ -71,7 +104,7 @@ function ApptCard({ appt }: { appt: AppointmentWithClient }) {
   )
 }
 
-// ── Followup urgent card ───────────────────────────────────────────────────────
+// ── Followup card ─────────────────────────────────────────────────────────────
 function FollowupCard({ f }: { f: FollowupWithClient }) {
   const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
@@ -89,20 +122,17 @@ function FollowupCard({ f }: { f: FollowupWithClient }) {
 
   return (
     <TouchableOpacity
-      style={styles.followupCard}
+      style={styles.followupRow}
       onPress={() => router.push(`/(app)/clients/${f.client_id}/followups`)}
-      activeOpacity={0.75}
+      activeOpacity={0.7}
     >
-      <View style={[styles.followupDot, { backgroundColor: urgent ? colors.dangerLight : colors.secondaryLight }]}>
-        <Text style={styles.followupDotText}>{urgent ? '!' : '▲'}</Text>
-      </View>
+      <View style={[styles.followupDot, { backgroundColor: urgent ? colors.danger : colors.secondary }]} />
+      <Avatar name={f.client?.full_name ?? '?'} size={34} />
       <View style={styles.followupInfo}>
-        <Text style={styles.followupName}>{f.client?.full_name}</Text>
-        <Text style={styles.followupContent} numberOfLines={1}>{f.title ?? f.content}</Text>
-      </View>
-      <View style={[styles.fuBadge, { backgroundColor: urgent ? colors.dangerLight : colors.secondaryLight }]}>
-        <Text style={[styles.fuBadgeText, { color: urgent ? colors.danger : colors.secondary }]}>
-          {badgeText}
+        <Text style={styles.followupName} numberOfLines={1}>{f.client?.full_name}</Text>
+        <Text style={styles.followupTask} numberOfLines={1}>{f.title ?? f.content}</Text>
+        <Text style={[styles.followupDue, { color: urgent ? colors.danger : colors.secondary }]}>
+          🕐 {badgeText}
         </Text>
       </View>
     </TouchableOpacity>
@@ -119,19 +149,25 @@ function LrpCard({ client }: { client: Client }) {
   const urgent = daysUntil !== null && daysUntil <= 7
 
   return (
-    <TouchableOpacity style={styles.apptCard} onPress={() => router.push(`/(app)/clients/${client.id}`)} activeOpacity={0.75}>
-      <Avatar name={client.full_name} size={44} />
+    <TouchableOpacity style={styles.apptRow} onPress={() => router.push(`/(app)/clients/${client.id}`)} activeOpacity={0.7}>
+      <View style={styles.apptTimeCol}>
+        <Text style={styles.apptTimeMain}>
+          {daysUntil !== null && daysUntil <= 0
+            ? t('dashboard.lrp_today')
+            : daysUntil !== null ? t('dashboard.lrp_days', { days: daysUntil }) : '—'}
+        </Text>
+        <Text style={styles.apptTimeSub}>LRP</Text>
+      </View>
+      <Avatar name={client.full_name} size={38} />
       <View style={styles.apptInfo}>
         <Text style={styles.apptName}>{client.full_name}</Text>
-        <Text style={styles.apptMeta}>
+        <Text style={styles.apptType}>
           {client.next_lrp_date && new Date(client.next_lrp_date).toLocaleDateString(locale, { day: '2-digit', month: 'long' })}
         </Text>
       </View>
-      {daysUntil !== null && (
-        <View style={[styles.statusBadge, { backgroundColor: urgent ? colors.dangerLight : colors.primaryLight }]}>
-          <Text style={[styles.statusText, { color: urgent ? colors.danger : colors.primary }]}>
-            {daysUntil <= 0 ? t('dashboard.lrp_today') : t('dashboard.lrp_days', { days: daysUntil })}
-          </Text>
+      {urgent && (
+        <View style={[styles.statusBadge, { backgroundColor: colors.dangerLight }]}>
+          <Text style={[styles.statusText, { color: colors.danger }]}>Urgent</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -160,10 +196,15 @@ export default function DashboardScreen() {
 
   const todayStr = new Date().toISOString().split('T')[0]
   const todayAppts    = appointments.filter(a => a.appointment_date.startsWith(todayStr))
-  const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 4)
+  const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 5)
   const overdueToday  = followups.filter(f => f.due_date <= todayStr)
-  // Shown appointments: prefer today, fall back to upcoming
-  const shownAppts = todayAppts.length > 0 ? todayAppts : upcomingAppts
+
+  const shownAppts  = todayAppts.length > 0 ? todayAppts : upcomingAppts
+  const showingToday = todayAppts.length > 0
+
+  const activePct = stats.totalClients > 0
+    ? Math.round(stats.activeClients / stats.totalClients * 100)
+    : 0
 
   function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
 
@@ -176,34 +217,50 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={statsLoading || apptLoading || fuLoading} onRefresh={refreshAll} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Greeting ─────────────────────────────────── */}
-        <Text style={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
-
-        {/* ── Quick action cards ────────────────────────── */}
-        <View style={styles.quickRow}>
-          <QuickCard icon="👤" label={t('dashboard.new_client')}         onPress={() => router.push('/(app)/clients/new')} />
-          <QuickCard icon="📅" label={t('dashboard.quick_appointment')}  onPress={() => router.push('/(app)/appointments')} />
+        {/* ── Greeting ──────────────────────────────────── */}
+        <View style={styles.greetingRow}>
+          <View>
+            <Text style={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
+            <Text style={styles.greetingSub}>{t('dashboard.title')}</Text>
+          </View>
+          <View style={styles.quickRow}>
+            <QuickCard icon="👤" label={t('dashboard.new_client')}        onPress={() => router.push('/(app)/clients/new')} />
+            <QuickCard icon="📅" label={t('dashboard.quick_appointment')} onPress={() => router.push('/(app)/appointments')} />
+          </View>
         </View>
 
-        {/* ── KPI strip ─────────────────────────────────── */}
-        <TouchableOpacity style={styles.kpiStrip} onPress={() => router.push('/(app)/clients')} activeOpacity={0.85}>
-          <View style={styles.kpiItem}>
-            <Text style={styles.kpiLabel}>{t('dashboard.stats.total_clients').toUpperCase()}</Text>
-            <Text style={styles.kpiValue}>{stats.totalClients}</Text>
-          </View>
-          <View style={styles.kpiDivider} />
-          <View style={styles.kpiItem}>
-            <Text style={styles.kpiLabel}>{t('dashboard.stats.this_month').toUpperCase()}</Text>
-            <Text style={styles.kpiValue}>{stats.newThisMonth}</Text>
-          </View>
-          <View style={styles.kpiDivider} />
-          <TouchableOpacity style={styles.kpiItem} onPress={() => router.push('/(app)/followups')}>
-            <Text style={styles.kpiLabel}>{t('dashboard.stats.pending_followups').toUpperCase()}</Text>
-            <Text style={[styles.kpiValue, overdueToday.length > 0 && { color: colors.danger }]}>
-              {stats.pendingFollowups}
-            </Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
+        {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
+        <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
+          <KpiCard
+            icon="👥" value={stats.totalClients}
+            label={t('dashboard.stats.total_clients')}
+            delta={t('dashboard.kpi.new_month', { count: stats.newThisMonth })}
+            accent={colors.primary} bg={colors.primaryLight}
+            onPress={() => router.push('/(app)/clients')}
+          />
+          <KpiCard
+            icon="📅" value={stats.appointmentsThisMonth}
+            label={t('dashboard.stats.sessions')}
+            delta={t('dashboard.kpi.sessions_since')}
+            accent={colors.primary} bg={colors.primaryLight}
+          />
+          <KpiCard
+            icon="⚠️" value={stats.pendingFollowups}
+            label={t('dashboard.stats.pending_followups')}
+            delta={overdueToday.length > 0
+              ? `${overdueToday.length} ${t('dashboard.kpi.overdue')}`
+              : t('dashboard.kpi.active_pct', { pct: activePct })}
+            accent={overdueToday.length > 0 ? colors.danger : colors.primary}
+            bg={overdueToday.length > 0 ? colors.dangerLight : colors.primaryLight}
+            onPress={() => router.push('/(app)/followups')}
+          />
+          <KpiCard
+            icon="✨" value={lrpClients.length}
+            label={t('dashboard.next_lrp')}
+            delta={t('dashboard.kpi.lrp_delta')}
+            accent={colors.secondary} bg={colors.secondaryLight}
+          />
+        </View>
 
         <View style={isWide ? styles.twoCol : styles.oneCol}>
           {/* ── Left column ─────────────────────────────── */}
@@ -214,10 +271,18 @@ export default function DashboardScreen() {
               <View style={styles.section}>
                 <SectionHeader
                   title={t('dashboard.today_agenda')}
+                  sub={showingToday
+                    ? `${todayAppts.length} RDV`
+                    : t('dashboard.next_appointments')}
                   onMore={() => router.push('/(app)/appointments')}
                 />
-                <View style={styles.cardList}>
-                  {shownAppts.map(a => <ApptCard key={a.id} appt={a} />)}
+                <View style={styles.listCard}>
+                  {shownAppts.map((a, i) => (
+                    <View key={a.id}>
+                      <ApptRow appt={a} isToday={showingToday} />
+                      {i < shownAppts.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -232,10 +297,16 @@ export default function DashboardScreen() {
               <View style={styles.section}>
                 <SectionHeader
                   title={t('dashboard.urgent_followups')}
+                  sub={t('dashboard.priority')}
                   onMore={() => router.push('/(app)/followups')}
                 />
-                <View style={styles.cardList}>
-                  {overdueToday.slice(0, 4).map(f => <FollowupCard key={f.id} f={f} />)}
+                <View style={styles.listCard}>
+                  {overdueToday.slice(0, 4).map((f, i) => (
+                    <View key={f.id}>
+                      <FollowupCard f={f} />
+                      {i < Math.min(overdueToday.length, 4) - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -244,8 +315,13 @@ export default function DashboardScreen() {
             {lrpClients.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader title={t('dashboard.next_lrp')} />
-                <View style={styles.cardList}>
-                  {lrpClients.map(c => <LrpCard key={c.id} client={c} />)}
+                <View style={styles.listCard}>
+                  {lrpClients.map((c, i) => (
+                    <View key={c.id}>
+                      <LrpCard client={c} />
+                      {i < lrpClients.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -268,64 +344,71 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
-  content:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 64, gap: 20 },
-  contentWide: { paddingHorizontal: 28, paddingTop: 24, gap: 24 },
+  content:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 64, gap: 22 },
+  contentWide: { paddingHorizontal: 28, paddingTop: 24, gap: 28 },
 
-  // ── Greeting ──────────────────────────────────────────────────────────────
-  greeting: { fontSize: 24, fontFamily: fonts.display, color: colors.primary },
+  // ── Greeting + quick actions in one row ───────────────────────────────────
+  greetingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  greeting:    { fontSize: 22, fontFamily: fonts.display, color: colors.primary },
+  greetingSub: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 2 },
+  quickRow:    { flexDirection: 'row', gap: 8, flexShrink: 0 },
+  quickCard:   { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center', gap: 4, minWidth: 70 },
+  quickCardIcon:  { fontSize: 18 },
+  quickCardLabel: { fontSize: 10, fontFamily: fonts.bold, color: colors.textInverse, textAlign: 'center' },
 
-  // ── Quick cards ───────────────────────────────────────────────────────────
-  quickRow:       { flexDirection: 'row', gap: 12 },
-  quickCard:      { flex: 1, backgroundColor: colors.primary, borderRadius: 16, paddingTop: 20, paddingBottom: 16, paddingHorizontal: 16, gap: 10 },
-  quickCardIcon:  { fontSize: 26 },
-  quickCardLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textInverse, lineHeight: 18 },
-
-  // ── KPI strip (one card with dividers) ────────────────────────────────────
-  kpiStrip:   { backgroundColor: colors.card, borderRadius: 14, paddingVertical: 18, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  kpiItem:    { flex: 1, alignItems: 'center', gap: 4 },
-  kpiDivider: { width: 1, height: 32, backgroundColor: colors.border },
-  kpiLabel:   { fontSize: 9, fontFamily: fonts.bold, color: colors.textSecondary, letterSpacing: 0.5, textAlign: 'center' },
-  kpiValue:   { fontSize: 26, fontFamily: fonts.display, color: colors.primary, lineHeight: 32 },
+  // ── KPI grid ──────────────────────────────────────────────────────────────
+  kpiGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  kpiGridWide: { flexWrap: 'nowrap' },
+  kpiCard:     { width: '47.5%', backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  kpiTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  kpiLabel:    { fontSize: 10, fontFamily: fonts.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1, paddingRight: 4 },
+  kpiIconBox:  { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  kpiIconText: { fontSize: 16 },
+  kpiValue:    { fontSize: 36, fontFamily: fonts.display, lineHeight: 42, letterSpacing: -1 },
+  kpiDelta:    { fontSize: 11, fontFamily: fonts.medium, color: colors.textSecondary },
 
   // ── Layout ────────────────────────────────────────────────────────────────
-  oneCol:  { gap: 20 },
+  oneCol:  { gap: 22 },
   twoCol:  { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
   col:     { flex: 1, gap: 20 },
   section: { gap: 12 },
 
   // ── Section header ────────────────────────────────────────────────────────
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle:  { fontSize: 18, fontFamily: fonts.display, color: colors.text },
-  sectionMore:   { fontSize: 13, fontFamily: fonts.medium, color: colors.primary },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  sectionTitle:  { fontSize: 20, fontFamily: fonts.display, color: colors.text },
+  sectionSub:    { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 1 },
+  sectionMore:   { fontSize: 13, fontFamily: fonts.medium, color: colors.primary, paddingTop: 4 },
 
-  // ── Card list ─────────────────────────────────────────────────────────────
-  cardList: { gap: 8 },
+  // ── Unified list card ─────────────────────────────────────────────────────
+  listCard: { backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  divider:  { height: 1, backgroundColor: colors.border, marginLeft: 16 },
 
-  // ── Appointment / LRP card (shared) ───────────────────────────────────────
-  apptCard:       { backgroundColor: colors.card, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  apptInfo:       { flex: 1 },
-  apptName:       { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  apptMeta:       { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 2 },
-  statusBadge:    { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexShrink: 0 },
+  // ── Appointment row ───────────────────────────────────────────────────────
+  apptRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  apptTimeCol:  { width: 48, flexShrink: 0, alignItems: 'flex-start' },
+  apptTimeMain: { fontSize: 18, fontFamily: fonts.display, color: colors.primary, lineHeight: 22 },
+  apptTimeSub:  { fontSize: 10, fontFamily: fonts.medium, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 1 },
+  apptInfo:     { flex: 1 },
+  apptName:     { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  apptType:     { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 1 },
+  statusBadge:    { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, flexShrink: 0 },
   confirmedBadge: { backgroundColor: colors.successLight },
   pendingBadge:   { backgroundColor: colors.secondaryLight },
-  statusText:     { fontSize: 12, fontFamily: fonts.medium },
+  statusText:     { fontSize: 11, fontFamily: fonts.medium },
   confirmedText:  { color: colors.success },
   pendingText:    { color: colors.secondary },
 
-  // ── Followup card ─────────────────────────────────────────────────────────
-  followupCard:     { backgroundColor: colors.card, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  followupDot:      { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  followupDotText:  { fontSize: 15, fontFamily: fonts.bold, color: colors.danger },
-  followupInfo:     { flex: 1 },
-  followupName:     { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  followupContent:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 2 },
-  fuBadge:          { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 20, flexShrink: 0 },
-  fuBadgeText:      { fontSize: 11, fontFamily: fonts.bold },
+  // ── Followup row ─────────────────────────────────────────────────────────
+  followupRow:   { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
+  followupDot:   { width: 8, height: 8, borderRadius: 4, marginTop: 6, flexShrink: 0 },
+  followupInfo:  { flex: 1 },
+  followupName:  { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  followupTask:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 1 },
+  followupDue:   { fontSize: 11, fontFamily: fonts.medium, marginTop: 4 },
 
   // ── Empty day ─────────────────────────────────────────────────────────────
-  emptyDay:      { alignItems: 'center', paddingVertical: 44, gap: 10, backgroundColor: colors.card, borderRadius: 16 },
+  emptyDay:      { alignItems: 'center', paddingVertical: 48, gap: 10, backgroundColor: colors.card, borderRadius: 16 },
   emptyDayEmoji: { fontSize: 40 },
-  emptyDayTitle: { fontSize: 18, fontFamily: fonts.display, color: colors.primary },
+  emptyDayTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.primary },
   emptyDaySub:   { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 20 },
 })

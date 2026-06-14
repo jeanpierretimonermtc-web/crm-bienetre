@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
-import type { AppointmentWithClient, FollowupWithClient, Client } from '@/shared/lib/types'
+import type { Client } from '@/shared/lib/types'
 
 interface DashboardStats {
   totalClients: number
   activeClients: number
   newThisMonth: number
   pendingFollowups: number
+  appointmentsThisMonth: number
 }
 
 export function useDashboardStats() {
@@ -22,11 +23,12 @@ export function useDashboardStats() {
       const uid = session.user.id
       const firstOfMonth = new Date(); firstOfMonth.setDate(1); firstOfMonth.setHours(0,0,0,0)
 
-      const [total, active, newMonth, pending] = await Promise.all([
+      const [total, active, newMonth, pending, sessions] = await Promise.all([
         supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', uid),
         supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', uid).eq('status', 'active'),
         supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', firstOfMonth.toISOString()),
         supabase.from('followups').select('*', { count: 'exact', head: true }).eq('user_id', uid).eq('done', false),
+        supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('user_id', uid).gte('appointment_date', firstOfMonth.toISOString()),
       ])
 
       setStats({
@@ -34,6 +36,7 @@ export function useDashboardStats() {
         activeClients: active.count ?? 0,
         newThisMonth: newMonth.count ?? 0,
         pendingFollowups: pending.count ?? 0,
+        appointmentsThisMonth: sessions.count ?? 0,
       })
     } finally {
       setLoading(false)
