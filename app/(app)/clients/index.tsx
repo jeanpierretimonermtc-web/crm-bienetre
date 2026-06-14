@@ -166,25 +166,25 @@ export default function ClientsScreen() {
           />
         </View>
 
-        {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filtersScroll}
-          contentContainerStyle={styles.filtersContent}
-        >
-          {STATUS_FILTERS.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.chip, statusFilter === s && styles.chipActive]}
-              onPress={() => setStatusFilter(s)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.chipText, statusFilter === s && styles.chipTextActive]}>
-                {t(`clients.filter_labels.${s}`)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Filter chips — inner View for reliable padding on iOS */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+          <View style={styles.filtersContent}>
+            {STATUS_FILTERS.map(s => {
+              const active = statusFilter === s
+              return (
+                <TouchableOpacity
+                  key={s}
+                  style={active ? styles.chipActive : styles.chip}
+                  onPress={() => setStatusFilter(s)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={active ? styles.chipTextActive : styles.chipText}>
+                    {t(`clients.filter_labels.${s}`)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
         </ScrollView>
 
         {/* List */}
@@ -233,12 +233,12 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.text, paddingVertical: 11 },
 
   // ── Filter chips ───────────────────────────────────────────────────────────
-  filtersScroll:  { flexGrow: 0 },
-  filtersContent: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 24, paddingBottom: 14 },
-  chip:           { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  chipActive:     { backgroundColor: colors.primaryAction, borderColor: colors.primaryAction },
-  chipText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
-  chipTextActive: { color: colors.textInverse, fontFamily: fonts.semibold },
+  filtersScroll:   { flexGrow: 0 },
+  filtersContent:  { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 14 },
+  chip:            { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  chipActive:      { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.primaryAction, borderWidth: 1, borderColor: colors.primaryAction },
+  chipText:        { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  chipTextActive:  { fontSize: 13, fontFamily: fonts.semibold, color: '#ffffff' },
 
   // ── FlatList ───────────────────────────────────────────────────────────────
   list:      { padding: 16, gap: 12, paddingBottom: 100 },
