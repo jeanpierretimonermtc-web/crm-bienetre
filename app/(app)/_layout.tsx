@@ -1,8 +1,10 @@
+import { useState, useEffect, useCallback } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
+import { loadDemoData, deleteDemoData, getDemoClientsCount } from '@/features/demo/demoService'
 import { colors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 
@@ -22,6 +24,34 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 function Sidebar({ pathname }: { pathname: string }) {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const [demoCount, setDemoCount]     = useState(0)
+  const [demoLoading, setDemoLoading] = useState(false)
+
+  const checkDemo = useCallback(async () => {
+    if (!session) return
+    setDemoCount(await getDemoClientsCount(session.user.id))
+  }, [session])
+
+  useEffect(() => { checkDemo() }, [checkDemo])
+
+  async function toggleDemo() {
+    if (!session) return
+    setDemoLoading(true)
+    try {
+      if (demoCount > 0) {
+        await deleteDemoData(session.user.id)
+        setDemoCount(0)
+      } else {
+        await loadDemoData(session.user.id)
+        await checkDemo()
+      }
+      router.replace('/')
+    } catch (e) {
+      console.error('[toggleDemo]', e)
+    } finally {
+      setDemoLoading(false)
+    }
+  }
 
   function isActive(segment: string) {
     if (segment === '') return pathname === '/'
@@ -73,6 +103,17 @@ function Sidebar({ pathname }: { pathname: string }) {
           </View>
           <Text style={styles.userName} numberOfLines={1}>{firstName}</Text>
         </View>
+        <TouchableOpacity style={styles.demoBtn} onPress={toggleDemo} disabled={demoLoading} activeOpacity={0.7}>
+          {demoLoading
+            ? <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginLeft: 4 }} />
+            : <>
+                <Text style={styles.demoIcon}>🧪</Text>
+                <Text style={[styles.demoText, demoCount > 0 && styles.demoTextActive]}>
+                  {demoCount > 0 ? t('dashboard.demo_delete') : t('dashboard.demo_load')}
+                </Text>
+              </>
+          }
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => supabase.auth.signOut()}
@@ -265,4 +306,9 @@ const styles = StyleSheet.create({
   },
   logoutIcon: { fontSize: 15, color: colors.textSecondary },
   logoutText: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+
+  demoBtn:        { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8 },
+  demoIcon:       { fontSize: 14 },
+  demoText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  demoTextActive: { color: colors.danger },
 })

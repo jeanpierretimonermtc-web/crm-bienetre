@@ -236,7 +236,8 @@ export default function DashboardScreen() {
   }
 
   const showLoadDemo   = !statsLoading && stats.totalClients === 0
-  const showDemoActive = !showLoadDemo && demoCount > 0
+  const showDemoActive = !statsLoading && demoCount > 0
+  const showDemoLink   = !statsLoading && stats.totalClients > 0 && demoCount === 0
 
   const todayStr = new Date().toISOString().split('T')[0]
   const todayAppts    = appointments.filter(a => a.appointment_date.startsWith(todayStr))
@@ -309,6 +310,16 @@ export default function DashboardScreen() {
               }
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* ── Demo: compact link (mobile, clients exist, no demo) ── */}
+        {showDemoLink && (
+          <TouchableOpacity style={styles.demoLink} onPress={handleLoadDemo} disabled={demoLoading} activeOpacity={0.7}>
+            {demoLoading
+              ? <ActivityIndicator size="small" color={colors.textSecondary} />
+              : <Text style={styles.demoLinkText}>🧪 {t('dashboard.demo_load')}</Text>
+            }
+          </TouchableOpacity>
         )}
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
@@ -526,4 +537,7 @@ const styles = StyleSheet.create({
   },
   demoBannerText:   { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   demoBannerDelete: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
+
+  demoLink:     { alignSelf: 'flex-start', paddingVertical: 4 },
+  demoLinkText: { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
 })
