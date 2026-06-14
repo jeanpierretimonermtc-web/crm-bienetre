@@ -258,8 +258,21 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── Demo UI (hidden when user activates hide_demo) ── */}
-        {!hideDemoCard && (
+        {/* ── Demo: bannière "actif" — toujours visible si démo active (pour pouvoir la désactiver) */}
+        {showDemoActive && (
+          <View style={styles.demoBanner}>
+            <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
+            <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
+              {demoLoading
+                ? <ActivityIndicator size="small" color={colors.textSecondary} />
+                : <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Reste du UI démo — masqué si hideDemoCard et aucune démo active */}
+        {!hideDemoCard && !showDemoActive && (
           <>
             {showLoadDemo && (
               <View style={styles.demoCard}>
@@ -276,18 +289,6 @@ export default function DashboardScreen() {
                   {demoLoading
                     ? <ActivityIndicator size="small" color="#ffffff" />
                     : <Text style={styles.demoLoadBtnText}>{t('dashboard.demo_load')}</Text>
-                  }
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {showDemoActive && (
-              <View style={styles.demoBanner}>
-                <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
-                <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
-                  {demoLoading
-                    ? <ActivityIndicator size="small" color={colors.textSecondary} />
-                    : <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
                   }
                 </TouchableOpacity>
               </View>
