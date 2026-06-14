@@ -196,7 +196,7 @@ export default function DashboardScreen() {
     : t('dashboard.greeting_evening')
 
   // ── Shared demo state (context) ────────────────────────────────────────────
-  const { demoCount, demoLoading, demoFailed, demoVersion, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
+  const { demoCount, demoLoading, demoFailed, demoVersion, hideDemoCard, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
 
   function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
 
@@ -258,51 +258,53 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── Demo: load card ───────────────────────────── */}
-        {showLoadDemo && (
-          <View style={styles.demoCard}>
-            <View style={styles.demoCardLeft}>
-              <Text style={styles.demoCardTitle}>{t('dashboard.demo_title')}</Text>
-              <Text style={styles.demoCardSub}>{t('dashboard.demo_subtitle')}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.demoLoadBtn}
-              onPress={handleLoadDemo}
-              activeOpacity={0.8}
-              disabled={demoLoading}
-            >
-              {demoLoading
-                ? <ActivityIndicator size="small" color="#ffffff" />
-                : <Text style={styles.demoLoadBtnText}>{t('dashboard.demo_load')}</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* ── Demo UI (hidden when user activates hide_demo) ── */}
+        {!hideDemoCard && (
+          <>
+            {showLoadDemo && (
+              <View style={styles.demoCard}>
+                <View style={styles.demoCardLeft}>
+                  <Text style={styles.demoCardTitle}>{t('dashboard.demo_title')}</Text>
+                  <Text style={styles.demoCardSub}>{t('dashboard.demo_subtitle')}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.demoLoadBtn}
+                  onPress={handleLoadDemo}
+                  activeOpacity={0.8}
+                  disabled={demoLoading}
+                >
+                  {demoLoading
+                    ? <ActivityIndicator size="small" color="#ffffff" />
+                    : <Text style={styles.demoLoadBtnText}>{t('dashboard.demo_load')}</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            )}
 
-        {/* ── Demo: active banner ────────────────────────── */}
-        {showDemoActive && (
-          <View style={styles.demoBanner}>
-            <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
-            <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
-              {demoLoading
-                ? <ActivityIndicator size="small" color={colors.textSecondary} />
-                : <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        )}
+            {showDemoActive && (
+              <View style={styles.demoBanner}>
+                <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
+                <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
+                  {demoLoading
+                    ? <ActivityIndicator size="small" color={colors.textSecondary} />
+                    : <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            )}
 
-        {/* ── Demo: compact link (clients exist, no demo) ── */}
-        {showDemoLink && (
-          <TouchableOpacity style={styles.demoLink} onPress={handleLoadDemo} disabled={demoLoading} activeOpacity={0.7}>
-            {demoLoading
-              ? <ActivityIndicator size="small" color={colors.textSecondary} />
-              : <Text style={styles.demoLinkText}>🧪 {t('dashboard.demo_load')}</Text>
-            }
-          </TouchableOpacity>
-        )}
+            {showDemoLink && (
+              <TouchableOpacity style={styles.demoLink} onPress={handleLoadDemo} disabled={demoLoading} activeOpacity={0.7}>
+                {demoLoading
+                  ? <ActivityIndicator size="small" color={colors.textSecondary} />
+                  : <Text style={styles.demoLinkText}>🧪 {t('dashboard.demo_load')}</Text>
+                }
+              </TouchableOpacity>
+            )}
 
-        {demoFailed ? <Text style={styles.demoErrorText}>{t('common.error')}</Text> : null}
+            {demoFailed ? <Text style={styles.demoErrorText}>{t('common.error')}</Text> : null}
+          </>
+        )}
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>

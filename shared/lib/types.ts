@@ -30,6 +30,8 @@ export interface Profile {
   locale: string | null
   timezone: string | null
   plan: string | null
+  specialty: string | null
+  onboarding_completed: boolean
   created_at: string
   updated_at: string | null
 }
