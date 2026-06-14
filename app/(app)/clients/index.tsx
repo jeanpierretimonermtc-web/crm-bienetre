@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -111,6 +111,8 @@ export default function ClientsScreen() {
   const { clients, loading, refresh } = useClients()
   const { results, search } = useClientSearch()
   const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
+  const { width } = useWindowDimensions()
+  const isWide = width >= 768
 
   useFocusEffect(useCallback(() => { refresh() }, []))
 
@@ -144,6 +146,7 @@ export default function ClientsScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
+        <View style={[styles.inner, isWide && styles.innerWide]}>
 
         {/* Page header */}
         <View style={styles.pageHeader}>
@@ -207,18 +210,25 @@ export default function ClientsScreen() {
           ? <ActivityIndicator style={styles.loader} color={colors.primaryAction} />
           : (
             <FlatList
+              key={isWide ? '2-col' : '1-col'}
+              numColumns={isWide ? 2 : 1}
+              columnWrapperStyle={isWide ? styles.columnWrapper : undefined}
               data={displayed}
               keyExtractor={c => c.id}
               renderItem={({ item }) => (
-                <ClientCard client={item} lastRdv={lastRdvMap[item.id]} />
+                <View style={isWide ? styles.colCard : undefined}>
+                  <ClientCard client={item} lastRdv={lastRdvMap[item.id]} />
+                </View>
               )}
               ListEmptyComponent={<EmptyState message={t('clients.empty')} icon="👥" />}
-              contentContainerStyle={[styles.list, displayed.length === 0 && styles.listEmpty]}
+              contentContainerStyle={[styles.list, isWide && styles.listWide, displayed.length === 0 && styles.listEmpty]}
               onRefresh={refresh}
               refreshing={loading}
             />
           )
         }
+
+        </View>
 
         {/* FAB */}
         <TouchableOpacity
@@ -234,7 +244,9 @@ export default function ClientsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container:  { flex: 1, backgroundColor: colors.bg },
+  inner:      { flex: 1, width: '100%' },
+  innerWide:  { maxWidth: 1100, alignSelf: 'center' },
 
   // ── Page header ────────────────────────────────────────────────────────────
   pageHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 6 },
@@ -254,9 +266,12 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13 },
 
   // ── FlatList ───────────────────────────────────────────────────────────────
-  list:      { padding: 16, gap: 12, paddingBottom: 100 },
-  listEmpty: { flex: 1 },
-  loader:    { marginTop: 48 },
+  list:          { padding: 16, gap: 12, paddingBottom: 100 },
+  listWide:      { paddingHorizontal: 0 },
+  listEmpty:     { flex: 1 },
+  loader:        { marginTop: 48 },
+  columnWrapper: { gap: 12, paddingHorizontal: 20 },
+  colCard:       { flex: 1 },
 
   // ── Card ───────────────────────────────────────────────────────────────────
   card: {

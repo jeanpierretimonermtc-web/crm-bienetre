@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
@@ -93,6 +93,8 @@ export default function FollowupsScreen() {
   const { t } = useTranslation()
   const { followups, loading, refresh } = usePendingFollowups()
   const [activeTab, setActiveTab] = useState<Tab>('overdue')
+  const { width } = useWindowDimensions()
+  const isWide = width >= 768
 
   useFocusEffect(useCallback(() => { refresh() }, []))
 
@@ -116,6 +118,7 @@ export default function FollowupsScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
+        <View style={[styles.inner, isWide && styles.innerWide]}>
 
         {/* ── Page header ───────────────────────────────── */}
         <View style={styles.pageHeader}>
@@ -175,6 +178,7 @@ export default function FollowupsScreen() {
             />
           )
         }
+        </View>
       </View>
     </>
   )
@@ -182,6 +186,8 @@ export default function FollowupsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  inner:     { flex: 1, width: '100%' },
+  innerWide: { maxWidth: 900, alignSelf: 'center' },
 
   // Page header
   pageHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4, gap: 3 },

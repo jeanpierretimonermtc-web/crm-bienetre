@@ -135,6 +135,8 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        <View style={styles.sectionsInner}>
+
         {/* ── Informations ────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('settings.profile')}</Text>
@@ -302,6 +304,8 @@ export default function ProfileScreen() {
             <TouchableOpacity><Text style={styles.footerLink}>{t('settings.terms')}</Text></TouchableOpacity>
           </View>
         </View>
+
+        </View>{/* /sectionsInner */}
       </ScrollView>
 
       {/* ── Timezone picker ─────────────────────────────────── */}
@@ -330,9 +334,10 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  container:  { flex: 1, backgroundColor: colors.bg },
-  content:    { paddingBottom: 80 },
+  loadingBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
+  container:     { flex: 1, backgroundColor: colors.bg },
+  content:       { paddingBottom: 80 },
+  sectionsInner: { maxWidth: 720, alignSelf: 'center', width: '100%' },
 
   // ── Hero ────────────────────────────────────────────────────────────────────
   hero: {

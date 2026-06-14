@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ScrollView, View, Text, Switch, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, Switch, StyleSheet, useWindowDimensions } from 'react-native'
 import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -15,6 +15,8 @@ const STATUSES: ClientStatus[] = ['prospect', 'active', 'inactive', 'vip', 'advi
 export default function NewClientScreen() {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const { width } = useWindowDimensions()
+  const isWide = width >= 768
 
   const [firstName, setFirstName] = useState('')
   const [fullName, setFullName] = useState('')
@@ -78,35 +80,36 @@ export default function NewClientScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('clients.add') }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
 
         <Text style={styles.section}>{t('clients.sections.personal')}</Text>
-        <Input
-          label={t('clients.fields.first_name')}
-          value={firstName}
-          onChangeText={setFirstName}
-          autoCapitalize="words"
-          placeholder="Marie"
-        />
-        <Input
-          label={t('clients.fields.last_name')}
-          value={fullName}
-          onChangeText={setFullName}
-          autoCapitalize="words"
-          placeholder="Dupont"
-        />
+        <View style={isWide ? styles.fieldRow : undefined}>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={t('clients.fields.first_name')} value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder="Marie" />
+          </View>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={t('clients.fields.last_name')} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholder="Dupont" />
+          </View>
+        </View>
         {displayName ? (
           <Text style={styles.namePreview}>{t('clients.name_preview')} : <Text style={styles.namePreviewBold}>{displayName}</Text></Text>
         ) : null}
-        <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <Input
-          label={t('clients.fields.inscription_date')}
-          value={inscriptionDate}
-          onChangeText={setInscriptionDate}
-          placeholder="YYYY-MM-DD"
-        />
-        <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD" />
+        <View style={isWide ? styles.fieldRow : undefined}>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          </View>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          </View>
+        </View>
+        <View style={isWide ? styles.fieldRow : undefined}>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={t('clients.fields.inscription_date')} value={inscriptionDate} onChangeText={setInscriptionDate} placeholder="YYYY-MM-DD" />
+          </View>
+          <View style={isWide ? styles.fieldHalf : undefined}>
+            <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD" />
+          </View>
+        </View>
         <Input label={`${t('clients.fields.profession')} (${t('common.optional')})`} value={profession} onChangeText={setProfession} />
         <Input label={`${t('clients.fields.children')} (${t('common.optional')})`} value={children} onChangeText={setChildren} />
         <Input label={`${t('clients.fields.source')} (${t('common.optional')})`} value={source} onChangeText={setSource} />
@@ -147,6 +150,9 @@ export default function NewClientScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1, backgroundColor: colors.bg },
   content:         { padding: 16, gap: 12, paddingBottom: 40 },
+  contentWide:     { maxWidth: 720, alignSelf: 'center', width: '100%', paddingHorizontal: 24 },
+  fieldRow:        { flexDirection: 'row', gap: 12 },
+  fieldHalf:       { flex: 1 },
   section:         { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
   statusRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   switchRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },

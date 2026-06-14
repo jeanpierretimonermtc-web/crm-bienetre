@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   root:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100, maxWidth: 900, alignSelf: 'center', width: '100%' },
 
   // ── Nav bar ────────────────────────────────────────────────────────────────
   navBar: {
