@@ -212,6 +212,25 @@
     "logout": "Log out",
     "full_name": "Full name",
     "confirm_email_title": "Check your email",
-    "confirm_email_body": "We sent a confirmation link to {{email}}. Click it to activate your account."
+    "confirm_email_body": "We sent a confirmation link to {{email}}. Click it to activate your account.",
+    "forgot_password": "Forgot password?",
+    "forgot_password_hint": "Enter your email address and we'll send you a link to reset your password.",
+    "send_reset_link": "Send reset link",
+    "reset_email_sent_title": "Email sent!",
+    "reset_email_sent_body": "We sent a reset link to {{email}}. Check your inbox (and spam folder).",
+    "back_to_login": "Back to login",
+    "reset_password": "New password",
+    "reset_password_hint": "Choose a new password of at least 8 characters.",
+    "reset_password_confirm": "Set new password",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "password_updated_title": "Password updated!",
+    "password_updated_body": "Your password has been changed. You can now log in.",
+    "reset_link_invalid_title": "Invalid link",
+    "reset_link_invalid_body": "This link has expired or is invalid. Please request a new one.",
+    "error_email_required": "Please enter your email address",
+    "error_password_required": "Please enter a password",
+    "error_password_too_short": "Password must be at least 8 characters",
+    "error_passwords_dont_match": "Passwords do not match"
   }
 }

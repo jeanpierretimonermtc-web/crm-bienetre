@@ -212,6 +212,25 @@
     "logout": "Se déconnecter",
     "full_name": "Nom complet",
     "confirm_email_title": "Vérifiez votre email",
-    "confirm_email_body": "Un lien de confirmation a été envoyé à {{email}}. Cliquez dessus pour activer votre compte."
+    "confirm_email_body": "Un lien de confirmation a été envoyé à {{email}}. Cliquez dessus pour activer votre compte.",
+    "forgot_password": "Mot de passe oublié ?",
+    "forgot_password_hint": "Saisissez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "send_reset_link": "Envoyer le lien",
+    "reset_email_sent_title": "Email envoyé !",
+    "reset_email_sent_body": "Un lien de réinitialisation a été envoyé à {{email}}. Vérifiez votre boîte mail (et les spams).",
+    "back_to_login": "Retour à la connexion",
+    "reset_password": "Nouveau mot de passe",
+    "reset_password_hint": "Choisissez un nouveau mot de passe d'au moins 8 caractères.",
+    "reset_password_confirm": "Définir le mot de passe",
+    "new_password": "Nouveau mot de passe",
+    "confirm_password": "Confirmer le mot de passe",
+    "password_updated_title": "Mot de passe mis à jour !",
+    "password_updated_body": "Votre mot de passe a été modifié. Vous pouvez maintenant vous connecter.",
+    "reset_link_invalid_title": "Lien invalide",
+    "reset_link_invalid_body": "Ce lien a expiré ou est invalide. Veuillez en demander un nouveau.",
+    "error_email_required": "Veuillez saisir votre adresse email",
+    "error_password_required": "Veuillez saisir un mot de passe",
+    "error_password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
+    "error_passwords_dont_match": "Les mots de passe ne correspondent pas"
   }
 }
