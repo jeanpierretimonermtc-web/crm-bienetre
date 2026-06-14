@@ -33,11 +33,15 @@ export default function ClientAppointmentsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('appointments.title'), headerRight: () => (
-        <TouchableOpacity onPress={openNew} style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
-      )}} />
+      <Stack.Screen options={{
+        title: t('appointments.title'),
+        headerBackTitle: '',
+        headerRight: () => (
+          <TouchableOpacity onPress={openNew} style={styles.addBtn}>
+            <Text style={styles.addBtnText}>+</Text>
+          </TouchableOpacity>
+        ),
+      }} />
       <View style={styles.container}>
         {loading
           ? <ActivityIndicator style={styles.loader} color={colors.primary} />

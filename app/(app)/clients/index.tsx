@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native'
-import { router, Stack } from 'expo-router'
+import { useState, useEffect, useCallback } from 'react'
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
@@ -112,6 +112,8 @@ export default function ClientsScreen() {
   const { results, search } = useClientSearch()
   const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
 
+  useFocusEffect(useCallback(() => { refresh() }, []))
+
   useEffect(() => {
     if (query.length > 0) search(query, statusFilter === 'all' ? undefined : statusFilter)
   }, [query, statusFilter])
@@ -166,28 +168,29 @@ export default function ClientsScreen() {
           />
         </View>
 
-        {/* Filter chips — spacers explicites (padding View ignoré dans ScrollView horizontal sur web) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-          <View style={styles.filtersContent}>
-            <View style={{ width: 16 }} />
-            {STATUS_FILTERS.map(s => {
-              const active = statusFilter === s
-              return (
-                <TouchableOpacity
-                  key={s}
-                  style={active ? styles.chipActive : styles.chip}
-                  onPress={() => setStatusFilter(s)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={active ? styles.chipTextActive : styles.chipText}>
-                    {t(`clients.filter_labels.${s}`)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-            <View style={{ width: 8 }} />
-          </View>
-        </ScrollView>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={STATUS_FILTERS}
+          keyExtractor={s => s}
+          style={styles.filtersList}
+          contentContainerStyle={styles.filtersContent}
+          ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
+          renderItem={({ item: s }) => {
+            const active = statusFilter === s
+            return (
+              <TouchableOpacity
+                style={active ? styles.chipActive : styles.chip}
+                onPress={() => setStatusFilter(s)}
+                activeOpacity={0.7}
+              >
+                <Text style={active ? styles.chipTextActive : styles.chipText}>
+                  {t(`clients.filter_labels.${s}`)}
+                </Text>
+              </TouchableOpacity>
+            )
+          }}
+        />
 
         {/* List */}
         {loading
@@ -235,10 +238,10 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.text, paddingVertical: 11 },
 
   // ── Filter chips ───────────────────────────────────────────────────────────
-  filtersScroll:   { flexGrow: 0 },
-  filtersContent:  { flexDirection: 'row', gap: 8, paddingBottom: 14 },
-  chip:            { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  chipActive:      { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.primaryAction, borderWidth: 1, borderColor: colors.primaryAction },
+  filtersList:    { flexGrow: 0, flexShrink: 0 },
+  filtersContent: { paddingHorizontal: 16, paddingBottom: 14, alignItems: 'center' },
+  chip:           { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  chipActive:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.primaryAction, borderWidth: 1, borderColor: colors.primaryAction },
   chipText:        { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   chipTextActive:  { fontSize: 13, fontFamily: fonts.semibold, color: '#ffffff' },
 

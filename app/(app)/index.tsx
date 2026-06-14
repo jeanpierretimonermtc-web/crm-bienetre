@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native'
-import { router, Stack } from 'expo-router'
+import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useDashboardStats, useUpcomingLrp } from '@/features/dashboard/useDashboard'
@@ -199,23 +199,41 @@ export default function DashboardScreen() {
   // ── Demo data ──────────────────────────────────────────────────────────────
   const [demoCount, setDemoCount]     = useState(0)
   const [demoLoading, setDemoLoading] = useState(false)
+  const [demoError, setDemoError]     = useState('')
 
   const checkDemo = useCallback(async () => {
     if (!session) return
-    setDemoCount(await getDemoClientsCount(session.user.id))
+    try {
+      setDemoCount(await getDemoClientsCount(session.user.id))
+    } catch {
+      // keep existing count — DB error shouldn't crash the screen
+    }
   }, [session])
 
   useEffect(() => { if (!statsLoading) checkDemo() }, [statsLoading, checkDemo])
 
+  // Refresh all data when screen comes into focus (handles sidebar navigation)
+  useFocusEffect(
+    useCallback(() => {
+      refreshStats()
+      refreshAppts()
+      refreshFu()
+      refreshLrp()
+      checkDemo()
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  )
+
   async function handleLoadDemo() {
     if (!session) return
     setDemoLoading(true)
+    setDemoError('')
     try {
       await loadDemoData(session.user.id)
       await checkDemo()
       refreshAll()
     } catch (e) {
       console.error('[loadDemo]', e)
+      setDemoError(t('common.error'))
     } finally {
       setDemoLoading(false)
     }
@@ -224,12 +242,14 @@ export default function DashboardScreen() {
   async function handleDeleteDemo() {
     if (!session) return
     setDemoLoading(true)
+    setDemoError('')
     try {
       await deleteDemoData(session.user.id)
       setDemoCount(0)
       refreshAll()
     } catch (e) {
       console.error('[deleteDemo]', e)
+      setDemoError(t('common.error'))
     } finally {
       setDemoLoading(false)
     }
@@ -321,6 +341,8 @@ export default function DashboardScreen() {
             }
           </TouchableOpacity>
         )}
+
+        {demoError ? <Text style={styles.demoErrorText}>{demoError}</Text> : null}
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
@@ -538,6 +560,7 @@ const styles = StyleSheet.create({
   demoBannerText:   { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   demoBannerDelete: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
 
-  demoLink:     { alignSelf: 'flex-start', paddingVertical: 4 },
-  demoLinkText: { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
+  demoLink:      { alignSelf: 'flex-start', paddingVertical: 4 },
+  demoLinkText:  { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
+  demoErrorText: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
 })

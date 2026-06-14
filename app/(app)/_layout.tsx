@@ -26,17 +26,23 @@ function Sidebar({ pathname }: { pathname: string }) {
   const { session } = useAuth()
   const [demoCount, setDemoCount]     = useState(0)
   const [demoLoading, setDemoLoading] = useState(false)
+  const [demoError, setDemoError]     = useState('')
 
   const checkDemo = useCallback(async () => {
     if (!session) return
-    setDemoCount(await getDemoClientsCount(session.user.id))
+    try {
+      setDemoCount(await getDemoClientsCount(session.user.id))
+    } catch {
+      // keep existing count — DB error shouldn't crash the sidebar
+    }
   }, [session])
 
-  useEffect(() => { checkDemo() }, [checkDemo])
+  useEffect(() => { checkDemo() }, [checkDemo, pathname])
 
   async function toggleDemo() {
     if (!session) return
     setDemoLoading(true)
+    setDemoError('')
     try {
       if (demoCount > 0) {
         await deleteDemoData(session.user.id)
@@ -48,6 +54,7 @@ function Sidebar({ pathname }: { pathname: string }) {
       router.replace('/')
     } catch (e) {
       console.error('[toggleDemo]', e)
+      setDemoError('Erreur')
     } finally {
       setDemoLoading(false)
     }
@@ -114,6 +121,7 @@ function Sidebar({ pathname }: { pathname: string }) {
               </>
           }
         </TouchableOpacity>
+        {demoError ? <Text style={styles.demoErrText}>{demoError}</Text> : null}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => supabase.auth.signOut()}
@@ -311,4 +319,5 @@ const styles = StyleSheet.create({
   demoIcon:       { fontSize: 14 },
   demoText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   demoTextActive: { color: colors.danger },
+  demoErrText:    { fontSize: 12, fontFamily: fonts.medium, color: colors.danger, paddingHorizontal: 8 },
 })
