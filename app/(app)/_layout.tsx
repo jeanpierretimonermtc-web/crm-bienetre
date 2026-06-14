@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
-import { loadDemoData, deleteDemoData, getDemoClientsCount } from '@/features/demo/demoService'
+import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
 import { colors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 
@@ -24,40 +24,18 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 function Sidebar({ pathname }: { pathname: string }) {
   const { t } = useTranslation()
   const { session } = useAuth()
-  const [demoCount, setDemoCount]     = useState(0)
-  const [demoLoading, setDemoLoading] = useState(false)
-  const [demoError, setDemoError]     = useState('')
+  const { demoCount, demoLoading, demoFailed, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
 
-  const checkDemo = useCallback(async () => {
-    if (!session) return
-    try {
-      setDemoCount(await getDemoClientsCount(session.user.id))
-    } catch {
-      // keep existing count — DB error shouldn't crash the sidebar
-    }
-  }, [session])
-
+  // Re-check count whenever the active route changes
   useEffect(() => { checkDemo() }, [checkDemo, pathname])
 
   async function toggleDemo() {
-    if (!session) return
-    setDemoLoading(true)
-    setDemoError('')
-    try {
-      if (demoCount > 0) {
-        await deleteDemoData(session.user.id)
-        setDemoCount(0)
-      } else {
-        await loadDemoData(session.user.id)
-        await checkDemo()
-      }
-      router.replace('/')
-    } catch (e) {
-      console.error('[toggleDemo]', e)
-      setDemoError('Erreur')
-    } finally {
-      setDemoLoading(false)
+    if (demoCount > 0) {
+      await handleDeleteDemo()
+    } else {
+      await handleLoadDemo()
     }
+    router.replace('/')
   }
 
   function isActive(segment: string) {
@@ -121,7 +99,7 @@ function Sidebar({ pathname }: { pathname: string }) {
               </>
           }
         </TouchableOpacity>
-        {demoError ? <Text style={styles.demoErrText}>{demoError}</Text> : null}
+        {demoFailed ? <Text style={styles.demoErrText}>{t('common.error')}</Text> : null}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => supabase.auth.signOut()}
@@ -150,69 +128,71 @@ export default function AppLayout() {
   const initials = firstName.slice(0, 2).toUpperCase()
 
   return (
-    <View style={[styles.root, isWide && styles.rootWide]}>
-      {isWide
-        ? <Sidebar pathname={pathname} />
-        : isRootRoute && (
-          <View style={styles.mobileHeader}>
-            <View style={styles.mobileHeaderLeft}>
-              <Text style={styles.mobileHeaderLeaf}>🌿</Text>
-              <Text style={styles.mobileHeaderName}>Lumora</Text>
+    <DemoProvider>
+      <View style={[styles.root, isWide && styles.rootWide]}>
+        {isWide
+          ? <Sidebar pathname={pathname} />
+          : isRootRoute && (
+            <View style={styles.mobileHeader}>
+              <View style={styles.mobileHeaderLeft}>
+                <Text style={styles.mobileHeaderLeaf}>🌿</Text>
+                <Text style={styles.mobileHeaderName}>Lumora</Text>
+              </View>
+              <View style={styles.mobileHeaderRight}>
+                <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
+                  <Text style={styles.mobileHeaderBtnIcon}>🔍</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.mobileHeaderAvatar} onPress={() => supabase.auth.signOut()}>
+                  <Text style={styles.mobileHeaderAvatarText}>{initials}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.mobileHeaderRight}>
-              <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
-                <Text style={styles.mobileHeaderBtnIcon}>🔍</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.mobileHeaderAvatar} onPress={() => supabase.auth.signOut()}>
-                <Text style={styles.mobileHeaderAvatarText}>{initials}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )
-      }
-      <View style={styles.content}>
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: colors.primary,
-            tabBarInactiveTintColor: colors.textSecondary,
-            tabBarStyle: isWide
-              ? { display: 'none' }
-              : { borderTopColor: colors.border, backgroundColor: colors.card },
-            tabBarLabelStyle: { fontSize: 10, fontFamily: fonts.medium },
-          }}
-        >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: t('dashboard.title'),
-              tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          )
+        }
+        <View style={styles.content}>
+          <Tabs
+            screenOptions={{
+              headerShown: false,
+              tabBarActiveTintColor: colors.primary,
+              tabBarInactiveTintColor: colors.textSecondary,
+              tabBarStyle: isWide
+                ? { display: 'none' }
+                : { borderTopColor: colors.border, backgroundColor: colors.card },
+              tabBarLabelStyle: { fontSize: 10, fontFamily: fonts.medium },
             }}
-          />
-          <Tabs.Screen
-            name="clients"
-            options={{
-              title: t('clients.title'),
-              tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} />,
-            }}
-          />
-          <Tabs.Screen
-            name="appointments"
-            options={{
-              title: t('appointments.title'),
-              tabBarIcon: ({ focused }) => <TabIcon emoji="📅" focused={focused} />,
-            }}
-          />
-          <Tabs.Screen
-            name="followups"
-            options={{
-              title: t('followups.title'),
-              tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} />,
-            }}
-          />
-        </Tabs>
+          >
+            <Tabs.Screen
+              name="index"
+              options={{
+                title: t('dashboard.title'),
+                tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+              }}
+            />
+            <Tabs.Screen
+              name="clients"
+              options={{
+                title: t('clients.title'),
+                tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} />,
+              }}
+            />
+            <Tabs.Screen
+              name="appointments"
+              options={{
+                title: t('appointments.title'),
+                tabBarIcon: ({ focused }) => <TabIcon emoji="📅" focused={focused} />,
+              }}
+            />
+            <Tabs.Screen
+              name="followups"
+              options={{
+                title: t('followups.title'),
+                tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} />,
+              }}
+            />
+          </Tabs>
+        </View>
       </View>
-    </View>
+    </DemoProvider>
   )
 }
 
@@ -263,7 +243,6 @@ const styles = StyleSheet.create({
   },
   sidebarLogo:    { fontSize: 22 },
   sidebarAppName: { fontSize: 16, fontFamily: fonts.bold, color: colors.primary },
-  sidebarVersion: { fontSize: 11, color: colors.textTertiary },
   sidebarNav:     { paddingHorizontal: 8, paddingTop: 4, gap: 2 },
 
   navItem: {

@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { useDemoState } from '@/features/demo/DemoProvider'
 import { useDashboardStats, useUpcomingLrp } from '@/features/dashboard/useDashboard'
 import { useUpcomingAppointments } from '@/features/appointments/useAppointments'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
-import { loadDemoData, deleteDemoData, getDemoClientsCount } from '@/features/demo/demoService'
 import { Avatar } from '@/shared/components/ui/Avatar'
 import { colors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
@@ -70,7 +70,6 @@ function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: bool
   const locale = useLocale()
   const date = new Date(appt.appointment_date)
 
-  // Time column: HH:mm for today, weekday+date for upcoming
   const timeMain = isToday
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : date.toLocaleDateString(locale, { weekday: 'short' })
@@ -196,64 +195,31 @@ export default function DashboardScreen() {
     ? t('dashboard.greeting_afternoon')
     : t('dashboard.greeting_evening')
 
-  // ── Demo data ──────────────────────────────────────────────────────────────
-  const [demoCount, setDemoCount]     = useState(0)
-  const [demoLoading, setDemoLoading] = useState(false)
-  const [demoError, setDemoError]     = useState('')
+  // ── Shared demo state (context) ────────────────────────────────────────────
+  const { demoCount, demoLoading, demoFailed, demoVersion, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
 
-  const checkDemo = useCallback(async () => {
-    if (!session) return
-    try {
-      setDemoCount(await getDemoClientsCount(session.user.id))
-    } catch {
-      // keep existing count — DB error shouldn't crash the screen
-    }
-  }, [session])
+  function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
 
-  useEffect(() => { if (!statsLoading) checkDemo() }, [statsLoading, checkDemo])
-
-  // Refresh all data when screen comes into focus (handles sidebar navigation)
+  // Refresh on focus (back-navigation, tab switch)
   useFocusEffect(
     useCallback(() => {
-      refreshStats()
-      refreshAppts()
-      refreshFu()
-      refreshLrp()
+      refreshAll()
       checkDemo()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
   )
 
-  async function handleLoadDemo() {
-    if (!session) return
-    setDemoLoading(true)
-    setDemoError('')
-    try {
-      await loadDemoData(session.user.id)
-      await checkDemo()
+  // Refresh when sidebar loads or deletes demo (demoVersion increments)
+  const mountedVersion = useRef(demoVersion)
+  useEffect(() => {
+    if (demoVersion !== mountedVersion.current) {
       refreshAll()
-    } catch (e) {
-      console.error('[loadDemo]', e)
-      setDemoError(t('common.error'))
-    } finally {
-      setDemoLoading(false)
     }
-  }
+  }, [demoVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleDeleteDemo() {
-    if (!session) return
-    setDemoLoading(true)
-    setDemoError('')
-    try {
-      await deleteDemoData(session.user.id)
-      setDemoCount(0)
-      refreshAll()
-    } catch (e) {
-      console.error('[deleteDemo]', e)
-      setDemoError(t('common.error'))
-    } finally {
-      setDemoLoading(false)
-    }
-  }
+  // Also keep stats in sync when demoCount changes (for KPI counts)
+  useEffect(() => {
+    if (!statsLoading) checkDemo()
+  }, [statsLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const showLoadDemo   = !statsLoading && stats.totalClients === 0
   const showDemoActive = !statsLoading && demoCount > 0
@@ -264,14 +230,12 @@ export default function DashboardScreen() {
   const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 5)
   const overdueToday  = followups.filter(f => f.due_date <= todayStr)
 
-  const shownAppts  = todayAppts.length > 0 ? todayAppts : upcomingAppts
+  const shownAppts   = todayAppts.length > 0 ? todayAppts : upcomingAppts
   const showingToday = todayAppts.length > 0
 
   const activePct = stats.totalClients > 0
     ? Math.round(stats.activeClients / stats.totalClients * 100)
     : 0
-
-  function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
 
   return (
     <>
@@ -298,12 +262,8 @@ export default function DashboardScreen() {
         {showLoadDemo && (
           <View style={styles.demoCard}>
             <View style={styles.demoCardLeft}>
-              <Text style={styles.demoCardTitle}>
-                {t('dashboard.demo_title')}
-              </Text>
-              <Text style={styles.demoCardSub}>
-                {t('dashboard.demo_subtitle')}
-              </Text>
+              <Text style={styles.demoCardTitle}>{t('dashboard.demo_title')}</Text>
+              <Text style={styles.demoCardSub}>{t('dashboard.demo_subtitle')}</Text>
             </View>
             <TouchableOpacity
               style={styles.demoLoadBtn}
@@ -332,7 +292,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* ── Demo: compact link (mobile, clients exist, no demo) ── */}
+        {/* ── Demo: compact link (clients exist, no demo) ── */}
         {showDemoLink && (
           <TouchableOpacity style={styles.demoLink} onPress={handleLoadDemo} disabled={demoLoading} activeOpacity={0.7}>
             {demoLoading
@@ -342,7 +302,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         )}
 
-        {demoError ? <Text style={styles.demoErrorText}>{demoError}</Text> : null}
+        {demoFailed ? <Text style={styles.demoErrorText}>{t('common.error')}</Text> : null}
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
@@ -380,8 +340,6 @@ export default function DashboardScreen() {
         <View style={isWide ? styles.twoCol : styles.oneCol}>
           {/* ── Left column ─────────────────────────────── */}
           <View style={isWide ? styles.col : undefined}>
-
-            {/* Agenda du jour */}
             {shownAppts.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader
@@ -401,13 +359,10 @@ export default function DashboardScreen() {
                 </View>
               </View>
             )}
-
           </View>
 
           {/* ── Right column ────────────────────────────── */}
           <View style={isWide ? styles.col : undefined}>
-
-            {/* Relances urgentes */}
             {overdueToday.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader
@@ -426,7 +381,6 @@ export default function DashboardScreen() {
               </View>
             )}
 
-            {/* LRP */}
             {lrpClients.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader title={t('dashboard.next_lrp')} />
@@ -440,7 +394,6 @@ export default function DashboardScreen() {
                 </View>
               </View>
             )}
-
           </View>
         </View>
 
@@ -462,7 +415,6 @@ const styles = StyleSheet.create({
   content:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 64, gap: 22 },
   contentWide: { paddingHorizontal: 28, paddingTop: 24, gap: 28 },
 
-  // ── Greeting + quick actions in one row ───────────────────────────────────
   greetingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   greeting:    { fontSize: 22, fontFamily: fonts.display, color: colors.primary },
   greetingSub: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 2 },
@@ -471,7 +423,6 @@ const styles = StyleSheet.create({
   quickCardIcon:  { fontSize: 18 },
   quickCardLabel: { fontSize: 10, fontFamily: fonts.bold, color: colors.textInverse, textAlign: 'center' },
 
-  // ── KPI grid ──────────────────────────────────────────────────────────────
   kpiGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   kpiGridWide:   { flexWrap: 'nowrap' },
   kpiCard:       { backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
@@ -484,23 +435,19 @@ const styles = StyleSheet.create({
   kpiValue:    { fontSize: 36, fontFamily: fonts.display, lineHeight: 42, letterSpacing: -1 },
   kpiDelta:    { fontSize: 11, fontFamily: fonts.medium, color: colors.textSecondary },
 
-  // ── Layout ────────────────────────────────────────────────────────────────
   oneCol:  { gap: 22 },
   twoCol:  { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
   col:     { flex: 1, gap: 20 },
   section: { gap: 12 },
 
-  // ── Section header ────────────────────────────────────────────────────────
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   sectionTitle:  { fontSize: 20, fontFamily: fonts.display, color: colors.text },
   sectionSub:    { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 1 },
   sectionMore:   { fontSize: 13, fontFamily: fonts.medium, color: colors.primary, paddingTop: 4 },
 
-  // ── Unified list card ─────────────────────────────────────────────────────
   listCard: { backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
   divider:  { height: 1, backgroundColor: colors.border, marginLeft: 16 },
 
-  // ── Appointment row ───────────────────────────────────────────────────────
   apptRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   apptTimeCol:  { width: 48, flexShrink: 0, alignItems: 'flex-start' },
   apptTimeMain: { fontSize: 18, fontFamily: fonts.display, color: colors.primary, lineHeight: 22 },
@@ -515,7 +462,6 @@ const styles = StyleSheet.create({
   confirmedText:  { color: colors.success },
   pendingText:    { color: colors.secondary },
 
-  // ── Followup row ─────────────────────────────────────────────────────────
   followupRow:   { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
   followupDot:   { width: 8, height: 8, borderRadius: 4, marginTop: 6, flexShrink: 0 },
   followupInfo:  { flex: 1 },
@@ -523,13 +469,11 @@ const styles = StyleSheet.create({
   followupTask:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 1 },
   followupDue:   { fontSize: 11, fontFamily: fonts.medium, marginTop: 4 },
 
-  // ── Empty day ─────────────────────────────────────────────────────────────
   emptyDay:      { alignItems: 'center', paddingVertical: 48, gap: 10, backgroundColor: colors.card, borderRadius: 16 },
   emptyDayEmoji: { fontSize: 40 },
   emptyDayTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.primary },
   emptyDaySub:   { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 20 },
 
-  // ── Demo ──────────────────────────────────────────────────────────────────
   demoCard: {
     backgroundColor: colors.primaryLight,
     borderRadius: 16,
