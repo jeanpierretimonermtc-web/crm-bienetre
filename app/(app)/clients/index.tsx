@@ -178,13 +178,23 @@ export default function ClientsScreen() {
           ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
           renderItem={({ item: s }) => {
             const active = statusFilter === s
+            const cs = s === 'all' ? null : (statusColors[s] ?? null)
+            const bg     = active
+              ? (cs ? cs.bg         : colors.primaryAction)
+              : (cs ? cs.bg + '55'  : colors.primaryLight)
+            const txtClr = active
+              ? (cs ? cs.text       : '#ffffff')
+              : (cs ? cs.text       : colors.textSecondary)
+            const border = active
+              ? (cs ? cs.text       : colors.primaryAction)
+              : (cs ? cs.bg         : colors.border)
             return (
               <TouchableOpacity
-                style={active ? styles.chipActive : styles.chip}
+                style={[styles.chip, { backgroundColor: bg, borderColor: border }]}
                 onPress={() => setStatusFilter(s)}
                 activeOpacity={0.7}
               >
-                <Text style={active ? styles.chipTextActive : styles.chipText}>
+                <Text style={[styles.chipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
                   {t(`clients.filter_labels.${s}`)}
                 </Text>
               </TouchableOpacity>
@@ -240,10 +250,8 @@ const styles = StyleSheet.create({
   // ── Filter chips ───────────────────────────────────────────────────────────
   filtersList:    { flexGrow: 0, flexShrink: 0 },
   filtersContent: { paddingHorizontal: 16, paddingBottom: 14, alignItems: 'center' },
-  chip:           { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  chipActive:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.primaryAction, borderWidth: 1, borderColor: colors.primaryAction },
-  chipText:        { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
-  chipTextActive:  { fontSize: 13, fontFamily: fonts.semibold, color: '#ffffff' },
+  chip:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  chipText: { fontSize: 13 },
 
   // ── FlatList ───────────────────────────────────────────────────────────────
   list:      { padding: 16, gap: 12, paddingBottom: 100 },
