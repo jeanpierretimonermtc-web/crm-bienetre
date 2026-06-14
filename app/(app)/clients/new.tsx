@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ScrollView, View, Text, Switch, StyleSheet, useWindowDimensions } from 'react-native'
+import { ScrollView, View, Text, Switch, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -7,7 +7,8 @@ import { createClient } from '@/features/clients/clientService'
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors } from '@/shared/theme/colors'
+import { colors, statusColors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 import type { ClientStatus } from '@/shared/lib/types'
 
 const STATUSES: ClientStatus[] = ['prospect', 'active', 'inactive', 'vip', 'advisor']
@@ -116,15 +117,25 @@ export default function NewClientScreen() {
 
         <Text style={styles.section}>{t('clients.sections.status')}</Text>
         <View style={styles.statusRow}>
-          {STATUSES.map(s => (
-            <Button
-              key={s}
-              label={t(`clients.status.${s}`)}
-              variant={status === s ? 'primary' : 'secondary'}
-              size="sm"
-              onPress={() => setStatus(s)}
-            />
-          ))}
+          {STATUSES.map(s => {
+            const active = status === s
+            const cs = statusColors[s] ?? null
+            const bg     = active ? (cs ? cs.bg   : colors.primaryAction) : (cs ? cs.bg + '55'  : colors.surfaceContainerHigh)
+            const txtClr = active ? (cs ? cs.text : '#ffffff')            : (cs ? cs.text        : colors.textSecondary)
+            const border = active ? (cs ? cs.text : colors.primaryAction) : (cs ? cs.bg          : colors.border)
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.statusChip, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => setStatus(s)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.statusChipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
+                  {t(`clients.status.${s}`)}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
 
         <Text style={styles.section}>{t('clients.sections.medical')}</Text>
@@ -155,6 +166,8 @@ const styles = StyleSheet.create({
   fieldHalf:       { flex: 1 },
   section:         { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
   statusRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusChip:      { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  statusChipText:  { fontSize: 13 },
   switchRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
   switchLabel:     { fontSize: 16, color: colors.text },
   namePreview:     { fontSize: 13, color: colors.textSecondary, paddingHorizontal: 4 },

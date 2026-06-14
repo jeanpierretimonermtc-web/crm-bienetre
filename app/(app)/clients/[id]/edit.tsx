@@ -6,7 +6,7 @@ import { getClient, updateClient, deleteClient } from '@/features/clients/client
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors } from '@/shared/theme/colors'
+import { colors, statusColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Client, ClientStatus } from '@/shared/lib/types'
 
@@ -187,15 +187,25 @@ export default function EditClientScreen() {
         {/* ── Statut ────────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>{t('clients.sections.status')}</Text>
         <View style={styles.statusRow}>
-          {STATUSES.map(s => (
-            <Button
-              key={s}
-              label={t(`clients.status.${s}`)}
-              variant={status === s ? 'primary' : 'secondary'}
-              size="sm"
-              onPress={() => setStatus(s)}
-            />
-          ))}
+          {STATUSES.map(s => {
+            const active = status === s
+            const cs = statusColors[s] ?? null
+            const bg     = active ? (cs ? cs.bg   : colors.primaryAction) : (cs ? cs.bg + '55'  : colors.surfaceContainerHigh)
+            const txtClr = active ? (cs ? cs.text : '#ffffff')            : (cs ? cs.text        : colors.textSecondary)
+            const border = active ? (cs ? cs.text : colors.primaryAction) : (cs ? cs.bg          : colors.border)
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.statusChip, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => setStatus(s)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.statusChipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
+                  {t(`clients.status.${s}`)}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
 
         {/* ── Médical ───────────────────────────────────────────────── */}
@@ -271,7 +281,9 @@ const styles = StyleSheet.create({
   namePreview:     { fontSize: 13, color: colors.textSecondary, paddingHorizontal: 4 },
   namePreviewBold: { fontFamily: fonts.semibold, color: colors.primary },
 
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusChip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  statusChipText: { fontSize: 13 },
 
   switchRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
   switchLabel: { fontSize: 16, fontFamily: fonts.body, color: colors.text },
