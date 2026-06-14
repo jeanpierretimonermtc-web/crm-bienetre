@@ -163,6 +163,26 @@
     "confirm_delete": "Êtes-vous sûr de vouloir supprimer ceci ?",
     "optional": "facultatif"
   },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez vos informations personnelles et votre abonnement.",
+    "profile": "Profil",
+    "full_name": "Nom complet",
+    "email": "Email",
+    "language": "Langue",
+    "timezone": "Fuseau horaire",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "subscription": "Abonnement",
+    "current_plan": "Offre actuelle",
+    "plan_active": "Actif",
+    "plan_pro_desc": "Votre abonnement se renouvelle automatiquement à 29,00 €/mois.",
+    "plan_cabinet_desc": "Votre abonnement se renouvelle automatiquement à 79,00 €/mois.",
+    "plan_free_desc": "Passez au plan Pro pour débloquer toutes les fonctionnalités et les clients illimités.",
+    "upgrade": "Mettre à niveau l'offre",
+    "privacy": "Confidentialité",
+    "terms": "Conditions"
+  },
   "auth": {
     "login": "Se connecter",
     "register": "Créer un compte",

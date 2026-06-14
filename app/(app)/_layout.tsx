@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { segment: 'clients',      icon: '👥', labelKey: 'clients.title'      },
   { segment: 'appointments', icon: '📅', labelKey: 'appointments.title' },
   { segment: 'followups',    icon: '🔔', labelKey: 'followups.title'    },
+  { segment: 'settings',     icon: '⚙️', labelKey: 'settings.title'    },
 ]
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
@@ -187,6 +188,13 @@ export default function AppLayout() {
               options={{
                 title: t('followups.title'),
                 tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} />,
+              }}
+            />
+            <Tabs.Screen
+              name="settings"
+              options={{
+                title: t('settings.title'),
+                tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
               }}
             />
           </Tabs>

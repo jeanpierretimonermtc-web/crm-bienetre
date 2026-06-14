@@ -163,6 +163,26 @@
     "confirm_delete": "Are you sure you want to delete this?",
     "optional": "optional"
   },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your personal info and subscription.",
+    "profile": "Profile",
+    "full_name": "Full name",
+    "email": "Email",
+    "language": "Language",
+    "timezone": "Timezone",
+    "save": "Save changes",
+    "saved": "Saved",
+    "subscription": "Subscription",
+    "current_plan": "Current offer",
+    "plan_active": "Active",
+    "plan_pro_desc": "Your subscription renews automatically at 29.00 €/month.",
+    "plan_cabinet_desc": "Your subscription renews automatically at 79.00 €/month.",
+    "plan_free_desc": "Upgrade to Pro to unlock all features and unlimited clients.",
+    "upgrade": "Upgrade plan",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
   "auth": {
     "login": "Log in",
     "register": "Create account",
