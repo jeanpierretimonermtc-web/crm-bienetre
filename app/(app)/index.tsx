@@ -26,12 +26,12 @@ function QuickCard({ icon, label, onPress }: { icon: string; label: string; onPr
 }
 
 // ── KPI card — icon square + serif value + label + delta ───────────────────
-function KpiCard({ icon, value, label, delta, accent, bg, onPress }: {
+function KpiCard({ icon, value, label, delta, accent, bg, onPress, wide }: {
   icon: string; value: number; label: string; delta?: string
-  accent: string; bg: string; onPress?: () => void
+  accent: string; bg: string; onPress?: () => void; wide?: boolean
 }) {
   return (
-    <TouchableOpacity style={styles.kpiCard} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+    <TouchableOpacity style={[styles.kpiCard, wide ? styles.kpiCardWide : styles.kpiCardMobile]} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
       <View style={styles.kpiTop}>
         <Text style={styles.kpiLabel}>{label}</Text>
         <View style={[styles.kpiIconBox, { backgroundColor: bg }]}>
@@ -231,20 +231,20 @@ export default function DashboardScreen() {
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
-          <KpiCard
+          <KpiCard wide={isWide}
             icon="👥" value={stats.totalClients}
             label={t('dashboard.stats.total_clients')}
             delta={t('dashboard.kpi.new_month', { count: stats.newThisMonth })}
             accent={colors.primary} bg={colors.primaryLight}
             onPress={() => router.push('/(app)/clients')}
           />
-          <KpiCard
+          <KpiCard wide={isWide}
             icon="📅" value={stats.appointmentsThisMonth}
             label={t('dashboard.stats.sessions')}
             delta={t('dashboard.kpi.sessions_since')}
             accent={colors.primary} bg={colors.primaryLight}
           />
-          <KpiCard
+          <KpiCard wide={isWide}
             icon="⚠️" value={stats.pendingFollowups}
             label={t('dashboard.stats.pending_followups')}
             delta={overdueToday.length > 0
@@ -254,7 +254,7 @@ export default function DashboardScreen() {
             bg={overdueToday.length > 0 ? colors.dangerLight : colors.primaryLight}
             onPress={() => router.push('/(app)/followups')}
           />
-          <KpiCard
+          <KpiCard wide={isWide}
             icon="✨" value={lrpClients.length}
             label={t('dashboard.next_lrp')}
             delta={t('dashboard.kpi.lrp_delta')}
@@ -357,9 +357,11 @@ const styles = StyleSheet.create({
   quickCardLabel: { fontSize: 10, fontFamily: fonts.bold, color: colors.textInverse, textAlign: 'center' },
 
   // ── KPI grid ──────────────────────────────────────────────────────────────
-  kpiGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  kpiGridWide: { flexWrap: 'nowrap' },
-  kpiCard:     { width: '47.5%', backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  kpiGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  kpiGridWide:   { flexWrap: 'nowrap' },
+  kpiCard:       { backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  kpiCardMobile: { width: '47.5%' },
+  kpiCardWide:   { flex: 1 },
   kpiTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   kpiLabel:    { fontSize: 10, fontFamily: fonts.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1, paddingRight: 4 },
   kpiIconBox:  { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
