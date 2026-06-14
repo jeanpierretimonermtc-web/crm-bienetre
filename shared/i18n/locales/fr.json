@@ -99,10 +99,16 @@
     "no_tasks": "Rien de prévu aujourd'hui",
     "upcoming_rdv": "Prochains RDV",
     "upcoming_lrp": "Prochaines LRP",
+    "new_client": "Nouveau client",
+    "confirmed": "Confirmé",
+    "pending_appt": "En attente",
+    "urgent_followups": "Relances urgentes",
+    "days_late": "{{days}}j de retard",
+    "yesterday": "Hier",
     "stats": {
-      "total_clients": "Clients",
+      "total_clients": "Total clients",
       "active_clients": "Actifs",
-      "this_month": "Ce mois",
+      "this_month": "Séances mois",
       "pending_followups": "Relances"
     }
   },

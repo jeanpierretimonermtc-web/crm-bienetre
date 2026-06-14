@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'r
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { colors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 
 const SIDEBAR_BREAKPOINT = 768
 
@@ -95,9 +96,30 @@ export default function AppLayout() {
   if (loading) return null
   if (!session) return <Redirect href="/(auth)/login" />
 
+  const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? session?.user?.email ?? ''
+  const initials = firstName.slice(0, 2).toUpperCase()
+
   return (
-    <View style={styles.root}>
-      {isWide && <Sidebar pathname={pathname} />}
+    <View style={[styles.root, isWide && styles.rootWide]}>
+      {isWide
+        ? <Sidebar pathname={pathname} />
+        : (
+          <View style={styles.mobileHeader}>
+            <View style={styles.mobileHeaderLeft}>
+              <Text style={styles.mobileHeaderLeaf}>🌿</Text>
+              <Text style={styles.mobileHeaderName}>Lumora</Text>
+            </View>
+            <View style={styles.mobileHeaderRight}>
+              <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
+                <Text style={styles.mobileHeaderBtnIcon}>🔍</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.mobileHeaderAvatar} onPress={() => supabase.auth.signOut()}>
+                <Text style={styles.mobileHeaderAvatarText}>{initials}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )
+      }
       <View style={styles.content}>
         <Tabs
           screenOptions={{
@@ -106,8 +128,8 @@ export default function AppLayout() {
             tabBarInactiveTintColor: colors.textSecondary,
             tabBarStyle: isWide
               ? { display: 'none' }
-              : { borderTopColor: colors.border },
-            tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+              : { borderTopColor: colors.border, backgroundColor: colors.card },
+            tabBarLabelStyle: { fontSize: 10, fontFamily: fonts.medium },
           }}
         >
           <Tabs.Screen
@@ -145,10 +167,30 @@ export default function AppLayout() {
 }
 
 const styles = StyleSheet.create({
-  root:    { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
-  content: { flex: 1 },
+  root:     { flex: 1, flexDirection: 'column', backgroundColor: colors.bg },
+  rootWide: { flexDirection: 'row' },
+  content:  { flex: 1 },
 
-  // Sidebar
+  // ── Mobile header ──────────────────────────────────────────────────────────
+  mobileHeader: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 44,
+    paddingBottom: 12,
+  },
+  mobileHeaderLeft:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mobileHeaderLeaf:       { fontSize: 20 },
+  mobileHeaderName:       { fontSize: 17, fontFamily: fonts.bold, color: colors.textInverse },
+  mobileHeaderRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mobileHeaderBtn:        { padding: 4 },
+  mobileHeaderBtnIcon:    { fontSize: 18 },
+  mobileHeaderAvatar:     { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  mobileHeaderAvatarText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+
+  // ── Sidebar (desktop ≥768px) ───────────────────────────────────────────────
   sidebar: {
     width: 240,
     backgroundColor: colors.card,
@@ -169,8 +211,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     marginBottom: 8,
   },
-  sidebarLogo:    { fontSize: 28 },
-  sidebarAppName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  sidebarLogo:    { fontSize: 22 },
+  sidebarAppName: { fontSize: 16, fontFamily: fonts.bold, color: colors.primary },
   sidebarVersion: { fontSize: 11, color: colors.textTertiary },
   sidebarNav:     { paddingHorizontal: 8, paddingTop: 4, gap: 2 },
 
@@ -180,12 +222,12 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 11,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   navItemActive:  { backgroundColor: colors.primaryLight },
   navIcon:        { fontSize: 18 },
-  navLabel:       { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
-  navLabelActive: { color: colors.primary, fontWeight: '600' },
+  navLabel:       { fontSize: 14, fontFamily: fonts.medium, color: colors.textSecondary },
+  navLabelActive: { color: colors.primary, fontFamily: fonts.semibold },
 
   // Footer
   sidebarFooter: {
@@ -211,8 +253,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userAvatarText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  userName:       { fontSize: 13, fontWeight: '500', color: colors.text, flex: 1 },
+  userAvatarText: { color: colors.textInverse, fontSize: 13, fontFamily: fonts.bold },
+  userName:       { fontSize: 13, fontFamily: fonts.medium, color: colors.text, flex: 1 },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,5 +263,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   logoutIcon: { fontSize: 15, color: colors.textSecondary },
-  logoutText: { fontSize: 13, color: colors.textSecondary },
+  logoutText: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
 })

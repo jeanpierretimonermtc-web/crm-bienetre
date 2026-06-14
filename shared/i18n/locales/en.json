@@ -99,10 +99,16 @@
     "no_tasks": "Nothing due today",
     "upcoming_rdv": "Upcoming appointments",
     "upcoming_lrp": "Upcoming LRP",
+    "new_client": "New client",
+    "confirmed": "Confirmed",
+    "pending_appt": "Pending",
+    "urgent_followups": "Urgent follow-ups",
+    "days_late": "+{{days}}d late",
+    "yesterday": "Yesterday",
     "stats": {
-      "total_clients": "Clients",
+      "total_clients": "Total clients",
       "active_clients": "Active",
-      "this_month": "New",
+      "this_month": "Sessions",
       "pending_followups": "Follow-ups"
     }
   },
