@@ -1,29 +1,43 @@
 export const colors = {
-  primary: '#007AFF',
-  primaryLight: '#E8F2FF',
-  success: '#34C759',
-  successLight: '#E8FAF0',
-  warning: '#FF9500',
-  warningLight: '#FFF4E5',
-  danger: '#FF3B30',
-  dangerLight: '#FFF0EF',
-  purple: '#AF52DE',
-  purpleLight: '#F5EDFC',
+  // Primary — forest green (Material Design 3)
+  primary: '#334f2b',
+  primaryLight: '#caecbc',
+  primaryContainer: '#dff5ce',
 
-  bg: '#F2F2F7',
-  card: '#FFFFFF',
-  border: '#E5E5EA',
+  // Secondary — warm amber
+  secondary: '#8a5100',
+  secondaryLight: '#ffdcbe',
+  secondaryContainer: '#ffdcbe',
 
-  text: '#1C1C1E',
-  textSecondary: '#8E8E93',
-  textTertiary: '#C7C7CC',
-  textInverse: '#FFFFFF',
+  // Semantic aliases
+  success: '#334f2b',
+  successLight: '#dff5ce',
+  warning: '#8a5100',
+  warningLight: '#ffdcbe',
+  danger: '#ba1a1a',
+  dangerLight: '#ffdad6',
+
+  // Tertiary — muted sage (backward compat alias for purple)
+  purple: '#434944',
+  purpleLight: '#dee4dc',
+
+  // Surfaces — warm cream palette
+  bg: '#fff8f3',
+  card: '#ffffff',
+  surfaceContainer: '#f3ede7',
+  border: '#c3c8bd',
+
+  // Text
+  text: '#1d1b18',
+  textSecondary: '#434840',
+  textTertiary: '#73796f',
+  textInverse: '#ffffff',
 } as const
 
 export const statusColors: Record<string, { bg: string; text: string }> = {
-  prospect:  { bg: colors.warningLight,  text: colors.warning },
-  active:    { bg: colors.successLight,  text: colors.success },
-  inactive:  { bg: '#F2F2F7',            text: colors.textSecondary },
-  vip:       { bg: colors.purpleLight,   text: colors.purple },
-  advisor:   { bg: colors.primaryLight,  text: colors.primary },
+  prospect:  { bg: colors.warningLight,     text: colors.warning },
+  active:    { bg: colors.successLight,     text: colors.success },
+  inactive:  { bg: colors.surfaceContainer, text: colors.textSecondary },
+  vip:       { bg: colors.purpleLight,      text: colors.purple },
+  advisor:   { bg: colors.primaryLight,     text: colors.primary },
 }

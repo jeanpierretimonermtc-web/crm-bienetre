@@ -7,6 +7,7 @@ import { useUpcomingAppointments } from '@/features/appointments/useAppointments
 import { usePendingFollowups } from '@/features/followups/useFollowups'
 import { Avatar } from '@/shared/components/ui/Avatar'
 import { colors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 import type { AppointmentWithClient, FollowupWithClient, Client } from '@/shared/lib/types'
 
 function useLocale() {
@@ -15,25 +16,22 @@ function useLocale() {
 }
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
-function KpiCard({ icon, value, label, sub, accent, onPress }: {
-  icon: string; value: number; label: string; sub?: string; accent: string; onPress?: () => void
+function KpiCard({ value, label, sub, accent, onPress }: {
+  value: number; label: string; sub?: string; accent: string; onPress?: () => void
 }) {
   return (
-    <TouchableOpacity style={[styles.kpiCard, { borderTopColor: accent }]} onPress={onPress} activeOpacity={onPress ? 0.75 : 1}>
-      <View style={[styles.kpiIcon, { backgroundColor: accent + '18' }]}>
-        <Text style={styles.kpiIconText}>{icon}</Text>
-      </View>
+    <TouchableOpacity style={[styles.kpiCard, { borderLeftColor: accent }]} onPress={onPress} activeOpacity={onPress ? 0.75 : 1}>
       <Text style={[styles.kpiValue, { color: accent }]}>{value}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
-      {sub ? <Text style={styles.kpiSub}>{sub}</Text> : null}
+      {sub ? <Text style={[styles.kpiSub, { color: accent }]}>{sub}</Text> : null}
     </TouchableOpacity>
   )
 }
 
 // ─── Quick Action ─────────────────────────────────────────────────────────────
-function QuickAction({ icon, label, onPress, accent }: { icon: string; label: string; onPress: () => void; accent: string }) {
+function QuickAction({ icon, label, onPress, accent, bg }: { icon: string; label: string; onPress: () => void; accent: string; bg: string }) {
   return (
-    <TouchableOpacity style={[styles.qaBtn, { borderColor: accent + '40' }]} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={[styles.qaBtn, { backgroundColor: bg }]} onPress={onPress} activeOpacity={0.75}>
       <Text style={styles.qaIcon}>{icon}</Text>
       <Text style={[styles.qaLabel, { color: accent }]}>{label}</Text>
     </TouchableOpacity>
@@ -48,14 +46,15 @@ function Section({ title, badge, accent = colors.textSecondary, onMore }: {
   return (
     <View style={styles.sectionRow}>
       <View style={styles.sectionLeft}>
-        <Text style={[styles.sectionTitle, { color: accent }]}>{title}</Text>
+        <View style={[styles.sectionAccent, { backgroundColor: accent }]} />
+        <Text style={styles.sectionTitle}>{title}</Text>
         {badge ? (
           <View style={[styles.badge, { backgroundColor: accent }]}>
             <Text style={styles.badgeText}>{badge}</Text>
           </View>
         ) : null}
       </View>
-      {onMore && <TouchableOpacity onPress={onMore}><Text style={styles.seeAll}>{t('dashboard.see_all')} →</Text></TouchableOpacity>}
+      {onMore && <TouchableOpacity onPress={onMore}><Text style={[styles.seeAll, { color: accent }]}>{t('dashboard.see_all')}</Text></TouchableOpacity>}
     </View>
   )
 }
@@ -134,8 +133,8 @@ function LrpItem({ client }: { client: Client }) {
         <Text style={styles.lrpDate}>{client.next_lrp_date && new Date(client.next_lrp_date).toLocaleDateString(locale, { day: '2-digit', month: 'long' })}</Text>
       </View>
       {daysUntil !== null && (
-        <View style={[styles.daysChip, urgent && styles.daysChipUrgent]}>
-          <Text style={[styles.daysText, urgent && styles.daysTextUrgent]}>
+        <View style={[styles.daysChip, { backgroundColor: urgent ? colors.dangerLight : colors.primaryLight }]}>
+          <Text style={[styles.daysText, { color: urgent ? colors.danger : colors.primary }]}>
             {daysUntil <= 0 ? t('dashboard.lrp_today') : t('dashboard.lrp_days', { days: daysUntil })}
           </Text>
         </View>
@@ -184,23 +183,23 @@ export default function DashboardScreen() {
       >
         {/* ── Hero ─────────────────────────────────────── */}
         <View style={styles.hero}>
-          <View>
-            <Text style={styles.heroGreeting}>{greeting}{firstName ? `, ${firstName}` : ''} 👋</Text>
+          <View style={styles.heroTextBlock}>
             <Text style={styles.heroDate}>{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</Text>
+            <Text style={styles.heroGreeting}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
           </View>
           <View style={styles.quickActions}>
-            <QuickAction icon="+" label={t('dashboard.quick_client')}      accent={colors.primary} onPress={() => router.push('/(app)/clients/new')} />
-            <QuickAction icon="📅" label={t('dashboard.quick_appointment')} accent={colors.success} onPress={() => router.push('/(app)/appointments')} />
-            <QuickAction icon="🔔" label={t('dashboard.quick_followup')}   accent={colors.warning} onPress={() => router.push('/(app)/followups')} />
+            <QuickAction icon="👤" label={t('dashboard.quick_client')}      accent={colors.primary}   bg={colors.primaryLight}   onPress={() => router.push('/(app)/clients/new')} />
+            <QuickAction icon="📅" label={t('dashboard.quick_appointment')} accent={colors.secondary} bg={colors.secondaryLight} onPress={() => router.push('/(app)/appointments')} />
+            <QuickAction icon="🔔" label={t('dashboard.quick_followup')}   accent={colors.secondary} bg={colors.secondaryLight} onPress={() => router.push('/(app)/followups')} />
           </View>
         </View>
 
         {/* ── KPIs ─────────────────────────────────────── */}
         <View style={[styles.kpiRow, isWide && styles.kpiRowWide]}>
-          <KpiCard icon="👥" value={stats.totalClients}     label={t('dashboard.stats.total_clients')}    accent={colors.primary} onPress={() => router.push('/(app)/clients')} />
-          <KpiCard icon="✅" value={stats.activeClients}    label={t('dashboard.stats.active_clients')}   accent={colors.success} sub={`${stats.totalClients > 0 ? Math.round(stats.activeClients / stats.totalClients * 100) : 0}%`} />
-          <KpiCard icon="🆕" value={stats.newThisMonth}     label={t('dashboard.stats.this_month')}       accent={colors.warning} />
-          <KpiCard icon="🔔" value={stats.pendingFollowups} label={t('dashboard.stats.pending_followups')} accent={overdueToday.length > 0 ? colors.danger : colors.textSecondary} onPress={() => router.push('/(app)/followups')} />
+          <KpiCard value={stats.totalClients}     label={t('dashboard.stats.total_clients')}     accent={colors.primary}                                                       onPress={() => router.push('/(app)/clients')} />
+          <KpiCard value={stats.activeClients}    label={t('dashboard.stats.active_clients')}    accent={colors.primary} sub={`${stats.totalClients > 0 ? Math.round(stats.activeClients / stats.totalClients * 100) : 0}%`} />
+          <KpiCard value={stats.newThisMonth}     label={t('dashboard.stats.this_month')}        accent={colors.secondary} />
+          <KpiCard value={stats.pendingFollowups} label={t('dashboard.stats.pending_followups')} accent={overdueToday.length > 0 ? colors.danger : colors.textSecondary}       onPress={() => router.push('/(app)/followups')} />
         </View>
 
         <View style={isWide ? styles.twoCol : undefined}>
@@ -263,73 +262,78 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: colors.bg },
-  content:      { padding: 16, gap: 20, paddingBottom: 48 },
-  contentWide:  { padding: 24, gap: 24 },
+  content:      { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 48, gap: 24 },
+  contentWide:  { paddingHorizontal: 28, paddingTop: 28, gap: 28 },
 
-  hero:         { backgroundColor: colors.card, borderRadius: 16, padding: 20, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  heroGreeting: { fontSize: 22, fontWeight: '800', color: colors.text },
-  heroDate:     { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  quickActions: { flexDirection: 'row', gap: 10 },
-  qaBtn:        { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, gap: 4 },
-  qaIcon:       { fontSize: 18 },
-  qaLabel:      { fontSize: 12, fontWeight: '700' },
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  hero:          { gap: 20 },
+  heroTextBlock: { gap: 3 },
+  heroDate:      { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary, textTransform: 'capitalize' },
+  heroGreeting:  { fontSize: 30, fontFamily: fonts.display, color: colors.primary, lineHeight: 38 },
+  quickActions:  { flexDirection: 'row', gap: 10 },
+  qaBtn:         { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, gap: 6 },
+  qaIcon:        { fontSize: 20 },
+  qaLabel:       { fontSize: 11, fontFamily: fonts.bold, letterSpacing: 0.2 },
 
-  kpiRow:     { flexDirection: 'row', gap: 10 },
-  kpiRowWide: { gap: 14 },
-  kpiCard:    { flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 14, borderTopWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, gap: 4 },
-  kpiIcon:    { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  kpiIconText:{ fontSize: 18 },
-  kpiValue:   { fontSize: 26, fontWeight: '900', letterSpacing: -0.5 },
-  kpiLabel:   { fontSize: 11, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.3 },
-  kpiSub:     { fontSize: 12, color: colors.textTertiary },
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  kpiRow:     { flexDirection: 'row', gap: 8 },
+  kpiRowWide: { gap: 12 },
+  kpiCard:    { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, borderLeftWidth: 3, shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2, gap: 3 },
+  kpiValue:   { fontSize: 28, fontFamily: fonts.display, lineHeight: 34, letterSpacing: -0.5 },
+  kpiLabel:   { fontSize: 10, fontFamily: fonts.medium, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  kpiSub:     { fontSize: 11, fontFamily: fonts.bold, opacity: 0.6 },
 
-  sectionRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle:{ fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  badge:       { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
-  badgeText:   { fontSize: 11, color: '#fff', fontWeight: '700' },
-  seeAll:      { fontSize: 13, color: colors.primary, fontWeight: '500' },
+  // ── Section header ────────────────────────────────────────────────────────
+  sectionRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sectionAccent: { width: 3, height: 18, borderRadius: 2 },
+  sectionTitle:  { fontSize: 13, fontFamily: fonts.bold, color: colors.text, textTransform: 'uppercase', letterSpacing: 0.7 },
+  badge:         { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
+  badgeText:     { fontSize: 11, color: '#fff', fontFamily: fonts.bold },
+  seeAll:        { fontSize: 12, fontFamily: fonts.medium },
 
   block: { gap: 0 },
 
-  timeline: { gap: 0 },
-  apptItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 6 },
-  apptTimeCol: { alignItems: 'center', width: 44, paddingTop: 8 },
-  apptTime:   { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
-  apptDot:    { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 4 },
-  apptLine:   { flex: 1, width: 1, backgroundColor: colors.border, minHeight: 20, marginTop: 2 },
-  apptCard:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 10, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
-  apptInfo:   { flex: 1 },
-  apptClient: { fontSize: 14, fontWeight: '600', color: colors.text },
-  apptSub:    { fontSize: 12, color: colors.textSecondary },
-  recapBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.successLight },
-  recapText:  { fontSize: 11, fontWeight: '600', color: colors.success },
-  recapPending:{ backgroundColor: colors.warningLight },
+  // ── Appointments timeline ─────────────────────────────────────────────────
+  timeline:    { gap: 0 },
+  apptItem:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 4 },
+  apptTimeCol: { alignItems: 'center', width: 48, paddingTop: 10 },
+  apptTime:    { fontSize: 11, fontFamily: fonts.bold, color: colors.primary, textAlign: 'center' },
+  apptDot:     { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 5, borderWidth: 2, borderColor: colors.primaryLight },
+  apptLine:    { flex: 1, width: 1, backgroundColor: colors.border, minHeight: 24, marginTop: 2 },
+  apptCard:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  apptInfo:    { flex: 1 },
+  apptClient:  { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  apptSub:     { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary },
+  recapBadge:  { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.successLight },
+  recapText:   { fontSize: 10, fontFamily: fonts.bold, color: colors.success },
+  recapPending:{ backgroundColor: colors.secondaryLight },
 
+  // ── Follow-ups ────────────────────────────────────────────────────────────
   fuList:    { gap: 6 },
-  fuItem:    { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
+  fuItem:    { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   fuAccent:  { width: 4, alignSelf: 'stretch' },
   fuContent: { flex: 1, paddingVertical: 12, paddingHorizontal: 12, gap: 2 },
-  fuClient:  { fontSize: 14, fontWeight: '600', color: colors.text },
-  fuTitle:   { fontSize: 12, color: colors.textSecondary },
+  fuClient:  { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  fuTitle:   { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary },
   fuMeta:    { paddingRight: 14 },
-  fuDate:    { fontSize: 13, fontWeight: '700' },
+  fuDate:    { fontSize: 13, fontFamily: fonts.bold },
 
-  lrpList:      { gap: 6 },
-  lrpItem:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 10, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
-  lrpInfo:      { flex: 1, gap: 2 },
-  lrpName:      { fontSize: 14, fontWeight: '600', color: colors.text },
-  lrpDate:      { fontSize: 12, color: colors.textSecondary },
-  daysChip:     { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, backgroundColor: '#f0f0ff' },
-  daysChipUrgent:{ backgroundColor: colors.dangerLight },
-  daysText:     { fontSize: 12, fontWeight: '700', color: '#6366f1' },
-  daysTextUrgent:{ color: colors.danger },
+  // ── LRP ───────────────────────────────────────────────────────────────────
+  lrpList:  { gap: 6 },
+  lrpItem:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  lrpInfo:  { flex: 1, gap: 2 },
+  lrpName:  { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  lrpDate:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary },
+  daysChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  daysText: { fontSize: 12, fontFamily: fonts.bold },
 
-  emptyDay:      { alignItems: 'center', paddingVertical: 40, gap: 8, backgroundColor: colors.card, borderRadius: 16 },
-  emptyDayEmoji: { fontSize: 36 },
-  emptyDayTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  emptyDaySub:   { fontSize: 13, color: colors.textSecondary },
+  // ── Empty day ─────────────────────────────────────────────────────────────
+  emptyDay:      { alignItems: 'center', paddingVertical: 44, gap: 10, backgroundColor: colors.card, borderRadius: 16 },
+  emptyDayEmoji: { fontSize: 40 },
+  emptyDayTitle: { fontSize: 18, fontFamily: fonts.display, color: colors.primary },
+  emptyDaySub:   { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 20 },
 
   twoCol: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
-  col:    { flex: 1, gap: 20 },
+  col:    { flex: 1, gap: 24 },
 })
