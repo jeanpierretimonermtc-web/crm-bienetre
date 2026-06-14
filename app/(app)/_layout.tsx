@@ -92,6 +92,7 @@ export default function AppLayout() {
   const { width } = useWindowDimensions()
   const pathname = usePathname()
   const isWide = width >= SIDEBAR_BREAKPOINT
+  const isRootRoute = pathname === '/' || pathname === '/clients' || pathname === '/appointments' || pathname === '/followups'
 
   if (loading) return null
   if (!session) return <Redirect href="/(auth)/login" />
@@ -103,7 +104,7 @@ export default function AppLayout() {
     <View style={[styles.root, isWide && styles.rootWide]}>
       {isWide
         ? <Sidebar pathname={pathname} />
-        : (
+        : isRootRoute && (
           <View style={styles.mobileHeader}>
             <View style={styles.mobileHeaderLeft}>
               <Text style={styles.mobileHeaderLeaf}>🌿</Text>
