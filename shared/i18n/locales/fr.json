@@ -80,13 +80,21 @@
   },
   "followups": {
     "title": "Relances",
+    "subtitle": "Suivi des accompagnements clients",
     "today": "Aujourd'hui",
     "overdue": "En retard",
     "upcoming": "À venir",
+    "none_overdue": "Aucune relance en retard",
+    "none_today": "Aucune relance aujourd'hui",
+    "none_upcoming": "Aucune relance à venir",
     "none": "Aucune relance en attente",
     "add": "Ajouter une relance",
     "done": "Terminée",
-    "title_label": "Titre"
+    "title_label": "Titre",
+    "late_day": "Retard de {{days}} jour",
+    "late_days": "Retard de {{days}} jours",
+    "ahead_day": "Dans {{days}} jour",
+    "ahead_days": "Dans {{days}} jours"
   },
   "notes": {
     "title": "Notes",

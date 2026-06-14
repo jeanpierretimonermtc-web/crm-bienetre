@@ -80,13 +80,21 @@
   },
   "followups": {
     "title": "Follow-ups",
+    "subtitle": "Client follow-up tracking",
     "today": "Today",
     "overdue": "Overdue",
     "upcoming": "Upcoming",
+    "none_overdue": "No overdue follow-ups",
+    "none_today": "Nothing due today",
+    "none_upcoming": "No upcoming follow-ups",
     "none": "No pending follow-ups",
     "add": "Add a follow-up",
     "done": "Done",
-    "title_label": "Title"
+    "title_label": "Title",
+    "late_day": "{{days}} day late",
+    "late_days": "{{days}} days late",
+    "ahead_day": "In {{days}} day",
+    "ahead_days": "In {{days}} days"
   },
   "notes": {
     "title": "Notes",
