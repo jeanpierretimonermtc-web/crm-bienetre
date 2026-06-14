@@ -7,6 +7,10 @@
     "name_preview": "Displayed as",
     "error_name_required": "First name or last name required",
     "error_session": "Session expired, please log in again",
+    "filter_all": "All",
+    "last_rdv": "Last appt.",
+    "no_rdv": "No appointments yet",
+    "view": "View",
     "status": {
       "prospect": "Prospect",
       "active": "Active",

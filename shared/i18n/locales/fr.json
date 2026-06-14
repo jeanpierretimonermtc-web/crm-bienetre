@@ -7,6 +7,10 @@
     "name_preview": "Affiché",
     "error_name_required": "Prénom ou Nom requis",
     "error_session": "Session expirée, reconnectez-vous",
+    "filter_all": "Tous",
+    "last_rdv": "Dernier RDV",
+    "no_rdv": "Aucun rendez-vous",
+    "view": "Voir",
     "status": {
       "prospect": "Prospect",
       "active": "Actif",
