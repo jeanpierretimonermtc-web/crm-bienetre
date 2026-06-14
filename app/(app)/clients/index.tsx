@@ -180,14 +180,14 @@ export default function ClientsScreen() {
             const active = statusFilter === s
             const cs = s === 'all' ? null : (statusColors[s] ?? null)
             const bg     = active
-              ? (cs ? cs.bg         : colors.primaryAction)
-              : (cs ? cs.bg + '55'  : colors.primaryLight)
+              ? (cs ? cs.bg    : '#2563eb')
+              : (cs ? cs.bg + '55' : '#dbeafe')
             const txtClr = active
-              ? (cs ? cs.text       : '#ffffff')
-              : (cs ? cs.text       : colors.textSecondary)
+              ? (cs ? cs.text  : '#ffffff')
+              : (cs ? cs.text  : '#1e40af')
             const border = active
-              ? (cs ? cs.text       : colors.primaryAction)
-              : (cs ? cs.bg         : colors.border)
+              ? (cs ? cs.text  : '#2563eb')
+              : (cs ? cs.bg    : '#bfdbfe')
             return (
               <TouchableOpacity
                 style={[styles.chip, { backgroundColor: bg, borderColor: border }]}

@@ -63,6 +63,6 @@ export const statusColors: Record<string, { bg: string; text: string }> = {
   prospect: { bg: '#ffdcbe',  text: '#c17b2a' },   // light amber / warm amber text
   active:   { bg: '#caecbc',  text: '#4a6741' },   // primary-fixed / primaryAction
   inactive: { bg: '#e7e1dc',  text: '#7a7468' },   // surface-variant / muted text
-  vip:      { bg: '#dee4dc',  text: '#434944' },   // tertiary-fixed / tertiary
-  advisor:  { bg: '#caecbc',  text: '#334f2b' },   // primary-fixed / primary dark
+  vip:      { bg: '#fef9c3',  text: '#854d0e' },   // yellow-100 / yellow-800
+  advisor:  { bg: '#fce7f3',  text: '#be185d' },   // pink-100 / pink-700
 }
