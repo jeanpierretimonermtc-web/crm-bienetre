@@ -143,7 +143,12 @@
       "overdue": "overdue",
       "sessions_since": "Since the 1st",
       "lrp_delta": "To monitor"
-    }
+    },
+    "demo_title": "Explore Lumora with demo data",
+    "demo_subtitle": "Discover all features with realistic client examples.",
+    "demo_load": "Try it",
+    "demo_active": "Demo mode active",
+    "demo_delete": "Delete demo"
   },
   "common": {
     "save": "Save",

@@ -1,10 +1,12 @@
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, RefreshControl, useWindowDimensions } from 'react-native'
+import { useState, useEffect, useCallback } from 'react'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useDashboardStats, useUpcomingLrp } from '@/features/dashboard/useDashboard'
 import { useUpcomingAppointments } from '@/features/appointments/useAppointments'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
+import { loadDemoData, deleteDemoData, getDemoClientsCount } from '@/features/demo/demoService'
 import { Avatar } from '@/shared/components/ui/Avatar'
 import { colors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
@@ -194,6 +196,48 @@ export default function DashboardScreen() {
     ? t('dashboard.greeting_afternoon')
     : t('dashboard.greeting_evening')
 
+  // ── Demo data ──────────────────────────────────────────────────────────────
+  const [demoCount, setDemoCount]     = useState(0)
+  const [demoLoading, setDemoLoading] = useState(false)
+
+  const checkDemo = useCallback(async () => {
+    if (!session) return
+    setDemoCount(await getDemoClientsCount(session.user.id))
+  }, [session])
+
+  useEffect(() => { if (!statsLoading) checkDemo() }, [statsLoading, checkDemo])
+
+  async function handleLoadDemo() {
+    if (!session) return
+    setDemoLoading(true)
+    try {
+      await loadDemoData(session.user.id)
+      await checkDemo()
+      refreshAll()
+    } catch (e) {
+      console.error('[loadDemo]', e)
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
+  async function handleDeleteDemo() {
+    if (!session) return
+    setDemoLoading(true)
+    try {
+      await deleteDemoData(session.user.id)
+      setDemoCount(0)
+      refreshAll()
+    } catch (e) {
+      console.error('[deleteDemo]', e)
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
+  const showLoadDemo   = !statsLoading && stats.totalClients === 0
+  const showDemoActive = !showLoadDemo && demoCount > 0
+
   const todayStr = new Date().toISOString().split('T')[0]
   const todayAppts    = appointments.filter(a => a.appointment_date.startsWith(todayStr))
   const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 5)
@@ -228,6 +272,44 @@ export default function DashboardScreen() {
             <QuickCard icon="📅" label={t('dashboard.quick_appointment')} onPress={() => router.push('/(app)/appointments')} />
           </View>
         </View>
+
+        {/* ── Demo: load card ───────────────────────────── */}
+        {showLoadDemo && (
+          <View style={styles.demoCard}>
+            <View style={styles.demoCardLeft}>
+              <Text style={styles.demoCardTitle}>
+                {t('dashboard.demo_title')}
+              </Text>
+              <Text style={styles.demoCardSub}>
+                {t('dashboard.demo_subtitle')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.demoLoadBtn}
+              onPress={handleLoadDemo}
+              activeOpacity={0.8}
+              disabled={demoLoading}
+            >
+              {demoLoading
+                ? <ActivityIndicator size="small" color="#ffffff" />
+                : <Text style={styles.demoLoadBtnText}>{t('dashboard.demo_load')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Demo: active banner ────────────────────────── */}
+        {showDemoActive && (
+          <View style={styles.demoBanner}>
+            <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
+            <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
+              {demoLoading
+                ? <ActivityIndicator size="small" color={colors.textSecondary} />
+                : <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
@@ -413,4 +495,35 @@ const styles = StyleSheet.create({
   emptyDayEmoji: { fontSize: 40 },
   emptyDayTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.primary },
   emptyDaySub:   { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 20 },
+
+  // ── Demo ──────────────────────────────────────────────────────────────────
+  demoCard: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.primaryLighter,
+  },
+  demoCardLeft:    { flex: 1, gap: 3 },
+  demoCardTitle:   { fontSize: 14, fontFamily: fonts.semibold, color: colors.primary },
+  demoCardSub:     { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 17 },
+  demoLoadBtn:     { backgroundColor: colors.primaryAction, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, minWidth: 80, alignItems: 'center' },
+  demoLoadBtnText: { fontSize: 13, fontFamily: fonts.semibold, color: '#ffffff' },
+
+  demoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  demoBannerText:   { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  demoBannerDelete: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
 })
