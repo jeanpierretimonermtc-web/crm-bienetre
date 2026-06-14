@@ -8,6 +8,14 @@
     "error_name_required": "First name or last name required",
     "error_session": "Session expired, please log in again",
     "filter_all": "All",
+    "filter_labels": {
+      "all": "All",
+      "active": "Active",
+      "prospect": "Prospects",
+      "inactive": "Inactive",
+      "vip": "VIP",
+      "advisor": "Advisors"
+    },
     "last_rdv": "Last appt.",
     "no_rdv": "No appointments yet",
     "view": "View",

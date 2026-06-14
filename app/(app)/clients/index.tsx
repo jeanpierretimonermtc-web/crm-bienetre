@@ -181,7 +181,7 @@ export default function ClientsScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.chipText, statusFilter === s && styles.chipTextActive]}>
-                {s === 'all' ? t('clients.filter_all') : t(`clients.status.${s}`)}
+                {t(`clients.filter_labels.${s}`)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
 
   // ── Filter chips ───────────────────────────────────────────────────────────
   filtersScroll:  { flexGrow: 0 },
-  filtersContent: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 14 },
+  filtersContent: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 24, paddingBottom: 14 },
   chip:           { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   chipActive:     { backgroundColor: colors.primaryAction, borderColor: colors.primaryAction },
   chipText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },

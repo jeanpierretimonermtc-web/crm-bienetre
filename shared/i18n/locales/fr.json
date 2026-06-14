@@ -8,6 +8,14 @@
     "error_name_required": "Prénom ou Nom requis",
     "error_session": "Session expirée, reconnectez-vous",
     "filter_all": "Tous",
+    "filter_labels": {
+      "all": "Tous",
+      "active": "Actifs",
+      "prospect": "Prospects",
+      "inactive": "Inactifs",
+      "vip": "VIP",
+      "advisor": "Conseillères"
+    },
     "last_rdv": "Dernier RDV",
     "no_rdv": "Aucun rendez-vous",
     "view": "Voir",
