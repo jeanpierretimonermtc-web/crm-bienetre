@@ -73,7 +73,7 @@ export interface Followup {
   client_id: string
   user_id: string
   title: string | null
-  content: string
+  content: string | null
   due_date: string
   done: boolean
   created_at: string
