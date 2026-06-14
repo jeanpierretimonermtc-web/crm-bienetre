@@ -96,7 +96,7 @@ function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
           onPress={() => router.push(`/(app)/clients/${client.id}/appointments`)}
           activeOpacity={0.8}
         >
-          <Text style={styles.btnFillText}>+ RDV</Text>
+          <Text style={styles.btnFillText}>{t('clients.add_appt')}</Text>
         </TouchableOpacity>
       </View>
     </View>

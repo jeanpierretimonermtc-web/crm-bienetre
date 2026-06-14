@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -10,6 +10,7 @@ import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Button } from '@/shared/components/ui/Button'
 import { Card } from '@/shared/components/ui/Card'
 import { colors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 import type { Recommendation } from '@/shared/lib/types'
 
 export default function ClientRecommendationsScreen() {
@@ -23,6 +24,7 @@ export default function ClientRecommendationsScreen() {
   const [reason, setReason] = useState('')
   const [pickedCatalog, setPickedCatalog] = useState<CatalogPickerResult | null>(null)
   const [saving, setSaving] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
   function handlePickerSelect(result: CatalogPickerResult) {
     setProductName(result.productName)
@@ -58,10 +60,9 @@ export default function ClientRecommendationsScreen() {
   }
 
   async function handleDelete(recId: string) {
-    Alert.alert(t('common.delete'), t('common.confirm_delete'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: async () => { await deleteRecommendation(recId); refresh() } },
-    ])
+    await deleteRecommendation(recId)
+    setConfirmId(null)
+    refresh()
   }
 
   return (
@@ -81,7 +82,6 @@ export default function ClientRecommendationsScreen() {
                 <Card style={styles.recCard}>
                   <View style={styles.recRow}>
                     <View style={styles.recInfo}>
-                      {/* Catalog badge */}
                       {item.catalog && (
                         <View style={[styles.catalogBadge, { backgroundColor: item.catalog.color + '18' }]}>
                           <Text style={styles.catalogIcon}>{item.catalog.icon}</Text>
@@ -89,17 +89,31 @@ export default function ClientRecommendationsScreen() {
                         </View>
                       )}
                       <Text style={styles.recName}>{item.product_name}</Text>
-                      {item.reason && <Text style={styles.recReason}>{item.reason}</Text>}
+                      {item.reason ? <Text style={styles.recReason}>{item.reason}</Text> : null}
                     </View>
                     <View style={styles.recActions}>
-                      <TouchableOpacity style={[styles.statusBtn, item.status === 'purchased' && styles.statusBtnActive]} onPress={() => handleToggle(item)}>
+                      <TouchableOpacity
+                        style={[styles.statusBtn, item.status === 'purchased' && styles.statusBtnActive]}
+                        onPress={() => handleToggle(item)}
+                      >
                         <Text style={[styles.statusBtnText, item.status === 'purchased' && styles.statusBtnTextActive]}>
                           {t(`recommendations.${item.status}`)}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                        <Text style={styles.deleteIcon}>🗑</Text>
-                      </TouchableOpacity>
+                      {confirmId === item.id ? (
+                        <View style={styles.inlineConfirm}>
+                          <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmId(null)}>
+                            <Text style={styles.confirmCancelText}>{t('common.cancel')}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.confirmDeleteBtn} onPress={() => handleDelete(item.id)}>
+                            <Text style={styles.confirmDeleteText}>{t('common.delete')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity onPress={() => setConfirmId(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Text style={styles.deleteIcon}>🗑</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 </Card>
@@ -122,7 +136,7 @@ export default function ClientRecommendationsScreen() {
           <View style={styles.productRow}>
             <TextInput
               style={[styles.productInput, { flex: 1 }]}
-              placeholder="Produit"
+              placeholder={t('recommendations.product_placeholder')}
               value={productName}
               onChangeText={text => { setProductName(text); setPickedCatalog(null) }}
               placeholderTextColor={colors.textTertiary}
@@ -132,8 +146,8 @@ export default function ClientRecommendationsScreen() {
               onPress={() => setShowPicker(true)}
             >
               {pickedCatalog
-                ? <Text style={{ fontSize: 13, color: pickedCatalog.catalogColor, fontWeight: '600' }}>{pickedCatalog.catalogIcon} {pickedCatalog.catalogName}</Text>
-                : <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>📦 Catalogue</Text>
+                ? <Text style={{ fontSize: 13, color: pickedCatalog.catalogColor, fontFamily: fonts.semibold }}>{pickedCatalog.catalogIcon} {pickedCatalog.catalogName}</Text>
+                : <Text style={{ fontSize: 13, color: colors.primary, fontFamily: fonts.semibold }}>📦 {t('recommendations.catalog')}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -167,26 +181,32 @@ const styles = StyleSheet.create({
   addBtnText:         { color: '#fff', fontSize: 22, lineHeight: 28 },
 
   recCard:            { },
-  recRow:             { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  recRow:             { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   recInfo:            { flex: 1, gap: 4 },
   catalogBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   catalogIcon:        { fontSize: 11 },
-  catalogName:        { fontSize: 11, fontWeight: '600' },
-  recName:            { fontSize: 15, fontWeight: '600', color: colors.text },
-  recReason:          { fontSize: 13, color: colors.textSecondary },
-  recActions:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  catalogName:        { fontSize: 11, fontFamily: fonts.semibold },
+  recName:            { fontSize: 15, fontFamily: fonts.semibold, color: colors.text },
+  recReason:          { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary },
+  recActions:         { flexDirection: 'column', alignItems: 'flex-end', gap: 8 },
   statusBtn:          { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
   statusBtnActive:    { backgroundColor: colors.successLight, borderColor: colors.success },
-  statusBtnText:      { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+  statusBtnText:      { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
   statusBtnTextActive:{ color: colors.success },
   deleteIcon:         { fontSize: 16 },
 
+  inlineConfirm:      { flexDirection: 'column', gap: 4, alignItems: 'flex-end' },
+  confirmCancelBtn:   { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: colors.border },
+  confirmCancelText:  { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
+  confirmDeleteBtn:   { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: colors.danger },
+  confirmDeleteText:  { fontSize: 12, fontFamily: fonts.semibold, color: '#ffffff' },
+
   modalHeader:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  modalTitle:         { fontSize: 17, fontWeight: '600', color: colors.text },
-  modalCancel:        { fontSize: 16, color: colors.primary },
+  modalTitle:         { fontSize: 17, fontFamily: fonts.semibold, color: colors.text },
+  modalCancel:        { fontSize: 16, fontFamily: fonts.body, color: colors.primary },
   modalContent:       { padding: 16 },
   productRow:         { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  productInput:       { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: colors.card, color: colors.text },
+  productInput:       { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, fontFamily: fonts.body, backgroundColor: colors.card, color: colors.text },
   catalogBtn:         { borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
-  reasonInput:        { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: colors.card, color: colors.text, minHeight: 80 },
+  reasonInput:        { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, fontFamily: fonts.body, backgroundColor: colors.card, color: colors.text, minHeight: 80 },
 })

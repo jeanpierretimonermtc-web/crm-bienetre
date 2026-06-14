@@ -74,7 +74,7 @@ function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: bool
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : date.toLocaleDateString(locale, { weekday: 'short' })
   const timeSub = isToday
-    ? `RDV ${appt.appointment_number}`
+    ? t('appointments.number', { number: appt.appointment_number })
     : date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
 
   const type = appt.themes_discussed?.split(/\n/)[0]?.trim()
@@ -168,7 +168,7 @@ function LrpCard({ client }: { client: Client }) {
       </View>
       {urgent && (
         <View style={[styles.statusBadge, { backgroundColor: colors.dangerLight }]}>
-          <Text style={[styles.statusText, { color: colors.danger }]}>Urgent</Text>
+          <Text style={[styles.statusText, { color: colors.danger }]}>{t('common.urgent')}</Text>
         </View>
       )}
     </TouchableOpacity>

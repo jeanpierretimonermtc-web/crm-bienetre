@@ -18,6 +18,7 @@
     },
     "last_rdv": "Dernier RDV",
     "no_rdv": "Aucun rendez-vous",
+    "add_appt": "+ RDV",
     "view": "Voir",
     "profile_title": "Fiche Client",
     "tab_overview": "Aperçu",
@@ -94,7 +95,10 @@
     "late_day": "Retard de {{days}} jour",
     "late_days": "Retard de {{days}} jours",
     "ahead_day": "Dans {{days}} jour",
-    "ahead_days": "Dans {{days}} jours"
+    "ahead_days": "Dans {{days}} jours",
+    "description": "Description",
+    "due_date": "Échéance",
+    "error_title_or_desc": "Saisissez un titre ou une description"
   },
   "notes": {
     "title": "Notes",
@@ -107,7 +111,9 @@
     "reason": "Raison",
     "advised": "Conseillé",
     "purchased": "Acheté",
-    "empty": "Aucune recommandation"
+    "empty": "Aucune recommandation",
+    "product_placeholder": "Nom du produit",
+    "catalog": "Catalogue"
   },
   "dashboard": {
     "title": "Aujourd'hui",
@@ -169,7 +175,8 @@
     "yes": "Oui",
     "no": "Non",
     "confirm_delete": "Êtes-vous sûr de vouloir supprimer ceci ?",
-    "optional": "facultatif"
+    "optional": "facultatif",
+    "urgent": "Urgent"
   },
   "settings": {
     "title": "Paramètres",
