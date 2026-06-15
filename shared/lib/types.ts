@@ -20,6 +20,13 @@ export interface CatalogProduct {
   sku: string | null
   name: string
   category: string | null
+  description: string | null
+  unit: string | null
+  retail_price_eur: number | null
+  wholesale_price_eur: number | null
+  pv: number | null
+  latin_name: string | null
+  image_url: string | null
   created_at: string
 }
 

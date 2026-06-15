@@ -1,68 +1,67 @@
-// Lumora Design System — M3 earth-tone palette
-// Source of truth: brand spec (sage green + warm amber + off-white)
+// Caelys Design System — Night × Azure × Dawn premium palette
 
 export const colors = {
-  // ── Primary — Sage Green ──────────────────────────────────────────────────
-  primary:              '#334f2b',   // darkest; text/icon on light surface
-  primaryAction:        '#4a6741',   // buttons & active UI (primary-container)
-  primaryLight:         '#caecbc',   // badge bg, tinted surfaces (primary-fixed)
-  primaryLighter:       '#afd0a1',   // inverse-primary / subtle tint
-  onPrimary:            '#ffffff',
-  onPrimaryContainer:   '#c2e4b4',
+  // ── Brand primary — Night (deep navy) ────────────────────────────────────
+  primary:              '#1A2B4A',   // brand; logo, header, primary text
+  primaryAction:        '#3570B5',   // CTA buttons, links, focus (azure AA-compliant)
+  primaryLight:         '#DDE8F5',   // azure-light — badge bg, tinted surfaces
+  primaryLighter:       '#E8EDF5',   // night-light — hover, subtle tint
+  onPrimary:            '#FFFFFF',
+  onPrimaryContainer:   '#DDE8F5',
 
-  // ── Secondary — Warm Amber ────────────────────────────────────────────────
-  secondary:            '#8a5100',
-  secondaryContainer:   '#fdad58',   // amber fill (secondary-container)
-  secondaryLight:       '#ffdcbe',   // light amber bg (secondary-fixed)
-  onSecondary:          '#ffffff',
-  onSecondaryContainer: '#724100',
+  // ── Accent — Dawn (warm gold) ─────────────────────────────────────────────
+  secondary:            '#C9913D',   // dawn gold — stats, highlight badges
+  secondaryContainer:   '#E0A84A',   // lighter dawn fill
+  secondaryLight:       '#FDF3E3',   // dawn-light — badge bg, warning surface
+  onSecondary:          '#FFFFFF',
+  onSecondaryContainer: '#7A5020',
 
-  // ── Tertiary — Muted Sage Gray ────────────────────────────────────────────
-  tertiary:             '#434944',
-  tertiaryContainer:    '#5b615b',
-  tertiaryLight:        '#dee4dc',   // tertiary-fixed
-  onTertiary:           '#ffffff',
-  onTertiaryContainer:  '#d6dcd4',
+  // ── Tertiary — Muted blue-gray ────────────────────────────────────────────
+  tertiary:             '#5C7490',
+  tertiaryContainer:    '#7A8FAA',
+  tertiaryLight:        '#EAF0F7',   // mist
+  onTertiary:           '#FFFFFF',
+  onTertiaryContainer:  '#DDE8F5',
 
-  // ── Semantic aliases (success / warning / danger) ─────────────────────────
-  success:              '#4a6741',   // = primaryAction
-  successLight:         '#caecbc',   // = primaryLight
-  warning:              '#8a5100',   // = secondary
-  warningLight:         '#ffdcbe',   // = secondaryLight
-  danger:               '#ba1a1a',
-  dangerLight:          '#ffdad6',   // error-container
+  // ── Semantic ──────────────────────────────────────────────────────────────
+  success:              '#2E7D32',
+  successLight:         '#E8F5E9',
+  warning:              '#C9913D',   // = dawn
+  warningLight:         '#FDF3E3',   // = dawn-light
+  danger:               '#C62828',
+  dangerLight:          '#FFEBEE',
 
-  // ── Legacy aliases — kept for backward compat ─────────────────────────────
-  purple:               '#434944',   // = tertiary
-  purpleLight:          '#dee4dc',   // = tertiaryLight
-  onSurfaceVariant:     '#434840',   // = textSecondary (used in Android components)
+  // ── Legacy aliases (backward compat) ─────────────────────────────────────
+  purple:               '#7A8FAA',
+  purpleLight:          '#EAF0F7',
+  onSurfaceVariant:     '#7A8FAA',
 
   // ── Surfaces ──────────────────────────────────────────────────────────────
-  bg:                      '#fff8f3',   // background / surface
-  surface:                 '#fff8f3',   // alias for bg
-  bgDim:                   '#dfd9d4',   // surface-dim
-  card:                    '#ffffff',   // surface-container-lowest
-  surfaceContainerLow:     '#f9f2ed',
-  surfaceContainer:        '#f3ede7',
-  surfaceContainerHigh:    '#ede7e2',
-  surfaceContainerHighest: '#e7e1dc',   // surface-variant
+  bg:                      '#F5F2ED',   // earth — page background
+  surface:                 '#F5F2ED',
+  bgDim:                   '#E8E4DD',
+  card:                    '#FFFFFF',   // white — card / modal surface
+  surfaceContainerLow:     '#F9F7F3',
+  surfaceContainer:        '#F5F2ED',   // earth
+  surfaceContainerHigh:    '#EAF0F7',   // mist — inputs, section headers
+  surfaceContainerHighest: '#DDE8F5',   // azure-light
 
   // ── Text ──────────────────────────────────────────────────────────────────
-  text:           '#1d1b18',   // on-surface
-  textSecondary:  '#434840',   // on-surface-variant
-  textTertiary:   '#73796f',   // outline
-  textInverse:    '#ffffff',
-  inverseText:    '#f6f0ea',   // inverse-on-surface
+  text:           '#1A2B4A',   // night — primary text
+  textSecondary:  '#7A8FAA',   // muted
+  textTertiary:   '#B0A99E',   // hint
+  textInverse:    '#FFFFFF',
+  inverseText:    '#E8EDF5',
 
   // ── Borders ───────────────────────────────────────────────────────────────
-  border:         '#c3c8bd',   // outline-variant
-  borderStrong:   '#73796f',   // outline
+  border:         '#DDD8CF',
+  borderStrong:   '#B0A99E',
 } as const
 
 export const statusColors: Record<string, { bg: string; text: string }> = {
-  prospect: { bg: '#ffdcbe',  text: '#c17b2a' },   // light amber / warm amber text
-  active:   { bg: '#caecbc',  text: '#4a6741' },   // primary-fixed / primaryAction
-  inactive: { bg: '#e7e1dc',  text: '#7a7468' },   // surface-variant / muted text
-  vip:      { bg: '#fef9c3',  text: '#854d0e' },   // yellow-100 / yellow-800
-  advisor:  { bg: '#fce7f3',  text: '#be185d' },   // pink-100 / pink-700
+  prospect: { bg: '#FDF3E3', text: '#A07530' },   // dawn-light / muted dawn
+  active:   { bg: '#DDE8F5', text: '#3570B5' },   // azure-light / azure
+  inactive: { bg: '#EAE6DF', text: '#7A8FAA' },   // warm gray / muted
+  vip:      { bg: '#1A2B4A', text: '#FFFFFF' },   // night inversé — prestige
+  advisor:  { bg: '#FCEEF5', text: '#C2185B' },   // rose dusty / rose profond
 }

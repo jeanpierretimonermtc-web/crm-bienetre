@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useDemoState } from '@/features/demo/DemoProvider'
 import { supabase } from '@/shared/lib/supabase'
+import { getCatalogs } from '@/features/catalogs/catalogService'
 import { Input } from '@/shared/components/ui/Input'
 import { colors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import i18n from '@/shared/i18n'
+import type { Catalog } from '@/shared/lib/types'
 
 const LANGUAGES = [
   { label: 'Français', value: 'fr' },
@@ -56,11 +58,14 @@ export default function ProfileScreen() {
   const [saveErr,  setSaveErr]  = useState('')
   const [showTz,   setShowTz]   = useState(false)
 
+  const [officialCatalogs, setOfficialCatalogs] = useState<Catalog[]>([])
+  const [activeSlugs, setActiveSlugs]           = useState<string[] | null>(null)
+
   useEffect(() => {
     if (!session) return
     supabase
       .from('profiles')
-      .select('full_name, specialty, locale, timezone, plan')
+      .select('full_name, specialty, locale, timezone, plan, active_catalog_slugs')
       .eq('id', session.user.id)
       .single()
       .then(({ data }) => {
@@ -70,9 +75,14 @@ export default function ProfileScreen() {
           setLocale(data.locale ?? 'fr')
           setTimezone(data.timezone ?? 'Europe/Paris')
           setPlan(data.plan ?? 'free')
+          setActiveSlugs((data as any).active_catalog_slugs ?? null)
         }
       })
       .finally(() => setLoading(false))
+
+    getCatalogs(session.user.id)
+      .then(all => setOfficialCatalogs(all.filter(c => c.type === 'official')))
+      .catch(console.error)
   }, [session])
 
   async function handleSave() {
@@ -95,6 +105,37 @@ export default function ProfileScreen() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function isCatalogActive(slug: string | null) {
+    if (!slug) return false
+    return !activeSlugs || activeSlugs.includes(slug)
+  }
+
+  async function toggleCatalog(slug: string) {
+    if (!session) return
+    const allSlugs = officialCatalogs.map(c => c.slug!).filter(Boolean)
+    let newSlugs: string[] | null
+
+    if (!activeSlugs) {
+      const updated = allSlugs.filter(s => s !== slug)
+      if (updated.length === 0) return
+      newSlugs = updated
+    } else if (activeSlugs.includes(slug)) {
+      const updated = activeSlugs.filter(s => s !== slug)
+      if (updated.length === 0) return
+      newSlugs = updated
+    } else {
+      const updated = [...activeSlugs, slug]
+      newSlugs = allSlugs.every(s => updated.includes(s)) ? null : updated
+    }
+
+    setActiveSlugs(newSlugs)
+    supabase
+      .from('profiles')
+      .update({ active_catalog_slugs: newSlugs })
+      .eq('id', session.user.id)
+      .then(({ error }) => { if (error) console.error('[profile.catalogs]', error) })
   }
 
   const currentTz  = TIMEZONES.find(tz => tz.value === timezone)
@@ -249,6 +290,35 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* ── Catalogues de produits ──────────────────────── */}
+        {officialCatalogs.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{t('settings.catalogs')}</Text>
+            <Text style={styles.sectionDesc}>{t('settings.catalogs_desc')}</Text>
+            <View style={styles.card}>
+              {officialCatalogs.map((cat, idx) => (
+                <View
+                  key={cat.id}
+                  style={[styles.catalogRow, idx > 0 && styles.catalogRowBorder]}
+                >
+                  <View style={[styles.catalogIcon, { backgroundColor: cat.color + '20' }]}>
+                    <Text style={styles.catalogIconEmoji}>{cat.icon}</Text>
+                  </View>
+                  <View style={styles.catalogInfo}>
+                    <Text style={styles.catalogName}>{cat.name}</Text>
+                  </View>
+                  <Switch
+                    value={isCatalogActive(cat.slug)}
+                    onValueChange={() => cat.slug && toggleCatalog(cat.slug)}
+                    trackColor={{ true: cat.color, false: colors.border }}
+                    thumbColor={colors.card}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* ── Abonnement ──────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('settings.subscription')}</Text>
@@ -297,7 +367,7 @@ export default function ProfileScreen() {
 
         {/* ── Footer ──────────────────────────────────────── */}
         <View style={styles.footer}>
-          <Text style={styles.version}>Lumora v1.0.0</Text>
+          <Text style={styles.version}>Caelys v1.0.0</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity><Text style={styles.footerLink}>{t('settings.privacy')}</Text></TouchableOpacity>
             <Text style={styles.footerDot}>·</Text>
@@ -409,6 +479,17 @@ const styles = StyleSheet.create({
   saveBtn:      { backgroundColor: colors.primaryAction, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnMuted: { backgroundColor: colors.primaryLighter },
   saveBtnText:  { fontSize: 15, fontFamily: fonts.semibold, color: '#ffffff' },
+
+  // ── Section description ─────────────────────────────────────────────────────
+  sectionDesc: { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, paddingHorizontal: 18, marginTop: -4 },
+
+  // ── Catalog toggles ─────────────────────────────────────────────────────────
+  catalogRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
+  catalogRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12, marginTop: 8 },
+  catalogIcon:      { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  catalogIconEmoji: { fontSize: 18 },
+  catalogInfo:      { flex: 1 },
+  catalogName:      { fontSize: 15, fontFamily: fonts.semibold, color: colors.text },
 
   // ── Display toggle ──────────────────────────────────────────────────────────
   switchRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },

@@ -119,6 +119,24 @@
     "product_placeholder": "Nom du produit",
     "catalog": "Catalogue"
   },
+  "catalog": {
+    "title": "Catalogue",
+    "search_placeholder": "Rechercher un produit...",
+    "all_categories": "Tous",
+    "recommend": "Recommander",
+    "recommend_title": "Recommander à un client",
+    "reason_placeholder": "Note facultative...",
+    "success": "Recommandation ajoutée",
+    "empty_products": "Aucun produit dans ce catalogue",
+    "empty_search": "Aucun résultat",
+    "products_count": "produits",
+    "detail": "Détail produit",
+    "retail": "Prix public",
+    "wholesale": "Prix membre",
+    "pv": "PV",
+    "latin_name": "Nom latin",
+    "format": "Format"
+  },
   "dashboard": {
     "title": "Aujourd'hui",
     "greeting_morning": "Bonjour",
@@ -162,7 +180,7 @@
       "sessions_since": "Depuis le 1er",
       "lrp_delta": "À surveiller"
     },
-    "demo_title": "Découvrez Lumora avec des données de démo",
+    "demo_title": "Découvrez Caelys avec des données de démo",
     "demo_subtitle": "Explorez toutes les fonctionnalités avec de vrais exemples de clients.",
     "demo_load": "Essayer",
     "demo_active": "Mode démo actif",
@@ -206,7 +224,9 @@
     "upgrade": "Mettre à niveau l'offre",
     "account": "Compte",
     "privacy": "Confidentialité",
-    "terms": "Conditions"
+    "terms": "Conditions",
+    "catalogs": "Catalogues de produits",
+    "catalogs_desc": "Sélectionnez les marques que vous distribuez"
   },
   "auth": {
     "login": "Se connecter",

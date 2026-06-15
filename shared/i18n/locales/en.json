@@ -119,6 +119,24 @@
     "product_placeholder": "Product name",
     "catalog": "Catalog"
   },
+  "catalog": {
+    "title": "Catalog",
+    "search_placeholder": "Search a product...",
+    "all_categories": "All",
+    "recommend": "Recommend",
+    "recommend_title": "Recommend to a client",
+    "reason_placeholder": "Optional note...",
+    "success": "Recommendation added",
+    "empty_products": "No products in this catalog",
+    "empty_search": "No results",
+    "products_count": "products",
+    "detail": "Product detail",
+    "retail": "Retail price",
+    "wholesale": "Member price",
+    "pv": "PV",
+    "latin_name": "Latin name",
+    "format": "Format"
+  },
   "dashboard": {
     "title": "Today",
     "greeting_morning": "Good morning",
@@ -162,7 +180,7 @@
       "sessions_since": "Since the 1st",
       "lrp_delta": "To monitor"
     },
-    "demo_title": "Explore Lumora with demo data",
+    "demo_title": "Explore Caelys with demo data",
     "demo_subtitle": "Discover all features with realistic client examples.",
     "demo_load": "Try it",
     "demo_active": "Demo mode active",
@@ -206,7 +224,9 @@
     "upgrade": "Upgrade plan",
     "account": "Account",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "catalogs": "Product catalogs",
+    "catalogs_desc": "Select the brands you distribute"
   },
   "auth": {
     "login": "Log in",

@@ -1,10 +1,10 @@
 @AGENTS.md
 
-# Lumora — CRM SaaS pour praticiens du bien-être
+# Caelys — CRM SaaS pour praticiens du bien-être
 
 ## Produit
 
-**Lumora** est un CRM SaaS multiplateforme (iOS / Android / Web) destiné aux praticiens du bien-être : naturopathes, thérapeutes MTC, distributeurs DoTerra/Zinzino, coachs, etc.
+**Caelys** est un CRM SaaS multiplateforme (iOS / Android / Web) destiné aux praticiens du bien-être : naturopathes, thérapeutes MTC, distributeurs DoTerra/Zinzino, coachs, etc.
 
 - **Production** : https://crm-bienetre.vercel.app
 - **GitHub** : https://github.com/jeanpierretimonermtc-web/crm-bienetre.git
@@ -167,7 +167,7 @@ Le build Vercel exécute `npx expo export --platform web` → dossier `dist/`.
 
 Les produits à recommander aux clients viennent de **catalogues** :
 
-- **Officiels** (`type='official'`, `user_id=null`) : maintenus par Lumora, visibles par tous
+- **Officiels** (`type='official'`, `user_id=null`) : maintenus par Caelys, visibles par tous
   - `slug='doterra'` : 52 produits seedés
   - À venir : `slug='zinzino'`, etc.
 - **Custom** (`type='custom'`, `user_id=X`) : créés par le praticien
