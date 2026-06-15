@@ -77,7 +77,11 @@
     "solutions": "Solutions proposed",
     "recap_sent": "Summary sent",
     "next_date": "Next appointment",
-    "empty": "No appointments yet"
+    "empty": "No appointments yet",
+    "time": "Time",
+    "select_client": "Select a client",
+    "error_client_required": "Please select a client",
+    "error_date_required": "Date is required"
   },
   "followups": {
     "title": "Follow-ups",

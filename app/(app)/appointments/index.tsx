@@ -15,7 +15,7 @@ import type { AppointmentWithClient } from '@/shared/lib/types'
 const DAY_HOUR_H  = 64   // px per hour — day view
 const WEEK_HOUR_H = 38   // px per hour — week view
 const TIME_COL_W  = 44   // px — time labels column
-const WEEK_COL_W  = 72   // px — each day column in week view
+const MIN_weekColW = 72 // minimum px per day column in week view
 const START_HOUR  = 8
 const END_HOUR    = 20
 const DURATION_MIN = 60
@@ -100,6 +100,11 @@ export default function AgendaScreen() {
 
   useEffect(() => { fetchWeek() }, [fetchWeek])
 
+  // ── Responsive week column width ──────────────────────────────────────────
+  const sidebarW  = screenW >= 768 ? 240 : 0
+  const weekColW  = Math.max(MIN_weekColW, Math.floor((screenW - sidebarW - TIME_COL_W - 4) / 7))
+  const totalGridW = 7 * weekColW
+
   // ── Derived ───────────────────────────────────────────────────────────────
   const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const dayAppts  = weekAppts.filter(a => isSameDay(new Date(a.appointment_date), selectedDay))
@@ -138,7 +143,6 @@ export default function AgendaScreen() {
 
   // ─── WEEK VIEW ─────────────────────────────────────────────────────────────
   const GRID_H = (END_HOUR - START_HOUR) * WEEK_HOUR_H
-  const TOTAL_GRID_W = 7 * WEEK_COL_W
 
   function renderWeekGrid() {
     return (
@@ -154,7 +158,7 @@ export default function AgendaScreen() {
 
         {/* Scrollable day columns */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-          <View style={{ width: TOTAL_GRID_W, height: GRID_H, position: 'relative' }}>
+          <View style={{ width: totalGridW, height: GRID_H, position: 'relative' }}>
 
             {/* Horizontal hour lines */}
             {GRID_HOURS.map(h => (
@@ -167,7 +171,7 @@ export default function AgendaScreen() {
 
             {/* Vertical column dividers */}
             {weekDays.map((_, i) => (
-              <View key={i} style={[styles.weekColDiv, { left: i * WEEK_COL_W }]} />
+              <View key={i} style={[styles.weekColDiv, { left: i * weekColW }]} />
             ))}
 
             {/* Appointments per day */}
@@ -184,8 +188,8 @@ export default function AgendaScreen() {
                   <TouchableOpacity
                     key={appt.id}
                     style={[styles.weekApptBlock, {
-                      left: dayIdx * WEEK_COL_W + 3,
-                      width: WEEK_COL_W - 6,
+                      left: dayIdx * weekColW + 3,
+                      width: weekColW - 6,
                       top: topPx + 2,
                       height: hPx,
                       backgroundColor: pal.bg,
@@ -213,8 +217,8 @@ export default function AgendaScreen() {
                 key={`zone-${dayIdx}`}
                 style={{
                   position: 'absolute',
-                  left: dayIdx * WEEK_COL_W,
-                  width: WEEK_COL_W,
+                  left: dayIdx * weekColW,
+                  width: weekColW,
                   top: 0,
                   height: GRID_H,
                   zIndex: 0,
@@ -236,7 +240,7 @@ export default function AgendaScreen() {
         {/* Space for time column */}
         <View style={{ width: TIME_COL_W }} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} scrollEnabled={false}>
-          <View style={{ flexDirection: 'row', width: TOTAL_GRID_W }}>
+          <View style={{ flexDirection: 'row', width: totalGridW }}>
             {weekDays.map((day, i) => {
               const isSel = isSameDay(day, selectedDay)
               const isTod = isSameDay(day, today)
@@ -244,7 +248,7 @@ export default function AgendaScreen() {
               return (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.weekDayHeaderCell, { width: WEEK_COL_W }]}
+                  style={[styles.weekDayHeaderCell, { width: weekColW }]}
                   onPress={() => selectDay(day, true)}
                   activeOpacity={0.7}
                 >
@@ -303,7 +307,19 @@ export default function AgendaScreen() {
             </View>
           ))}
 
-          {/* Appointment blocks */}
+          {/* Background tap zone — tap empty slot to create appointment */}
+          <TouchableOpacity
+            style={styles.dayTapZone}
+            onPress={(e) => {
+              const tapY = e.nativeEvent.locationY
+              const hour = Math.min(Math.max(Math.floor(tapY / DAY_HOUR_H) + START_HOUR, START_HOUR), END_HOUR - 1)
+              const dateStr = selectedDay.toISOString().split('T')[0]
+              router.push(`/(app)/appointments/new?date=${dateStr}&time=${pad2(hour)}:00` as any)
+            }}
+            activeOpacity={0.95}
+          />
+
+          {/* Appointment blocks — zIndex: 1, above the tap zone */}
           {dayAppts.map(appt => {
             const d      = new Date(appt.appointment_date)
             const end    = new Date(d.getTime() + DURATION_MIN * 60000)
@@ -320,6 +336,7 @@ export default function AgendaScreen() {
                   height: hPx,
                   backgroundColor: pal.bg,
                   borderLeftColor: pal.accent,
+                  zIndex: 1,
                 }]}
                 onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments` as any)}
                 activeOpacity={0.8}
@@ -480,7 +497,10 @@ export default function AgendaScreen() {
           </View>
           <TouchableOpacity
             style={styles.newRdvBtn}
-            onPress={() => router.push('/(app)/clients' as any)}
+            onPress={() => {
+              const dateStr = selectedDay.toISOString().split('T')[0]
+              router.push(`/(app)/appointments/new?date=${dateStr}` as any)
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.newRdvText}>+ {isFr ? 'Rendez-vous' : 'Appointment'}</Text>
@@ -606,6 +626,9 @@ const styles = StyleSheet.create({
   hourLine:      { flex: 1, height: StyleSheet.hairlineWidth, marginTop: 8, marginRight: 8 },
   hourLineMain:  { backgroundColor: colors.border },
   hourLineMinor: { backgroundColor: colors.border, opacity: 0.4 },
+
+  // ── Day tap zone (background, behind appointments) ───────────────────────
+  dayTapZone: { position: 'absolute', top: 0, left: TIME_COL_W, right: 0, bottom: 0, zIndex: 0 },
 
   // ── Day appointment block ─────────────────────────────────────────────────
   dayApptBlock: {

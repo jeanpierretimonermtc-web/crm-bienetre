@@ -77,7 +77,11 @@
     "solutions": "Solutions proposées",
     "recap_sent": "Récap envoyé",
     "next_date": "Prochain RDV",
-    "empty": "Aucun rendez-vous"
+    "empty": "Aucun rendez-vous",
+    "time": "Heure",
+    "select_client": "Sélectionner un client",
+    "error_client_required": "Veuillez sélectionner un client",
+    "error_date_required": "La date est requise"
   },
   "followups": {
     "title": "Relances",
