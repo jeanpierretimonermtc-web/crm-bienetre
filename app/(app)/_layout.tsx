@@ -140,7 +140,7 @@ function Sidebar({ pathname }: { pathname: string }) {
       <View style={styles.sidebarTop}>
         <View style={styles.sidebarHeader}>
           <Image source={require('@/assets/logo-icon.png')} style={styles.sidebarLogo} resizeMode="contain" />
-          <Text style={styles.sidebarAppName}>Oryalis</Text>
+          <Image source={require('@/assets/wordmark-day.png')} style={styles.sidebarWordmark} resizeMode="contain" />
         </View>
 
         <View style={styles.sidebarNav}>
@@ -216,7 +216,7 @@ export default function AppLayout() {
             <View style={styles.mobileHeader}>
               <View style={styles.mobileHeaderLeft}>
                 <Image source={require('@/assets/logo-icon.png')} style={styles.mobileHeaderLeaf} resizeMode="contain" />
-                <Text style={styles.mobileHeaderName}>Oryalis</Text>
+                <Image source={require('@/assets/wordmark-dark.png')} style={styles.mobileHeaderWordmark} resizeMode="contain" />
               </View>
               <View style={styles.mobileHeaderRight}>
                 <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
@@ -263,8 +263,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   mobileHeaderLeft:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mobileHeaderLeaf:       { width: 22, height: 22 },
-  mobileHeaderName:       { fontSize: 17, fontFamily: fonts.bold, color: colors.textInverse },
+  mobileHeaderLeaf:       { width: 28, height: 28 },
+  mobileHeaderWordmark:   { width: 146, height: 20 },
   mobileHeaderRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   mobileHeaderBtn:        { padding: 4 },
   mobileHeaderBtnIcon:    { fontSize: 18 },
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     marginBottom: 8,
   },
-  sidebarLogo:    { width: 26, height: 26 },
-  sidebarAppName: { fontSize: 16, fontFamily: fonts.bold, color: colors.primary },
+  sidebarLogo:     { width: 34, height: 34 },
+  sidebarWordmark: { width: 150, height: 20 },
   sidebarNav:     { paddingHorizontal: 8, paddingTop: 4, gap: 2 },
 
   navItem:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingHorizontal: 12, borderRadius: 10 },
