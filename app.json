@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Caelys",
-    "slug": "caelys",
-    "scheme": "caelys",
+    "name": "Oryalis",
+    "slug": "oryalis",
+    "scheme": "oryalis",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { loadDemoData, deleteDemoData, getDemoClientsCount } from './demoService'
 
-const HIDE_DEMO_KEY = '@caelys:hideDemoCard'
+const HIDE_DEMO_KEY = '@oryalis:hideDemoCard'
 
 type DemoCtx = {
   demoCount: number

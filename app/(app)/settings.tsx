@@ -367,7 +367,7 @@ export default function ProfileScreen() {
 
         {/* ── Footer ──────────────────────────────────────── */}
         <View style={styles.footer}>
-          <Text style={styles.version}>Caelys v1.0.0</Text>
+          <Text style={styles.version}>Oryalis v1.0.0</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity><Text style={styles.footerLink}>{t('settings.privacy')}</Text></TouchableOpacity>
             <Text style={styles.footerDot}>·</Text>

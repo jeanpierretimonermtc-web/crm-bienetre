@@ -1,4 +1,4 @@
-// Caelys Design System — Night × Azure × Dawn premium palette
+// Oryalis Design System — Night × Azure × Dawn premium palette
 
 export const colors = {
   // ── Brand primary — Night (deep navy) ────────────────────────────────────

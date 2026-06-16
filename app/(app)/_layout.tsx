@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
@@ -139,8 +139,8 @@ function Sidebar({ pathname }: { pathname: string }) {
     <View style={styles.sidebar}>
       <View style={styles.sidebarTop}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarLogo}>🌟</Text>
-          <Text style={styles.sidebarAppName}>Caelys</Text>
+          <Image source={require('@/assets/logo-icon.png')} style={styles.sidebarLogo} resizeMode="contain" />
+          <Text style={styles.sidebarAppName}>Oryalis</Text>
         </View>
 
         <View style={styles.sidebarNav}>
@@ -215,8 +215,8 @@ export default function AppLayout() {
           : isRootRoute && (
             <View style={styles.mobileHeader}>
               <View style={styles.mobileHeaderLeft}>
-                <Text style={styles.mobileHeaderLeaf}>🌿</Text>
-                <Text style={styles.mobileHeaderName}>Caelys</Text>
+                <Image source={require('@/assets/logo-icon.png')} style={styles.mobileHeaderLeaf} resizeMode="contain" />
+                <Text style={styles.mobileHeaderName}>Oryalis</Text>
               </View>
               <View style={styles.mobileHeaderRight}>
                 <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   mobileHeaderLeft:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mobileHeaderLeaf:       { fontSize: 20 },
+  mobileHeaderLeaf:       { width: 22, height: 22 },
   mobileHeaderName:       { fontSize: 17, fontFamily: fonts.bold, color: colors.textInverse },
   mobileHeaderRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   mobileHeaderBtn:        { padding: 4 },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     marginBottom: 8,
   },
-  sidebarLogo:    { fontSize: 22 },
+  sidebarLogo:    { width: 26, height: 26 },
   sidebarAppName: { fontSize: 16, fontFamily: fonts.bold, color: colors.primary },
   sidebarNav:     { paddingHorizontal: 8, paddingTop: 4, gap: 2 },
 

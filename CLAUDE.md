@@ -1,10 +1,10 @@
 @AGENTS.md
 
-# Caelys — CRM SaaS pour praticiens du bien-être
+# Oryalis — CRM SaaS pour praticiens du bien-être
 
 ## Produit
 
-**Caelys** est un CRM SaaS multiplateforme (iOS / Android / Web) destiné aux praticiens du bien-être : naturopathes, thérapeutes MTC, distributeurs DoTerra/Zinzino, coachs, etc.
+**Oryalis** est un CRM SaaS multiplateforme (iOS / Android / Web) destiné aux praticiens du bien-être : naturopathes, thérapeutes MTC, distributeurs DoTerra/Zinzino, coachs, etc.
 
 - **Production** : https://crm-bienetre.vercel.app
 - **GitHub** : https://github.com/jeanpierretimonermtc-web/crm-bienetre.git
@@ -167,7 +167,7 @@ Le build Vercel exécute `npx expo export --platform web` → dossier `dist/`.
 
 Les produits à recommander aux clients viennent de **catalogues** :
 
-- **Officiels** (`type='official'`, `user_id=null`) : maintenus par Caelys, visibles par tous
+- **Officiels** (`type='official'`, `user_id=null`) : maintenus par Oryalis, visibles par tous
   - `slug='doterra'` : 52 produits seedés
   - À venir : `slug='zinzino'`, etc.
 - **Custom** (`type='custom'`, `user_id=X`) : créés par le praticien
@@ -200,7 +200,7 @@ Clients, RDV, Notes, Relances, Recommandations, Module DoTerra, Dashboard KPI, S
 - [ ] Stripe abonnements (Free / Pro 29€ / Cabinet 79€)
 - [ ] Webhook Stripe → `subscriptions` table Supabase
 - [ ] Gates fonctionnalités Pro
-- [ ] Landing page lumora.app
+- [ ] Landing page oryalis.app
 - [ ] Onboarding guidé 3 étapes
 - [ ] Données de démo au premier login
 - [ ] Emails transactionnels (Resend)
