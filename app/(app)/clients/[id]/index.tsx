@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +8,8 @@ import { useClientAppointments } from '@/features/appointments/useAppointments'
 import { useNotes } from '@/features/notes/useNotes'
 import { useClientFollowups } from '@/features/followups/useFollowups'
 import { useRecommendations } from '@/features/recommendations/useRecommendations'
-import { statusColors, colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { ClientStatus } from '@/shared/lib/types'
 
@@ -36,6 +37,8 @@ function fmtShort(d: string | null | undefined, locale: string) {
 
 export default function ClientDetailScreen() {
   const { t, i18n } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
   const { client, loading } = useClient(id)
@@ -408,7 +411,8 @@ const CARD_SHADOW = {
   elevation: 1,
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   root:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
@@ -528,4 +532,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabIcon: { fontSize: 22, color: colors.textInverse, lineHeight: 26 },
-})
+  })
+}

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useCatalogs, useCatalogProducts } from './useCatalog'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import type { Catalog, CatalogProduct } from '@/shared/lib/types'
 
 export interface CatalogPickerResult {
@@ -21,6 +22,8 @@ interface Props {
 
 export function CatalogProductPicker({ onSelect, onClose }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { catalogs, loading: catalogsLoading } = useCatalogs()
   const [selectedCatalog, setSelectedCatalog] = useState<Catalog | null>(null)
   const { products, loading: productsLoading } = useCatalogProducts(selectedCatalog?.id ?? null)
@@ -129,7 +132,8 @@ export function CatalogProductPicker({ onSelect, onClose }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 20, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   title:       { fontSize: 18, fontWeight: '700', color: colors.text },
@@ -151,4 +155,5 @@ const styles = StyleSheet.create({
   category:    { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   sep:         { height: 1, backgroundColor: colors.border, marginLeft: 36 },
   empty:       { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontSize: 14 },
-})
+  })
+}

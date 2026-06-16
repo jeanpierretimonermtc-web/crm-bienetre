@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import { statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
 import { useTranslation } from 'react-i18next'
 import type { ClientStatus } from '@/shared/lib/types'
 
@@ -9,6 +9,7 @@ interface Props {
 
 export function StatusBadge({ status }: Props) {
   const { t } = useTranslation()
+  const { statusColors } = useTheme()
   const { bg, text } = statusColors[status] ?? { bg: '#eee', text: '#666' }
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>

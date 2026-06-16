@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Switch } from 'react-native'
 import { Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,8 @@ import { useDemoState } from '@/features/demo/DemoProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { getCatalogs } from '@/features/catalogs/catalogService'
 import { Input } from '@/shared/components/ui/Input'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import i18n from '@/shared/i18n'
 import type { Catalog } from '@/shared/lib/types'
@@ -44,6 +45,8 @@ function nameInitials(name: string) {
 export default function ProfileScreen() {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const { colors, mode, toggleTheme } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { hideDemoCard, setHideDemoCard } = useDemoState()
 
   const [fullName, setFullName] = useState('')
@@ -277,6 +280,18 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <View style={styles.switchRow}>
               <View style={styles.switchInfo}>
+                <Text style={styles.switchLabel}>{t('settings.dark_mode')}</Text>
+                <Text style={styles.switchDesc}>{t('settings.dark_mode_desc')}</Text>
+              </View>
+              <Switch
+                value={mode === 'dark'}
+                onValueChange={toggleTheme}
+                trackColor={{ true: colors.primaryAction, false: colors.border }}
+                thumbColor={colors.card}
+              />
+            </View>
+            <View style={[styles.switchRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14, marginTop: 14 }]}>
+              <View style={styles.switchInfo}>
                 <Text style={styles.switchLabel}>{t('settings.hide_demo')}</Text>
                 <Text style={styles.switchDesc}>{t('settings.hide_demo_desc')}</Text>
               </View>
@@ -403,7 +418,8 @@ export default function ProfileScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   loadingBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   container:     { flex: 1, backgroundColor: colors.bg },
   content:       { paddingBottom: 80 },
@@ -536,4 +552,5 @@ const styles = StyleSheet.create({
   tzLabel:      { fontSize: 15, fontFamily: fonts.body, color: colors.text },
   tzLabelActive: { color: colors.primary, fontFamily: fonts.semibold },
   tzCheck:      { fontSize: 16, color: colors.primaryAction },
-})
+  })
+}

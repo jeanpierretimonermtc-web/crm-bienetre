@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useMemo } from 'react'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +8,8 @@ import { useDashboardStats, useUpcomingLrp } from '@/features/dashboard/useDashb
 import { useUpcomingAppointments } from '@/features/appointments/useAppointments'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
 import { Avatar } from '@/shared/components/ui/Avatar'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { AppointmentWithClient, FollowupWithClient, Client } from '@/shared/lib/types'
 
@@ -19,6 +20,8 @@ function useLocale() {
 
 // ── Quick card ────────────────────────────────────────────────────────────────
 function QuickCard({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   return (
     <TouchableOpacity style={styles.quickCard} onPress={onPress} activeOpacity={0.85}>
       <Text style={styles.quickCardIcon}>{icon}</Text>
@@ -32,6 +35,8 @@ function KpiCard({ icon, value, label, delta, accent, bg, onPress, wide }: {
   icon: string; value: number; label: string; delta?: string
   accent: string; bg: string; onPress?: () => void; wide?: boolean
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   return (
     <TouchableOpacity style={[styles.kpiCard, wide ? styles.kpiCardWide : styles.kpiCardMobile]} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
       <View style={styles.kpiTop}>
@@ -49,6 +54,8 @@ function KpiCard({ icon, value, label, delta, accent, bg, onPress, wide }: {
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, sub, onMore }: { title: string; sub?: string; onMore?: () => void }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   return (
     <View style={styles.sectionHeader}>
       <View>
@@ -67,6 +74,8 @@ function SectionHeader({ title, sub, onMore }: { title: string; sub?: string; on
 // ── Appointment row (inside unified card) ────────────────────────────────────
 function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: boolean }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const locale = useLocale()
   const date = new Date(appt.appointment_date)
 
@@ -108,6 +117,8 @@ function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: bool
 // ── Followup card ─────────────────────────────────────────────────────────────
 function FollowupCard({ f }: { f: FollowupWithClient }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const today = new Date().toISOString().split('T')[0]
   const isOverdue = f.due_date < today
   const daysLate = isOverdue
@@ -143,6 +154,8 @@ function FollowupCard({ f }: { f: FollowupWithClient }) {
 // ── LRP card ──────────────────────────────────────────────────────────────────
 function LrpCard({ client }: { client: Client }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const locale = useLocale()
   const daysUntil = client.next_lrp_date
     ? Math.ceil((new Date(client.next_lrp_date).getTime() - Date.now()) / 86400000)
@@ -178,6 +191,8 @@ function LrpCard({ client }: { client: Client }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -413,7 +428,8 @@ export default function DashboardScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
   content:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 64, gap: 22 },
   contentWide: { paddingHorizontal: 28, paddingTop: 24, gap: 28 },
@@ -510,4 +526,5 @@ const styles = StyleSheet.create({
   demoLink:      { alignSelf: 'flex-start', paddingVertical: 4 },
   demoLinkText:  { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
   demoErrorText: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
-})
+  })
+}

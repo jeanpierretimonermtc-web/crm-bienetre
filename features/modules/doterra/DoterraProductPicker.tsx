@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native'
 import { searchProducts, DOTERRA_PRODUCTS, type DoterraProduct } from './products'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
 
 export function DoterraProductPicker({ onSelect, onClose }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [query, setQuery] = useState('')
   const results = query.length >= 1 ? searchProducts(query) : DOTERRA_PRODUCTS
 
@@ -49,7 +52,8 @@ export function DoterraProductPicker({ onSelect, onClose }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 20 },
   title:       { fontSize: 18, fontWeight: '700', color: colors.text },
@@ -59,4 +63,5 @@ const styles = StyleSheet.create({
   productName: { fontSize: 16, fontWeight: '500', color: colors.text },
   category:    { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   sep:         { height: 1, backgroundColor: colors.border, marginLeft: 16 },
-})
+  })
+}

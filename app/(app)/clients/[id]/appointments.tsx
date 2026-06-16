@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Switch, ActivityIndicator } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,8 @@ import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Card } from '@/shared/components/ui/Card'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Appointment } from '@/shared/lib/types'
 
@@ -18,6 +19,8 @@ export default function ClientAppointmentsScreen() {
   const { t, i18n } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { appointments, loading, refresh } = useClientAppointments(id)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Appointment | null>(null)
@@ -91,6 +94,8 @@ function AppointmentCard({ appt, locale, confirmId, onEdit, onDeleteRequest, onD
   onDeleteConfirm: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [expanded, setExpanded] = useState(false)
   const isConfirming = confirmId === appt.id
 
@@ -158,6 +163,8 @@ function AppointmentModal({ clientId, userId, existing, onClose, onSaved }: {
   onClose: () => void; onSaved: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [date, setDate] = useState(existing?.appointment_date?.split('T')[0] ?? new Date().toISOString().split('T')[0])
   const [themes, setThemes] = useState(existing?.themes_discussed ?? '')
   const [solutions, setSolutions] = useState(existing?.solutions_proposed ?? '')
@@ -209,7 +216,8 @@ function AppointmentModal({ clientId, userId, existing, onClose, onSaved }: {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:      { flex: 1, backgroundColor: colors.bg },
   list:           { padding: 12, gap: 8 },
   loader:         { marginTop: 40 },
@@ -240,4 +248,5 @@ const styles = StyleSheet.create({
   modalContent:   { padding: 16 },
   switchRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
   switchLabel:    { fontSize: 16, fontFamily: fonts.body, color: colors.text },
-})
+  })
+}

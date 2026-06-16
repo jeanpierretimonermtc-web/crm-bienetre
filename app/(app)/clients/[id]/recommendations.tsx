@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,8 @@ import { CatalogProductPicker, type CatalogPickerResult } from '@/features/catal
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Button } from '@/shared/components/ui/Button'
 import { Card } from '@/shared/components/ui/Card'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Recommendation } from '@/shared/lib/types'
 
@@ -17,6 +18,8 @@ export default function ClientRecommendationsScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { recommendations, loading, refresh } = useRecommendations(id)
   const [showModal, setShowModal] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
@@ -173,7 +176,8 @@ export default function ClientRecommendationsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:          { flex: 1, backgroundColor: colors.bg },
   list:               { padding: 12, gap: 8 },
   loader:             { marginTop: 40 },
@@ -209,4 +213,5 @@ const styles = StyleSheet.create({
   productInput:       { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, fontFamily: fonts.body, backgroundColor: colors.card, color: colors.text },
   catalogBtn:         { borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
   reasonInput:        { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, fontFamily: fonts.body, backgroundColor: colors.card, color: colors.text, minHeight: 80 },
-})
+  })
+}

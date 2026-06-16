@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
 
 export default function FollowupsLayout() {
+  const { colors } = useTheme()
   return (
     <Stack
       screenOptions={{

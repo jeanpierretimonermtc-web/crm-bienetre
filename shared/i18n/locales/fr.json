@@ -213,6 +213,8 @@
     "save": "Enregistrer",
     "saved": "Enregistré",
     "display": "Affichage",
+    "dark_mode": "Mode sombre",
+    "dark_mode_desc": "Bascule l'application vers un thème de couleurs sombre",
     "hide_demo": "Masquer le mode démo",
     "hide_demo_desc": "Masque la carte démo sur le tableau de bord",
     "subscription": "Abonnement",

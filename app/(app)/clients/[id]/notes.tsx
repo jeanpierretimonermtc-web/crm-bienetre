@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +6,8 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { useNotes } from '@/features/notes/useNotes'
 import { createNote, deleteNote } from '@/features/notes/noteService'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Note } from '@/shared/lib/types'
 
@@ -14,6 +15,8 @@ export default function ClientNotesScreen() {
   const { t, i18n } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { notes, loading, refresh } = useNotes(id)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -94,6 +97,8 @@ function NoteRow({ note, locale, isConfirming, onDeleteRequest, onDeleteCancel, 
   onDeleteConfirm: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const date = new Date(note.created_at).toLocaleDateString(locale, {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   })
@@ -125,7 +130,8 @@ function NoteRow({ note, locale, isConfirming, onDeleteRequest, onDeleteCancel, 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:         { flex: 1, backgroundColor: colors.bg },
   list:              { padding: 12 },
   empty:             { flex: 1 },
@@ -150,4 +156,5 @@ const styles = StyleSheet.create({
   sendBtn:           { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled:   { backgroundColor: colors.textTertiary },
   sendBtnText:       { color: '#fff', fontSize: 20, fontFamily: fonts.bold },
-})
+  })
+}

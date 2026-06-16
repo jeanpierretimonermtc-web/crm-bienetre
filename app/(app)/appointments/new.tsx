@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ScrollView, View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, useWindowDimensions,
@@ -11,7 +11,8 @@ import { createAppointment, getNextAppointmentNumber } from '@/features/appointm
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors, statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Client } from '@/shared/lib/types'
 
@@ -24,6 +25,8 @@ function initials(name: string | null | undefined) {
 
 export default function NewAppointmentScreen() {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { date: paramDate, time: paramTime, clientId: paramClientId } =
     useLocalSearchParams<{ date?: string; time?: string; clientId?: string }>()
@@ -214,7 +217,8 @@ export default function NewAppointmentScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
   content:     { padding: 16, gap: 14, paddingBottom: 48 },
   contentWide: { maxWidth: 640, alignSelf: 'center', width: '100%', paddingHorizontal: 24 },
@@ -261,4 +265,5 @@ const styles = StyleSheet.create({
 
   // ── Error ─────────────────────────────────────────────────────────────────
   error: { color: colors.danger, fontSize: 14, textAlign: 'center', padding: 10, backgroundColor: colors.dangerLight, borderRadius: 8 },
-})
+  })
+}

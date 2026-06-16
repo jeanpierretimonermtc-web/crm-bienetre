@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 
 const SIDEBAR_BREAKPOINT = 768
@@ -32,6 +33,8 @@ const TAB_ROUTES: { name: string; icon: string; path: string }[] = [
 function CustomTabBar({ insets }: any) {
   const { width } = useWindowDimensions()
   const pathname  = usePathname()
+  const { colors } = useTheme()
+  const tabStyles = useMemo(() => makeTabStyles(colors), [colors])
   if (width >= SIDEBAR_BREAKPOINT) return null
 
   function isTabActive(tab: typeof TAB_ROUTES[0]) {
@@ -62,7 +65,8 @@ function CustomTabBar({ insets }: any) {
   )
 }
 
-const tabStyles = StyleSheet.create({
+function makeTabStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   wrapper: {
     backgroundColor: 'transparent',
     paddingHorizontal: 16,
@@ -104,13 +108,16 @@ const tabStyles = StyleSheet.create({
   iconActive: {
     opacity: 1,
   },
-})
+  })
+}
 
 // ── Sidebar (web ≥768px) ────────────────────────────────────────────────────
 
 function Sidebar({ pathname }: { pathname: string }) {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const { colors, mode } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { demoCount, demoLoading, demoFailed, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
 
   useEffect(() => { checkDemo() }, [checkDemo, pathname])
@@ -140,7 +147,11 @@ function Sidebar({ pathname }: { pathname: string }) {
       <View style={styles.sidebarTop}>
         <View style={styles.sidebarHeader}>
           <Image source={require('@/assets/logo-icon.png')} style={styles.sidebarLogo} resizeMode="contain" />
-          <Image source={require('@/assets/wordmark-day.png')} style={styles.sidebarWordmark} resizeMode="contain" />
+          <Image
+            source={mode === 'dark' ? require('@/assets/wordmark-dark.png') : require('@/assets/wordmark-day.png')}
+            style={styles.sidebarWordmark}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.sidebarNav}>
@@ -196,6 +207,8 @@ function Sidebar({ pathname }: { pathname: string }) {
 export default function AppLayout() {
   const { session, loading } = useAuth()
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { width } = useWindowDimensions()
   const pathname = usePathname()
   const isWide = width >= SIDEBAR_BREAKPOINT
@@ -247,7 +260,8 @@ export default function AppLayout() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   root:     { flex: 1, flexDirection: 'column', backgroundColor: colors.bg },
   rootWide: { flexDirection: 'row' },
   content:  { flex: 1 },
@@ -317,4 +331,5 @@ const styles = StyleSheet.create({
   demoText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   demoTextActive: { color: colors.danger },
   demoErrText:    { fontSize: 12, fontFamily: fonts.medium, color: colors.danger, paddingHorizontal: 8 },
-})
+  })
+}

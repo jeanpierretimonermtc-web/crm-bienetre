@@ -11,7 +11,8 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors, statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Catalog, CatalogProduct, Client } from '@/shared/lib/types'
 
@@ -59,6 +60,8 @@ function ProductCard({
   onDetail: (p: CatalogProduct) => void
   onRecommend: (p: CatalogProduct) => void
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const accent  = categoryAccent(product.category, catalog?.color ?? colors.primaryAction)
   const catMeta = product.category ? CATEGORY_META[product.category] : null
 
@@ -111,6 +114,8 @@ function DetailModal({
   onRecommend: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   if (!product) return null
 
   const accent  = categoryAccent(product.category, catalogColor)
@@ -205,6 +210,8 @@ function DetailModal({
 
 export default function CatalogScreen() {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -545,7 +552,8 @@ export default function CatalogScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:  { flex: 1, backgroundColor: colors.bg },
   loader:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   listLoader: { marginTop: 48 },
@@ -688,4 +696,5 @@ const styles = StyleSheet.create({
   error:       { color: colors.danger, fontSize: 14, textAlign: 'center', padding: 10, backgroundColor: colors.dangerLight, borderRadius: 8 },
   successBox:  { backgroundColor: colors.successLight, borderRadius: 12, padding: 20, alignItems: 'center' },
   successText: { fontSize: 16, fontFamily: fonts.semibold, color: colors.success },
-})
+  })
+}

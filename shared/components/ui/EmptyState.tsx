@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 
 interface Props {
   message: string
@@ -7,6 +9,8 @@ interface Props {
 }
 
 export function EmptyState({ message, icon = '📭' }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>
@@ -15,8 +19,10 @@ export function EmptyState({ message, icon = '📭' }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  icon:      { fontSize: 40 },
-  message:   { fontSize: 15, color: colors.textSecondary, textAlign: 'center' },
-})
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
+    icon:      { fontSize: 40 },
+    message:   { fontSize: 15, color: colors.textSecondary, textAlign: 'center' },
+  })
+}

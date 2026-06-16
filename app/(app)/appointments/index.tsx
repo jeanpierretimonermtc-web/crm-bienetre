@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, useWindowDimensions,
@@ -7,7 +7,8 @@ import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { AppointmentWithClient } from '@/shared/lib/types'
 
@@ -67,6 +68,8 @@ const GRID_HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AgendaScreen() {
   const { t, i18n } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { width: screenW } = useWindowDimensions()
   const isFr = i18n.language === 'fr'
@@ -511,7 +514,8 @@ export default function AgendaScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   // ── Page header ───────────────────────────────────────────────────────────
@@ -668,4 +672,5 @@ const styles = StyleSheet.create({
   bottomWeekCount: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
   newRdvBtn:       { backgroundColor: colors.primaryAction, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, alignItems: 'center' },
   newRdvText:      { fontSize: 14, fontFamily: fonts.semibold, color: '#ffffff' },
-})
+  })
+}

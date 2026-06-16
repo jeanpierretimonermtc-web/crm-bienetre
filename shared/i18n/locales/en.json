@@ -213,6 +213,8 @@
     "save": "Save changes",
     "saved": "Saved",
     "display": "Display",
+    "dark_mode": "Dark mode",
+    "dark_mode_desc": "Switch the app to a dark color theme",
     "hide_demo": "Hide demo mode",
     "hide_demo_desc": "Removes the demo card from the dashboard",
     "subscription": "Subscription",

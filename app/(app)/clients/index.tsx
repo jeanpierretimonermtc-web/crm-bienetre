@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +6,8 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { useClients, useClientSearch } from '@/features/clients/useClients'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
-import { colors, statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Client, ClientStatus } from '@/shared/lib/types'
 
@@ -20,6 +21,8 @@ function initials(name: string) {
 }
 
 function ClientAvatar({ name, status }: { name: string; status: ClientStatus }) {
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const sc = statusColors[status] ?? { bg: colors.surfaceContainerHigh, text: colors.textSecondary }
   return (
     <View style={[styles.avatar, { backgroundColor: sc.bg }]}>
@@ -30,6 +33,8 @@ function ClientAvatar({ name, status }: { name: string; status: ClientStatus }) 
 
 function StatusPill({ status }: { status: ClientStatus }) {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const sc = statusColors[status] ?? { bg: colors.surfaceContainerHighest, text: colors.textTertiary }
   return (
     <View style={[styles.pill, { backgroundColor: sc.bg }]}>
@@ -40,6 +45,8 @@ function StatusPill({ status }: { status: ClientStatus }) {
 
 function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
   const { t, i18n } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
 
   const rdvText = lastRdv
@@ -105,6 +112,8 @@ function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
 
 export default function ClientsScreen() {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all')
@@ -243,7 +252,8 @@ export default function ClientsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:  { flex: 1, backgroundColor: colors.bg },
   inner:      { flex: 1, width: '100%' },
   innerWide:  { maxWidth: 1100, alignSelf: 'center' },
@@ -332,4 +342,5 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabIcon: { fontSize: 28, color: colors.textInverse, lineHeight: 32 },
-})
+  })
+}

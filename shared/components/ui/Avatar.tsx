@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 
 const PALETTE = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#5AC8FA','#FF2D55']
 
@@ -22,6 +24,8 @@ interface Props {
 }
 
 export function Avatar({ name, size = 44 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const bg = colorFor(name)
   const fontSize = size * 0.38
   return (
@@ -31,7 +35,9 @@ export function Avatar({ name, size = 44 }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  circle: { alignItems: 'center', justifyContent: 'center' },
-  text:   { color: colors.textInverse, fontWeight: '700' },
-})
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    circle: { alignItems: 'center', justifyContent: 'center' },
+    text:   { color: colors.textInverse, fontWeight: '700' },
+  })
+}

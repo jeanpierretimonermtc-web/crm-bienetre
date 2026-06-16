@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,8 @@ import { Input } from '@/shared/components/ui/Input'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Card } from '@/shared/components/ui/Card'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Followup } from '@/shared/lib/types'
 
@@ -17,6 +18,8 @@ export default function ClientFollowupsScreen() {
   const { t, i18n } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { followups, loading, refresh } = useClientFollowups(id)
   const [showModal, setShowModal] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -99,6 +102,8 @@ function FollowupModal({ clientId, userId, onClose, onSaved }: {
   clientId: string; userId: string; onClose: () => void; onSaved: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0])
@@ -145,7 +150,8 @@ function FollowupModal({ clientId, userId, onClose, onSaved }: {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:  { flex: 1, backgroundColor: colors.bg },
   list:       { padding: 12, gap: 8 },
   loader:     { marginTop: 40 },
@@ -172,4 +178,5 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle:  { fontSize: 17, fontFamily: fonts.semibold, color: colors.text },
   modalCancel: { fontSize: 16, fontFamily: fonts.body, color: colors.primary },
-})
+  })
+}

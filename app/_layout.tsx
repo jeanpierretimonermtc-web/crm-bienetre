@@ -1,6 +1,7 @@
 import '@/shared/i18n'
 import { Slot } from 'expo-router'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { ThemeProvider } from '@/shared/theme/ThemeProvider'
 import { useFonts, DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display'
 import {
   DMSans_400Regular,
@@ -21,8 +22,10 @@ export default function RootLayout() {
   if (!fontsLoaded) return null
 
   return (
-    <AuthProvider>
-      <Slot />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Slot />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

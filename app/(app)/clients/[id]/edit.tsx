@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ScrollView, View, Text, Switch, StyleSheet, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +6,8 @@ import { getClient, updateClient, deleteClient } from '@/features/clients/client
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors, statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Client, ClientStatus } from '@/shared/lib/types'
 
@@ -14,6 +15,8 @@ const STATUSES: ClientStatus[] = ['prospect', 'active', 'inactive', 'vip', 'advi
 
 export default function EditClientScreen() {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -262,7 +265,8 @@ export default function EditClientScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   loader:      { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   container:   { flex: 1, backgroundColor: colors.bg },
   content:     { padding: 16, gap: 12, paddingBottom: 40 },
@@ -302,4 +306,5 @@ const styles = StyleSheet.create({
   cancelBtnText: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
   deleteBtn:   { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: colors.danger, alignItems: 'center' },
   deleteBtnText: { fontSize: 14, fontFamily: fonts.semibold, color: '#ffffff' },
-})
+  })
+}

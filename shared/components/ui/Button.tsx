@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
@@ -13,6 +15,8 @@ interface Props {
 }
 
 export function Button({ label, onPress, variant = 'primary', loading, disabled, size = 'md' }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const isDisabled = disabled || loading
   return (
     <TouchableOpacity
@@ -29,20 +33,22 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
   )
 }
 
-const styles = StyleSheet.create({
-  base: { borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 20 },
-  sm:   { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
-  disabled: { opacity: 0.5 },
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    base: { borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 20 },
+    sm:   { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
+    disabled: { opacity: 0.5 },
 
-  primary:   { backgroundColor: colors.primary },
-  secondary: { backgroundColor: colors.primaryLight },
-  danger:    { backgroundColor: colors.danger },
-  ghost:     { backgroundColor: 'transparent' },
+    primary:   { backgroundColor: colors.primary },
+    secondary: { backgroundColor: colors.primaryLight },
+    danger:    { backgroundColor: colors.danger },
+    ghost:     { backgroundColor: 'transparent' },
 
-  label:          { fontSize: 16, fontWeight: '600' },
-  smLabel:        { fontSize: 14 },
-  primaryLabel:   { color: colors.textInverse },
-  secondaryLabel: { color: colors.primary },
-  dangerLabel:    { color: colors.textInverse },
-  ghostLabel:     { color: colors.primary },
-})
+    label:          { fontSize: 16, fontWeight: '600' },
+    smLabel:        { fontSize: 14 },
+    primaryLabel:   { color: colors.textInverse },
+    secondaryLabel: { color: colors.primary },
+    dangerLabel:    { color: colors.textInverse },
+    ghostLabel:     { color: colors.primary },
+  })
+}

@@ -1,20 +1,23 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
 import { toggleFollowupDone } from '@/features/followups/followupService'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
-import { colors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { FollowupWithClient } from '@/shared/lib/types'
 
 type Tab = 'overdue' | 'today' | 'upcoming'
 
-const TAB_CONFIG: Record<Tab, { labelKey: string; accent: string; emptyKey: string }> = {
-  overdue:  { labelKey: 'followups.overdue',  accent: colors.danger,        emptyKey: 'followups.none_overdue'  },
-  today:    { labelKey: 'followups.today',    accent: colors.secondary,     emptyKey: 'followups.none_today'    },
-  upcoming: { labelKey: 'followups.upcoming', accent: colors.primaryAction, emptyKey: 'followups.none_upcoming' },
+function getTabConfig(colors: ThemeColors): Record<Tab, { labelKey: string; accent: string; emptyKey: string }> {
+  return {
+    overdue:  { labelKey: 'followups.overdue',  accent: colors.danger,        emptyKey: 'followups.none_overdue'  },
+    today:    { labelKey: 'followups.today',    accent: colors.secondary,     emptyKey: 'followups.none_today'    },
+    upcoming: { labelKey: 'followups.upcoming', accent: colors.primaryAction, emptyKey: 'followups.none_upcoming' },
+  }
 }
 
 function initials(name: string) {
@@ -29,6 +32,8 @@ function FollowupCard({ f, accent, today, onDone }: {
   f: FollowupWithClient; accent: string; today: string; onDone: () => Promise<void>
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [busy, setBusy] = useState(false)
 
   const isOverdue  = f.due_date < today
@@ -91,6 +96,9 @@ function FollowupCard({ f, accent, today, onDone }: {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function FollowupsScreen() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  const TAB_CONFIG = useMemo(() => getTabConfig(colors), [colors])
   const { followups, loading, refresh } = usePendingFollowups()
   const [activeTab, setActiveTab] = useState<Tab>('overdue')
   const { width } = useWindowDimensions()
@@ -184,7 +192,8 @@ export default function FollowupsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   inner:     { flex: 1, width: '100%' },
   innerWide: { maxWidth: 900, alignSelf: 'center' },
@@ -244,4 +253,5 @@ const styles = StyleSheet.create({
   // Done button
   doneBtn:    { flexShrink: 0, padding: 4 },
   doneCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
-})
+  })
+}

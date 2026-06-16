@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ScrollView, View, Text, Switch, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,8 @@ import { createClient } from '@/features/clients/clientService'
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
-import { colors, statusColors } from '@/shared/theme/colors'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { ClientStatus } from '@/shared/lib/types'
 
@@ -15,6 +16,8 @@ const STATUSES: ClientStatus[] = ['prospect', 'active', 'inactive', 'vip', 'advi
 
 export default function NewClientScreen() {
   const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -158,7 +161,8 @@ export default function NewClientScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container:       { flex: 1, backgroundColor: colors.bg },
   content:         { padding: 16, gap: 12, paddingBottom: 40 },
   contentWide:     { maxWidth: 720, alignSelf: 'center', width: '100%', paddingHorizontal: 24 },
@@ -173,4 +177,5 @@ const styles = StyleSheet.create({
   namePreview:     { fontSize: 13, color: colors.textSecondary, paddingHorizontal: 4 },
   namePreviewBold: { fontWeight: '600', color: colors.primary },
   error:           { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 10, backgroundColor: '#fef2f2', borderRadius: 8 },
-})
+  })
+}
