@@ -23,12 +23,14 @@ function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.card,
-      borderRadius: 12,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+      elevation: 1,
     },
   })
 }

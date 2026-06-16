@@ -1,143 +1,177 @@
-// Oryalis Design System — Night × Azure × Dawn premium palette
-// Brand swatches (day mode: #371ED9 / #0339A6 / #0477BF / #04BFAD / #F2F2F2)
-// Brand swatches (dark mode: #022873 / #01050D / #0B1426 / #0396A6 / #03A696)
+// ─────────────────────────────────────────────────────────────────────────────
+// Oryalis Design System — Premium SaaS palette
+// Inspired by: Linear · Stripe · Notion · Vercel
+// Brand: hummingbird · global network · cyan · blue · violet
+//
+// Brand accent (use only for icons, CTAs, important states — not everywhere):
+//   cyan   #22D3EE
+//   blue   #3B82F6
+//   violet #6D3BFF
+//   gradient: linear-gradient(90deg, #22D3EE → #3B82F6 → #6D3BFF)
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const lightColors = {
-  // ── Brand primary — Night (deep navy) ────────────────────────────────────
-  primary:              '#0339A6',   // brand navy; logo, header, primary text
-  primaryAction:        '#0477BF',   // CTA buttons, links, focus (azure)
-  primaryLight:         '#DCEEFA',   // azure-light — badge bg, tinted surfaces
-  primaryLighter:       '#EAF2FB',   // hover, subtle tint
-  onPrimary:            '#FFFFFF',
-  onPrimaryContainer:   '#0339A6',
-
-  // ── Accent — Dawn (warm gold) ─────────────────────────────────────────────
-  secondary:            '#C9913D',   // dawn gold — stats, highlight badges
-  secondaryContainer:   '#E0A84A',   // lighter dawn fill
-  secondaryLight:       '#FDF3E3',   // dawn-light — badge bg, warning surface
-  onSecondary:          '#FFFFFF',
-  onSecondaryContainer: '#7A5020',
-
-  // ── Tertiary — Teal accent ────────────────────────────────────────────────
-  tertiary:             '#04BFAD',
-  tertiaryContainer:    '#3DD9C8',
-  tertiaryLight:        '#E1F8F5',
-  onTertiary:           '#FFFFFF',
-  onTertiaryContainer:  '#03857A',
-
-  // ── Semantic ──────────────────────────────────────────────────────────────
-  success:              '#2E7D32',
-  successLight:         '#E8F5E9',
-  warning:              '#C9913D',   // = dawn
-  warningLight:         '#FDF3E3',   // = dawn-light
-  danger:               '#C62828',
-  dangerLight:          '#FFEBEE',
-
-  // ── Legacy aliases (backward compat) ─────────────────────────────────────
-  purple:               '#371ED9',
-  purpleLight:          '#E7E2FB',
-  onSurfaceVariant:     '#536082',
-
-  // ── Surfaces ──────────────────────────────────────────────────────────────
-  bg:                      '#F2F2F2',
-  surface:                 '#F2F2F2',
-  bgDim:                   '#E6E6E6',
+// ── Light mode ───────────────────────────────────────────────────────────────
+const light = {
+  // ── Backgrounds & surfaces ────────────────────────────────────────────────
+  bg:                      '#FFFFFF',
+  surface:                 '#F8FAFC',
+  bgDim:                   '#F1F5F9',    // surfaceAlt — secondary bg, sheet fills
   card:                    '#FFFFFF',
-  surfaceContainerLow:     '#FAFAFA',
-  surfaceContainer:        '#F2F2F2',
-  surfaceContainerHigh:    '#EAF2FB',
-  surfaceContainerHighest: '#DCEEFA',
+  surfaceContainerLow:     '#F8FAFC',
+  surfaceContainer:        '#F1F5F9',
+  surfaceContainerHigh:    '#E2E8F0',
+  surfaceContainerHighest: '#CBD5E1',
 
-  // ── Text ──────────────────────────────────────────────────────────────────
-  text:           '#0B1426',
-  textSecondary:  '#536082',
-  textTertiary:   '#5F6F8E',
+  // ── Text ─────────────────────────────────────────────────────────────────
+  text:           '#0F172A',   // textPrimary  — headings, body
+  textSecondary:  '#475569',   // labels, secondary info
+  textTertiary:   '#94A3B8',   // textMuted — placeholders, meta, hints
   textInverse:    '#FFFFFF',
-  inverseText:    '#EAF2FB',
+  inverseText:    '#F8FAFC',
 
   // ── Borders ───────────────────────────────────────────────────────────────
-  border:         '#DCDCDC',
-  borderStrong:   '#B5B5B5',
-}
+  border:         '#E2E8F0',
+  borderStrong:   '#CBD5E1',
 
-export const darkColors: typeof lightColors = {
-  // ── Brand primary — Night (deep navy) ────────────────────────────────────
-  primary:              '#022873',
-  primaryAction:        '#0396A6',   // teal-cyan CTA
-  primaryLight:         '#0E3A57',
-  primaryLighter:       '#102A47',
+  // ── Primary action (blue) ─────────────────────────────────────────────────
+  primary:              '#2563EB',
+  primaryAction:        '#1D4ED8',   // hover / pressed
+  primaryLight:         '#DBEAFE',   // tinted surface
+  primaryLighter:       '#EFF6FF',
   onPrimary:            '#FFFFFF',
-  onPrimaryContainer:   '#9FD8E6',
+  onPrimaryContainer:   '#1E40AF',
 
-  // ── Accent — Dawn (warm gold) ─────────────────────────────────────────────
-  secondary:            '#E0A84A',
-  secondaryContainer:   '#C9913D',
-  secondaryLight:        '#3A2C12',
-  onSecondary:          '#1A1304',
-  onSecondaryContainer: '#FDE3B0',
+  // ── Cyan brand accent ────────────────────────────────────────────────────
+  secondary:            '#22D3EE',
+  secondaryContainer:   '#06B6D4',
+  secondaryLight:       '#ECFEFF',
+  onSecondary:          '#FFFFFF',
+  onSecondaryContainer: '#0E7490',
 
-  // ── Tertiary — Teal accent ────────────────────────────────────────────────
-  tertiary:             '#03A696',
-  tertiaryContainer:    '#0396A6',
-  tertiaryLight:        '#0E3530',
+  // ── Violet brand accent ──────────────────────────────────────────────────
+  tertiary:             '#6D3BFF',
+  tertiaryContainer:    '#8B5CF6',
+  tertiaryLight:        '#EDE9FE',
   onTertiary:           '#FFFFFF',
-  onTertiaryContainer:  '#8FE9DB',
+  onTertiaryContainer:  '#4C1D95',
 
-  // ── Semantic ──────────────────────────────────────────────────────────────
-  success:              '#4CAF50',
-  successLight:         '#163A1A',
-  warning:              '#E0A84A',
-  warningLight:         '#3A2C12',
-  danger:               '#E57373',
-  dangerLight:          '#3A1414',
+  // ── Semantic states ───────────────────────────────────────────────────────
+  success:      '#10B981',
+  successLight: '#D1FAE5',
+  warning:      '#F59E0B',
+  warningLight: '#FEF3C7',
+  danger:       '#EF4444',
+  dangerLight:  '#FEE2E2',
 
-  // ── Legacy aliases (backward compat) ─────────────────────────────────────
-  purple:               '#7C6FE0',
-  purpleLight:          '#241F47',
-  onSurfaceVariant:     '#8C9BB5',  // L=0.324, 6.6:1 on dark card — fine
-
-  // ── Surfaces ──────────────────────────────────────────────────────────────
-  bg:                      '#01050D',
-  surface:                 '#01050D',
-  bgDim:                   '#000000',
-  card:                    '#0B1426',
-  surfaceContainerLow:     '#070B14',
-  surfaceContainer:        '#0B1426',
-  surfaceContainerHigh:    '#11203A',
-  surfaceContainerHighest: '#16294A',
-
-  // ── Text ──────────────────────────────────────────────────────────────────
-  text:           '#F2F2F2',
-  textSecondary:  '#8C9BB5',
-  textTertiary:   '#7580A0',
-  textInverse:    '#0B1426',
-  inverseText:    '#0B1426',
-
-  // ── Borders ───────────────────────────────────────────────────────────────
-  border:         '#1C2840',
-  borderStrong:   '#2C3A56',
+  // ── Legacy aliases ────────────────────────────────────────────────────────
+  purple:           '#6D3BFF',
+  purpleLight:      '#EDE9FE',
+  onSurfaceVariant: '#475569',
 }
 
-export type ThemeColors = typeof lightColors
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+const dark: typeof light = {
+  // ── Backgrounds & surfaces ────────────────────────────────────────────────
+  bg:                      '#0B1220',
+  surface:                 '#111827',
+  bgDim:                   '#1E293B',
+  card:                    '#111827',
+  surfaceContainerLow:     '#0F172A',
+  surfaceContainer:        '#1E293B',
+  surfaceContainerHigh:    '#263548',
+  surfaceContainerHighest: '#334155',
 
-// Default export kept for any straggling static usage — points at the light palette.
-export const colors = lightColors
+  // ── Text ─────────────────────────────────────────────────────────────────
+  text:           '#F8FAFC',
+  textSecondary:  '#CBD5E1',
+  textTertiary:   '#64748B',   // textMuted — intentionally de-emphasized
+  textInverse:    '#0F172A',
+  inverseText:    '#0F172A',
 
+  // ── Borders ───────────────────────────────────────────────────────────────
+  border:         '#334155',
+  borderStrong:   '#475569',
+
+  // ── Primary action (blue — slightly brighter on dark bg) ─────────────────
+  primary:              '#3B82F6',
+  primaryAction:        '#2563EB',
+  primaryLight:         '#1E3A5F',
+  primaryLighter:       '#172844',
+  onPrimary:            '#FFFFFF',
+  onPrimaryContainer:   '#93C5FD',
+
+  // ── Cyan brand accent ────────────────────────────────────────────────────
+  secondary:            '#22D3EE',
+  secondaryContainer:   '#06B6D4',
+  secondaryLight:       '#0C3B47',
+  onSecondary:          '#0B1220',
+  onSecondaryContainer: '#67E8F9',
+
+  // ── Violet brand accent ──────────────────────────────────────────────────
+  tertiary:             '#8B5CF6',   // slightly lighter for dark bg readability
+  tertiaryContainer:    '#6D3BFF',
+  tertiaryLight:        '#1E1547',
+  onTertiary:           '#FFFFFF',
+  onTertiaryContainer:  '#C4B5FD',
+
+  // ── Semantic states ───────────────────────────────────────────────────────
+  success:      '#10B981',
+  successLight: '#064E3B',
+  warning:      '#F59E0B',
+  warningLight: '#451A03',
+  danger:       '#EF4444',
+  dangerLight:  '#450A0A',
+
+  // ── Legacy aliases ────────────────────────────────────────────────────────
+  purple:           '#8B5CF6',
+  purpleLight:      '#1E1547',
+  onSurfaceVariant: '#CBD5E1',
+}
+
+// ── Status colors — CRM client statuses ───────────────────────────────────────
 export const lightStatusColors: Record<string, { bg: string; text: string }> = {
-  prospect: { bg: '#FDF3E3', text: '#A07530' },
-  active:   { bg: '#DCEEFA', text: '#0477BF' },
-  inactive: { bg: '#EAE6DF', text: '#6B7A99' },
-  vip:      { bg: '#0339A6', text: '#FFFFFF' },
-  advisor:  { bg: '#FCEEF5', text: '#C2185B' },
+  active:   { bg: '#D1FAE5', text: '#059669' },   // green  — client actif
+  prospect: { bg: '#DBEAFE', text: '#1D4ED8' },   // blue   — prospect
+  inactive: { bg: '#FEF3C7', text: '#B45309' },   // amber  — à relancer
+  vip:      { bg: '#EDE9FE', text: '#5B21B6' },   // violet — VIP
+  advisor:  { bg: '#ECFEFF', text: '#0E7490' },   // cyan   — conseillère
 }
 
 export const darkStatusColors: Record<string, { bg: string; text: string }> = {
-  prospect: { bg: '#3A2C12', text: '#FDE3B0' },
-  active:   { bg: '#0E3A57', text: '#9FD8E6' },
-  inactive: { bg: '#1C2840', text: '#8C9BB5' },
-  vip:      { bg: '#0396A6', text: '#01050D' },
-  advisor:  { bg: '#3A1430', text: '#F0A8C9' },
+  active:   { bg: '#064E3B', text: '#34D399' },
+  prospect: { bg: '#1E3A5F', text: '#60A5FA' },
+  inactive: { bg: '#451A03', text: '#FCD34D' },
+  vip:      { bg: '#1E1547', text: '#A78BFA' },
+  advisor:  { bg: '#0C3B47', text: '#67E8F9' },
 }
 
-// Backward-compat default export — light status colors.
+// ── Public API ────────────────────────────────────────────────────────────────
+export type ThemeColors = typeof light
+
+export const lightColors = light
+export const darkColors  = dark
+
+// Structured export for direct usage: colors.light, colors.dark, colors.brand, etc.
+export const colors = {
+  light,
+  dark,
+  brand: {
+    cyan:   '#22D3EE',
+    blue:   '#3B82F6',
+    violet: '#6D3BFF',
+  },
+  // KPI card accents
+  kpi: {
+    clients:  '#22D3EE',   // cyan
+    agenda:   '#3B82F6',   // blue
+    revenue:  '#10B981',   // green
+    followup: '#F59E0B',   // amber
+  },
+  gradients: {
+    brand:    ['#22D3EE', '#3B82F6', '#6D3BFF'] as const,
+    brandCss: 'linear-gradient(90deg, #22D3EE, #3B82F6, #6D3BFF)',
+  },
+} as const
+
+// Backward-compat flat aliases (used by ThemeProvider + legacy imports)
 export const statusColors = lightStatusColors

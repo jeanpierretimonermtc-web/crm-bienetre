@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 
 interface Props {
   message: string
@@ -23,6 +24,6 @@ function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
     icon:      { fontSize: 40 },
-    message:   { fontSize: 15, color: colors.textSecondary, textAlign: 'center' },
+    message:   { fontSize: 15, fontFamily: fonts.medium, color: colors.textSecondary, textAlign: 'center' },
   })
 }

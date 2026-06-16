@@ -1,7 +1,7 @@
 export const fonts = {
-  display: 'DMSerifDisplay_400Regular',
-  body: 'DMSans_400Regular',
-  medium: 'DMSans_500Medium',
-  semibold: 'DMSans_600SemiBold',
-  bold: 'DMSans_700Bold',
+  display:  'Inter_700Bold',      // section headings, KPI numbers
+  body:     'Inter_400Regular',   // default body text
+  medium:   'Inter_500Medium',    // slightly emphasized labels
+  semibold: 'Inter_600SemiBold',  // buttons, tab labels, card titles
+  bold:     'Inter_700Bold',      // strong emphasis, numbers
 } as const
