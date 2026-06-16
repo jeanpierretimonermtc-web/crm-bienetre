@@ -25,7 +25,10 @@ function initials(name: string | null | undefined) {
 const CATEGORY_META: Record<string, { color: string; emoji: string }> = {
   'Huile essentielle': { color: '#2E7D32', emoji: '🌿' },
   'Mélange':           { color: '#3570B5', emoji: '⚗️' },
+  'Mélange Kids':       { color: '#C2185B', emoji: '🧒' },
   'Complément':        { color: '#C9913D', emoji: '💊' },
+  'Soin topique':      { color: '#7A8FAA', emoji: '🧴' },
+  'Accessoire':        { color: '#B0A99E', emoji: '🧺' },
 }
 
 function categoryAccent(category: string | null, fallback: string): string {
