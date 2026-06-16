@@ -36,7 +36,7 @@ export const lightColors = {
   // ── Legacy aliases (backward compat) ─────────────────────────────────────
   purple:               '#371ED9',
   purpleLight:          '#E7E2FB',
-  onSurfaceVariant:     '#6B7A99',
+  onSurfaceVariant:     '#536082',
 
   // ── Surfaces ──────────────────────────────────────────────────────────────
   bg:                      '#F2F2F2',
@@ -50,8 +50,8 @@ export const lightColors = {
 
   // ── Text ──────────────────────────────────────────────────────────────────
   text:           '#0B1426',
-  textSecondary:  '#6B7A99',
-  textTertiary:   '#9AA6BD',
+  textSecondary:  '#536082',
+  textTertiary:   '#5F6F8E',
   textInverse:    '#FFFFFF',
   inverseText:    '#EAF2FB',
 
@@ -94,7 +94,7 @@ export const darkColors: typeof lightColors = {
   // ── Legacy aliases (backward compat) ─────────────────────────────────────
   purple:               '#7C6FE0',
   purpleLight:          '#241F47',
-  onSurfaceVariant:     '#8C9BB5',
+  onSurfaceVariant:     '#8C9BB5',  // L=0.324, 6.6:1 on dark card — fine
 
   // ── Surfaces ──────────────────────────────────────────────────────────────
   bg:                      '#01050D',
@@ -109,7 +109,7 @@ export const darkColors: typeof lightColors = {
   // ── Text ──────────────────────────────────────────────────────────────────
   text:           '#F2F2F2',
   textSecondary:  '#8C9BB5',
-  textTertiary:   '#5C6B85',
+  textTertiary:   '#7580A0',
   textInverse:    '#0B1426',
   inverseText:    '#0B1426',
 
