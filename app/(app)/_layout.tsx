@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { StatusBar } from 'expo-status-bar'
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
@@ -103,7 +104,7 @@ function makeTabStyles(colors: ThemeColors) {
   },
   icon: {
     fontSize: 22,
-    opacity: 0.38,
+    opacity: 0.5,
   },
   iconActive: {
     opacity: 1,
@@ -227,9 +228,10 @@ export default function AppLayout() {
           ? <Sidebar pathname={pathname} />
           : isRootRoute && (
             <View style={styles.mobileHeader}>
+              <StatusBar style="light" />
               <View style={styles.mobileHeaderLeft}>
                 <Image source={require('@/assets/logo-icon.png')} style={styles.mobileHeaderLeaf} resizeMode="contain" />
-                <Image source={require('@/assets/wordmark-dark.png')} style={styles.mobileHeaderWordmark} resizeMode="contain" />
+                <Image source={require('@/assets/wordmark-white.png')} style={styles.mobileHeaderWordmark} resizeMode="contain" />
               </View>
               <View style={styles.mobileHeaderRight}>
                 <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
@@ -282,8 +284,8 @@ function makeStyles(colors: ThemeColors) {
   mobileHeaderRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   mobileHeaderBtn:        { padding: 4 },
   mobileHeaderBtnIcon:    { fontSize: 18 },
-  mobileHeaderAvatar:     { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  mobileHeaderAvatarText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  mobileHeaderAvatar:     { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  mobileHeaderAvatarText: { fontSize: 12, fontFamily: fonts.bold, color: '#FFFFFF' },
 
   // ── Sidebar ──────────────────────────────────────────────────────────────────
   sidebar: {
