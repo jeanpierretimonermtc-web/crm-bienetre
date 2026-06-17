@@ -38,7 +38,7 @@ function KpiCard({ icon, value, label, delta, accent, bg, onPress, wide }: {
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
   return (
-    <TouchableOpacity style={[styles.kpiCard, wide ? styles.kpiCardWide : styles.kpiCardMobile]} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
+    <TouchableOpacity style={[styles.kpiCard, wide ? styles.kpiCardWide : styles.kpiCardMobile, { borderLeftWidth: 3, borderLeftColor: accent }]} onPress={onPress} activeOpacity={onPress ? 0.8 : 1}>
       <View style={styles.kpiTop}>
         <Text style={styles.kpiLabel}>{label}</Text>
         <View style={[styles.kpiIconBox, { backgroundColor: bg }]}>
@@ -263,8 +263,8 @@ export default function DashboardScreen() {
       >
         {/* ── Greeting ──────────────────────────────────── */}
         <View style={styles.greetingRow}>
-          <View>
-            <Text style={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
+          <View style={styles.greetingLeft}>
+            <Text style={styles.greeting} numberOfLines={2}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
             <Text style={styles.greetingSub}>{t('dashboard.title')}</Text>
           </View>
           <View style={styles.quickRow}>
@@ -328,7 +328,7 @@ export default function DashboardScreen() {
             icon="👥" value={stats.totalClients}
             label={t('dashboard.stats.total_clients')}
             delta={t('dashboard.kpi.new_month', { count: stats.newThisMonth })}
-            accent={colors.primary} bg={colors.primaryLight}
+            accent={colors.secondary} bg={colors.secondaryLight}
             onPress={() => router.push('/(app)/clients')}
           />
           <KpiCard wide={isWide}
@@ -338,20 +338,20 @@ export default function DashboardScreen() {
             accent={colors.primary} bg={colors.primaryLight}
           />
           <KpiCard wide={isWide}
-            icon="⚠️" value={stats.pendingFollowups}
+            icon="🔔" value={stats.pendingFollowups}
             label={t('dashboard.stats.pending_followups')}
             delta={overdueToday.length > 0
               ? `${overdueToday.length} ${t('dashboard.kpi.overdue')}`
               : t('dashboard.kpi.active_pct', { pct: activePct })}
-            accent={overdueToday.length > 0 ? colors.danger : colors.primary}
-            bg={overdueToday.length > 0 ? colors.dangerLight : colors.primaryLight}
+            accent={overdueToday.length > 0 ? colors.danger : colors.warning}
+            bg={overdueToday.length > 0 ? colors.dangerLight : colors.warningLight}
             onPress={() => router.push('/(app)/followups')}
           />
           <KpiCard wide={isWide}
             icon="✨" value={lrpClients.length}
             label={t('dashboard.next_lrp')}
             delta={t('dashboard.kpi.lrp_delta')}
-            accent={colors.secondary} bg={colors.secondaryLight}
+            accent={colors.tertiary} bg={colors.tertiaryLight}
           />
         </View>
 
@@ -434,8 +434,9 @@ function makeStyles(colors: ThemeColors) {
   content:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 64, gap: 22 },
   contentWide: { paddingHorizontal: 28, paddingTop: 24, gap: 28 },
 
-  greetingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  greeting:    { fontSize: 22, fontFamily: fonts.display, color: colors.primary },
+  greetingRow:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  greetingLeft: { flex: 1 },
+  greeting:     { fontSize: 22, fontFamily: fonts.display, color: colors.primary },
   greetingSub: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 2 },
   quickRow:    { flexDirection: 'row', gap: 8, flexShrink: 0 },
   quickCard:   { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center', gap: 4, minWidth: 70 },

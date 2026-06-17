@@ -231,7 +231,7 @@ export default function AppLayout() {
               <StatusBar style="light" />
               <View style={styles.mobileHeaderLeft}>
                 <Image source={require('@/assets/logo-icon.png')} style={styles.mobileHeaderLeaf} resizeMode="contain" />
-                <Image source={require('@/assets/wordmark-white.png')} style={styles.mobileHeaderWordmark} resizeMode="contain" />
+                <Image source={require('@/assets/wordmark-dark.png')} style={styles.mobileHeaderWordmark} resizeMode="contain" />
               </View>
               <View style={styles.mobileHeaderRight}>
                 <TouchableOpacity onPress={() => router.push('/(app)/clients')} style={styles.mobileHeaderBtn}>
@@ -270,7 +270,7 @@ function makeStyles(colors: ThemeColors) {
 
   // ── Mobile header ────────────────────────────────────────────────────────────
   mobileHeader: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#0F172A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
