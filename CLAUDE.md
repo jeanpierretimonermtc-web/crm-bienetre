@@ -21,6 +21,7 @@
 | Navigation | Expo Router v4 (file-based) |
 | Backend / DB | Supabase (PostgreSQL + Auth + RLS) |
 | i18n | i18next + react-i18next + expo-localization |
+| Police | Inter (400/500/600/700) via `@expo-google-fonts/inter` |
 | Déploiement web | Vercel (`npx vercel --prod`) |
 | Migrations DB | Node.js + `pg` (scripts `migrate*.mjs`) |
 
@@ -32,24 +33,35 @@
 
 ```
 app/
-  _layout.tsx              — Root layout (AuthProvider + i18n)
+  _layout.tsx              — Root layout : ThemeProvider > AuthProvider > Slot
+                             Charge les polices Inter (useFonts)
+  reset-password.tsx       — Route publique reset mot de passe (email Supabase)
   (auth)/
+    _layout.tsx
     login.tsx
     register.tsx
   (app)/
-    _layout.tsx            — Sidebar (web ≥768px) + Bottom tabs (mobile)
-    index.tsx              — Dashboard (KPIs, agenda, relances, LRP)
+    _layout.tsx            — Sidebar (web ≥768px) + Header mobile + Bottom tabs
+                             Utilise DemoProvider, useTheme, StatusBar
+    index.tsx              — Dashboard (KPIs, agenda, relances, LRP, mode démo)
+    settings.tsx           — Profil praticien + toggle dark mode + masquer démo
+    catalog/
+      index.tsx            — Catalogue produits (onglets par marque, recherche, recommandation)
     clients/
-      index.tsx            — Liste clients avec search + filtres statut
+      index.tsx            — Liste clients (search + filtres statut)
       new.tsx              — Formulaire création client
       [id]/
         index.tsx          — Fiche client (hub central)
+        edit.tsx           — Édition fiche client
         appointments.tsx
         notes.tsx
         followups.tsx
         recommendations.tsx — Utilise CatalogProductPicker
-    appointments/index.tsx — Agenda global
-    followups/index.tsx    — Relances globales (overdue / today / upcoming)
+    appointments/
+      index.tsx            — Agenda : vue jour / vue semaine (grille horaire)
+      new.tsx              — Nouveau RDV avec sélecteur client
+    followups/
+      index.tsx            — Relances globales (overdue / today / upcoming)
 
 features/
   auth/AuthProvider.tsx    — Context session Supabase
@@ -60,6 +72,8 @@ features/
   recommendations/         — recommendationService.ts + useRecommendations.ts
   dashboard/               — useDashboard.ts (stats + LRP)
   catalogs/                — catalogService.ts + useCatalog.ts + CatalogProductPicker.tsx
+  demo/                    — DemoProvider.tsx + demoService.ts
+                             Charge/supprime des données fictives pour démo
   modules/
     doterra/               — products.ts (référence legacy) + DoterraProductPicker (déprécié)
 
@@ -71,12 +85,128 @@ shared/
     index.ts               — Config i18next (EN canonique, fallback EN)
     locales/en.json        — Langue canonique (source de vérité)
     locales/fr.json        — Traduction française complète
-  theme/colors.ts          — Palette couleurs + statusColors
-  components/ui/           — Button, Card, Badge, Avatar, Input, TextArea, EmptyState
+  theme/
+    colors.ts              — Design system : lightColors, darkColors, ThemeColors,
+                             lightStatusColors, darkStatusColors,
+                             export colors.{light,dark,brand,kpi,gradients}
+    fonts.ts               — Constantes typographiques Inter (display/body/medium/semibold/bold)
+    ThemeProvider.tsx      — Context thème : useTheme() → { mode, colors, statusColors,
+                             toggleTheme, setMode }. Persisté AsyncStorage @oryalis:themeMode
+  components/ui/           — Button, Card, Badge (StatusBadge), Avatar, Input, TextArea, EmptyState
+
+assets/
+  logo-icon.png            — Glyphe colibri transparent (extrait du master 1024, chroma-key)
+  wordmark-day.png         — "ORYALIS" texte navy, fond transparent — sidebar light mode
+  wordmark-dark.png        — "ORYALIS" texte gradient cyan→bleu→violet, fond transparent — sidebar dark mode
+  wordmark-white.png       — "ORYALIS" texte blanc, fond transparent — header mobile (fond coloré)
+  icon.png                 — Icône app 1024×1024 (iOS / Expo)
+  favicon.png              — Favicon web 192×192
+  android-icon-foreground.png / android-icon-background.png / android-icon-monochrome.png
+  splash-icon.png
 
 supabase/migrations/       — SQL de référence (non exécuté via CLI)
 migrate*.mjs               — Scripts Node.js + pg pour migrations DB
 ```
+
+---
+
+## Design system
+
+### Thème light / dark
+
+Le projet a un **vrai système de thème** clair/sombre avec bascule dans Paramètres > Affichage.
+
+**Règle absolue** : ne jamais importer `colors` statiquement depuis `colors.ts`. Toujours `useTheme()` à l'intérieur d'un composant React.
+
+```ts
+// ✅ Correct
+const { colors, statusColors, mode } = useTheme()
+const styles = useMemo(() => makeStyles(colors), [colors])
+
+// ❌ Interdit — ne réagit pas au changement de thème
+import { lightColors as colors } from '@/shared/theme/colors'
+```
+
+**Pattern standard pour tout composant avec styles colorés :**
+
+```tsx
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import type { ThemeColors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
+
+export function MonComposant() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  // ...
+}
+
+function makeStyles(colors: ThemeColors) {
+  return StyleSheet.create({ ... })
+}
+```
+
+Si un helper au scope module a besoin de couleurs, passer `colors` en paramètre (ne peut pas appeler un hook hors composant).
+
+### Palette (tokens principaux)
+
+| Token | Light | Dark |
+|---|---|---|
+| `bg` | `#FFFFFF` | `#0B1220` |
+| `surface` | `#F8FAFC` | `#111827` |
+| `bgDim` | `#F1F5F9` | `#1E293B` |
+| `card` | `#FFFFFF` | `#111827` |
+| `border` | `#E2E8F0` | `#334155` |
+| `text` | `#0F172A` | `#F8FAFC` |
+| `textSecondary` | `#475569` | `#CBD5E1` |
+| `textTertiary` | `#94A3B8` | `#64748B` |
+| `primary` (CTA) | `#2563EB` | `#3B82F6` |
+| `primaryAction` | `#1D4ED8` | `#2563EB` |
+| `primaryLight` | `#DBEAFE` | `#1E3A5F` |
+
+**Accents brand** (uniquement pour icônes, KPIs, états importants — pas partout) :
+- `secondary` : cyan `#22D3EE`
+- `tertiary` : violet `#6D3BFF` / `#8B5CF6` dark
+- `success` : `#10B981` · `warning` : `#F59E0B` · `danger` : `#EF4444`
+
+**KPI colors** (accès via `colors.kpi` — import statique autorisé ici car pas de styles RN) :
+- clients `#22D3EE` · agenda `#3B82F6` · revenus `#10B981` · relances `#F59E0B`
+
+**Gradient officiel** : `['#22D3EE', '#3B82F6', '#6D3BFF']` (dans `colors.gradients.brand`)
+
+### Statuts CRM
+
+| Statut | Light bg | Light text | Dark bg | Dark text |
+|---|---|---|---|---|
+| `active` | `#D1FAE5` | `#059669` | `#064E3B` | `#34D399` |
+| `prospect` | `#DBEAFE` | `#1D4ED8` | `#1E3A5F` | `#60A5FA` |
+| `inactive` | `#FEF3C7` | `#B45309` | `#451A03` | `#FCD34D` |
+| `vip` | `#EDE9FE` | `#5B21B6` | `#1E1547` | `#A78BFA` |
+| `advisor` | `#ECFEFF` | `#0E7490` | `#0C3B47` | `#67E8F9` |
+
+### Typographie (Inter)
+
+```ts
+import { fonts } from '@/shared/theme/fonts'
+// fonts.display / fonts.body / fonts.medium / fonts.semibold / fonts.bold
+// → 'Inter_700Bold' / 'Inter_400Regular' / 'Inter_500Medium' / 'Inter_600SemiBold' / 'Inter_700Bold'
+```
+
+### Composants UI — border-radius premium
+
+| Composant | borderRadius |
+|---|---|
+| Button (md) | 12 |
+| Button (sm) | 10 |
+| Card | 16 + borderWidth 1 |
+| Input / TextArea | 12 |
+| StatusBadge | 8 |
+
+### Header mobile
+
+- Fond : `colors.primary` (bleu)
+- Wordmark : `wordmark-white.png` (texte blanc — les versions gradient/navy seraient invisibles sur fond bleu)
+- `StatusBar style="light"` pour icônes système iOS en blanc
+- Sidebar web day → `wordmark-day.png`, dark → `wordmark-dark.png`
 
 ---
 
@@ -97,7 +227,8 @@ followups         — id, client_id, user_id, title, content, due_date, done, up
 recommendations   — id, client_id, user_id, product_name, reason, status, catalog_id, product_id
 catalogs          — id, slug (UNIQUE), name, brand, type (official|custom), user_id (null=officiel),
                     color, icon, created_at
-catalog_products  — id, catalog_id, sku, name, category, created_at
+catalog_products  — id, catalog_id, sku, name, category, image_url, created_at
+                    (128 produits doTERRA seedés, images dans bucket Supabase Storage public)
 ```
 
 ### RLS
@@ -132,6 +263,7 @@ Historique :
 - `migrate2.mjs` — correctifs RLS + trigger
 - `migrate3.mjs` — ajout first_name + inscription_date sur clients
 - `migrate4.mjs` — tables catalogs + catalog_products + seed doTERRA (52 produits)
+- `migrate5.mjs` — 76 produits doTERRA supplémentaires + bucket images public + image_url
 
 ---
 
@@ -163,12 +295,12 @@ Le build Vercel exécute `npx expo export --platform web` → dossier `dist/`.
 
 ---
 
-## Architecture catalogues (Phase 2)
+## Architecture catalogues
 
 Les produits à recommander aux clients viennent de **catalogues** :
 
 - **Officiels** (`type='official'`, `user_id=null`) : maintenus par Oryalis, visibles par tous
-  - `slug='doterra'` : 52 produits seedés
+  - `slug='doterra'` : 128 produits seedés avec images S3
   - À venir : `slug='zinzino'`, etc.
 - **Custom** (`type='custom'`, `user_id=X`) : créés par le praticien
 
@@ -184,28 +316,30 @@ Pour ajouter une nouvelle marque : `INSERT INTO catalogs` + `INSERT INTO catalog
 - **Pas de `console.log`** en prod — uniquement `console.error` dans les catch
 - **Pas de commentaires** sauf si la logique est non-évidente
 - **Pas de mock** — toujours les vraies données Supabase
+- **Thème** : toujours `useTheme()` — jamais import statique de `colors` (voir section Design system)
+- **Styles** : pattern `makeStyles(colors: ThemeColors)` + `useMemo(() => makeStyles(colors), [colors])`
+- **Fonts** : utiliser `fonts.semibold` etc. depuis `shared/theme/fonts.ts` — pas de `fontWeight` hardcodé
 - Hooks : `use[Resource].ts` dans `features/[resource]/`
 - Services : `[resource]Service.ts` dans `features/[resource]/`
 - Composants UI partagés : uniquement dans `shared/components/ui/`
 - **PowerShell + BOM** : ne jamais piper des strings vers des processus natifs via PowerShell (BOM 0xFEFF). Toujours utiliser Node.js API calls pour écrire des fichiers ou appeler des APIs externes.
+- **Scripts Node utilitaires** (ex: chroma-key PNG) : créer comme `.mjs` à la racine du projet (besoin de `node_modules`), supprimer après usage, ne jamais committer
 
 ---
 
 ## État du projet
 
 ### Phase 1 ✅ Terminée
-Clients, RDV, Notes, Relances, Recommandations, Module DoTerra, Dashboard KPI, Sidebar responsive, i18n EN/FR, Architecture catalogues DB.
+Clients, RDV, Notes, Relances, Recommandations, Module DoTerra (128 produits + images), Dashboard KPI, Agenda semaine/jour, Mode démo (chargement/suppression), Page Paramètres (profil + dark mode toggle), Sidebar responsive web, i18n EN/FR, Architecture catalogues DB, Design system light/dark mode premium (Inter, palette Linear/Stripe).
 
 ### Phase 2 — À construire
 - [ ] Stripe abonnements (Free / Pro 29€ / Cabinet 79€)
 - [ ] Webhook Stripe → `subscriptions` table Supabase
-- [ ] Gates fonctionnalités Pro
+- [ ] Gates fonctionnalités Pro (limite 20 clients plan Free)
 - [ ] Landing page oryalis.app
-- [ ] Onboarding guidé 3 étapes
-- [ ] Données de démo au premier login
-- [ ] Emails transactionnels (Resend)
-- [ ] Agenda calendrier (vue semaine + jour)
-- [ ] Page Paramètres (profil, langue, timezone)
+- [ ] Onboarding guidé 3 étapes (premier login)
+- [ ] Emails transactionnels (Resend) — confirmation compte, récap RDV
+- [ ] Page Paramètres : langue + timezone (section à compléter)
 
 ### Phase 3 — Rétention
 - [ ] Export PDF fiche client
@@ -218,7 +352,7 @@ Clients, RDV, Notes, Relances, Recommandations, Module DoTerra, Dashboard KPI, S
 - [ ] Module MTC complet (référence : `C:\Users\timjp\development\synoria`)
 - [ ] Module Zinzino + seed catalogue
 - [ ] Marketplace praticiens
-- [ ] App stores iOS + Android
+- [ ] App stores iOS + Android (publication)
 - [ ] Multilingue ES, DE, PT, AR (RTL)
 - [ ] White-label associations
 
