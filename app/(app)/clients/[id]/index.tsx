@@ -8,20 +8,37 @@ import { useClientAppointments } from '@/features/appointments/useAppointments'
 import { useNotes } from '@/features/notes/useNotes'
 import { useClientFollowups } from '@/features/followups/useFollowups'
 import { useRecommendations } from '@/features/recommendations/useRecommendations'
+import { useClientInteractions } from '@/features/interactions/useInteractions'
+import { useClientOrders } from '@/features/orders/useOrders'
+import { useDirectTeam } from '@/features/network/useNetwork'
+import { computeProspectScore } from '@/features/clients/clientService'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import type { ClientStatus } from '@/shared/lib/types'
+import type { ClientStatus, ContactRole } from '@/shared/lib/types'
 
-type Tab = 'apercu' | 'rdv' | 'notes' | 'relances' | 'reco'
+type Tab = 'apercu' | 'rdv' | 'notes' | 'relances' | 'reco' | 'interactions' | 'orders' | 'team'
 
-const TABS: { key: Tab; labelKey: string }[] = [
-  { key: 'apercu',   labelKey: 'clients.tab_overview' },
-  { key: 'rdv',      labelKey: 'clients.tab_rdv' },
-  { key: 'notes',    labelKey: 'clients.tab_notes' },
-  { key: 'relances', labelKey: 'clients.tab_followups' },
-  { key: 'reco',     labelKey: 'clients.tab_reco' },
+const BASE_TABS: { key: Tab; labelKey: string }[] = [
+  { key: 'apercu',       labelKey: 'clients.tab_overview' },
+  { key: 'rdv',          labelKey: 'clients.tab_rdv' },
+  { key: 'notes',        labelKey: 'clients.tab_notes' },
+  { key: 'relances',     labelKey: 'clients.tab_followups' },
+  { key: 'reco',         labelKey: 'clients.tab_reco' },
+  { key: 'interactions', labelKey: 'clients.tab_interactions' },
+  { key: 'orders',       labelKey: 'clients.tab_orders' },
 ]
+
+function getRoleColors(role: ContactRole, colors: ThemeColors) {
+  switch (role) {
+    case 'distributor': return { bg: colors.secondaryLight, text: colors.secondary }
+    case 'leader':      return { bg: colors.tertiaryLight,  text: colors.tertiary  }
+    case 'customer':    return { bg: colors.successLight,   text: colors.success   }
+    case 'team_member': return { bg: colors.bgDim,          text: colors.textSecondary }
+    case 'inactive':    return { bg: colors.warningLight,   text: colors.warning   }
+    default:            return { bg: colors.primaryLight,   text: colors.primary   }
+  }
+}
 
 function nameInitials(name: string) {
   const parts = name.trim().split(' ').filter(Boolean)
@@ -46,7 +63,17 @@ export default function ClientDetailScreen() {
   const { notes } = useNotes(id)
   const { followups } = useClientFollowups(id)
   const { recommendations } = useRecommendations(id)
+  const { interactions } = useClientInteractions(id)
+  const { orders } = useClientOrders(id)
+  const { team } = useDirectTeam(id)
   const [activeTab, setActiveTab] = useState<Tab>('apercu')
+
+  const TABS = useMemo(() => {
+    const isNetworkRole = client?.contact_role === 'distributor' || client?.contact_role === 'leader'
+    return isNetworkRole
+      ? [...BASE_TABS, { key: 'team' as Tab, labelKey: 'clients.tab_team' }]
+      : BASE_TABS
+  }, [client?.contact_role])
 
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
 
@@ -67,15 +94,34 @@ export default function ClientDetailScreen() {
 
   // KPI calculations
   const now = new Date()
-  const past   = appointments.filter(a => new Date(a.appointment_date) <= now)
-    .sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime())
-  const future = appointments.filter(a => new Date(a.appointment_date) > now)
-    .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime())
-  const lastDate = past[0]?.appointment_date
-  const nextDate = future[0]?.appointment_date
-    ?? appointments.find(a => a.next_appointment_date)?.next_appointment_date
+  const past   = appointments.filter(a => new Date(a.start_at) <= now)
+    .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
+  const future = appointments.filter(a => new Date(a.start_at) > now)
+    .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime())
+  const lastDate = past[0]?.start_at
+  const nextDate = future[0]?.start_at
 
   const sc = statusColors[client.status as ClientStatus] ?? { bg: colors.surfaceContainerHigh, text: colors.textSecondary }
+
+  // Prospect score — uses full data available in this screen
+  const bestFollowup = followups.reduce<typeof followups[0] | null>((best, f) => {
+    if (!f.prospect_temperature) return best
+    const order = { very_hot: 4, hot: 3, warm: 2, cold: 1 }
+    if (!best?.prospect_temperature) return f
+    return (order[f.prospect_temperature] ?? 0) > (order[best.prospect_temperature!] ?? 0) ? f : best
+  }, null)
+
+  const prospectScore = computeProspectScore({
+    client,
+    lastRdvDate: lastDate ?? null,
+    totalRdv: appointments.length,
+    followupTemperature: bestFollowup?.prospect_temperature ?? null,
+    pipelineStage: bestFollowup?.pipeline_stage ?? null,
+  })
+
+  const scoreBg   = prospectScore >= 70 ? colors.dangerLight  : prospectScore >= 40 ? colors.warningLight : colors.bgDim
+  const scoreText = prospectScore >= 70 ? colors.danger        : prospectScore >= 40 ? colors.warning      : colors.textSecondary
+
   const particularityItems = client.particularities
     ? client.particularities.split('\n').map(s => s.trim()).filter(Boolean)
     : []
@@ -119,10 +165,27 @@ export default function ClientDetailScreen() {
                   {t(`clients.status.${client.status}`).toUpperCase()}
                 </Text>
               </View>
+              {client.contact_role && client.contact_role !== 'customer' ? (() => {
+                const rc = getRoleColors(client.contact_role as ContactRole, colors)
+                return (
+                  <View style={[styles.heroPill, { backgroundColor: rc.bg }]}>
+                    <Text style={[styles.heroPillText, { color: rc.text }]}>
+                      {t(`clients.contact_role.${client.contact_role}`).toUpperCase()}
+                    </Text>
+                  </View>
+                )
+              })() : null}
               {client.client_type ? (
                 <View style={[styles.heroPill, { backgroundColor: colors.surfaceContainerHighest }]}>
                   <Text style={[styles.heroPillText, { color: colors.textSecondary }]}>
                     {client.client_type.toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
+              {prospectScore > 0 ? (
+                <View style={[styles.heroPill, { backgroundColor: scoreBg }]}>
+                  <Text style={[styles.heroPillText, { color: scoreText }]}>
+                    {t('clients.score')} {prospectScore}
                   </Text>
                 </View>
               ) : null}
@@ -259,6 +322,62 @@ export default function ClientDetailScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                {/* Parcours */}
+                {(client.journey_stage || client.next_action_type || client.next_action_date) ? (
+                  <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
+                        <Text style={styles.iconBoxEmoji}>🗺</Text>
+                      </View>
+                      <Text style={styles.cardTitle}>{t('clients.sections.journey')}</Text>
+                    </View>
+                    {client.journey_stage ? (
+                      <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>{t('clients.fields.journey_stage').toUpperCase()}</Text>
+                        <Text style={styles.fieldValue}>{t(`journey_stages.${client.journey_stage}`)}</Text>
+                      </View>
+                    ) : null}
+                    {client.next_action_type ? (
+                      <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>{t('clients.fields.next_action_type').toUpperCase()}</Text>
+                        <Text style={styles.fieldValue}>{t(`next_action_types.${client.next_action_type}`)}</Text>
+                      </View>
+                    ) : null}
+                    {client.next_action_date ? (
+                      <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>{t('clients.fields.next_action_date').toUpperCase()}</Text>
+                        <Text style={styles.fieldValue}>
+                          {new Date(client.next_action_date).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                {/* Réseau */}
+                {((client.referral_count ?? 0) > 0 || client.network_potential) ? (
+                  <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <View style={[styles.iconBox, { backgroundColor: colors.tertiaryLight }]}>
+                        <Text style={styles.iconBoxEmoji}>🌐</Text>
+                      </View>
+                      <Text style={styles.cardTitle}>{t('clients.sections.network')}</Text>
+                    </View>
+                    {(client.referral_count ?? 0) > 0 ? (
+                      <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>{t('clients.fields.referral_count').toUpperCase()}</Text>
+                        <Text style={styles.fieldValue}>{client.referral_count}</Text>
+                      </View>
+                    ) : null}
+                    {client.network_potential ? (
+                      <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>{t('clients.fields.network_potential').toUpperCase()}</Text>
+                        <Text style={styles.fieldValue}>{t(`network_potentials.${client.network_potential}`)}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
               </>
             )}
 
@@ -269,7 +388,7 @@ export default function ClientDetailScreen() {
                   ? <Text style={styles.emptyText}>{t('appointments.empty')}</Text>
                   : appointments
                       .slice()
-                      .sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime())
+                      .slice().sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
                       .map(appt => (
                         <TouchableOpacity
                           key={appt.id}
@@ -279,14 +398,12 @@ export default function ClientDetailScreen() {
                         >
                           <View style={styles.listCardLeft}>
                             <Text style={styles.listCardDate}>
-                              {new Date(appt.appointment_date).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
+                              {new Date(appt.start_at).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                             </Text>
-                            {appt.themes_discussed ? (
-                              <Text style={styles.listCardSub} numberOfLines={2}>{appt.themes_discussed}</Text>
-                            ) : null}
+                            <Text style={styles.listCardSub} numberOfLines={1}>{appt.title}</Text>
                           </View>
                           <View style={styles.listCardBadge}>
-                            <Text style={styles.listCardBadgeText}>#{appt.appointment_number}</Text>
+                            <Text style={styles.listCardBadgeText}>{new Date(appt.start_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</Text>
                           </View>
                         </TouchableOpacity>
                       ))
@@ -373,8 +490,8 @@ export default function ClientDetailScreen() {
                           <Text style={styles.listCardTitle}>{r.product_name}</Text>
                           {r.reason ? <Text style={styles.listCardSub} numberOfLines={2}>{r.reason}</Text> : null}
                         </View>
-                        <View style={[styles.listCardBadge, r.status === 'purchased' && styles.listCardBadgeGreen]}>
-                          <Text style={[styles.listCardBadgeText, r.status === 'purchased' && styles.listCardBadgeTextGreen]}>
+                        <View style={[styles.listCardBadge, r.status !== 'advised' && styles.listCardBadgeGreen]}>
+                          <Text style={[styles.listCardBadgeText, r.status !== 'advised' && styles.listCardBadgeTextGreen]}>
                             {t(`recommendations.${r.status}`)}
                           </Text>
                         </View>
@@ -383,6 +500,113 @@ export default function ClientDetailScreen() {
                 }
                 <TouchableOpacity style={styles.addRowBtn} onPress={() => router.push(`/(app)/clients/${id}/recommendations`)} activeOpacity={0.7}>
                   <Text style={styles.addRowBtnText}>+ {t('recommendations.add')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ─ Commandes ─ */}
+            {activeTab === 'orders' && (
+              <View style={styles.listTab}>
+                {orders.length === 0
+                  ? <Text style={styles.emptyText}>{t('orders.empty')}</Text>
+                  : orders
+                      .slice()
+                      .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())
+                      .map(o => (
+                        <TouchableOpacity
+                          key={o.id}
+                          style={styles.listCard}
+                          onPress={() => router.push(`/(app)/clients/${id}/orders`)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.listCardLeft}>
+                            <Text style={styles.listCardDate}>
+                              {new Date(o.order_date).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </Text>
+                            <Text style={styles.listCardSub} numberOfLines={1}>{o.product_name}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                            {o.is_lrp ? (
+                              <View style={[styles.listCardBadge, { backgroundColor: colors.secondaryLight }]}>
+                                <Text style={[styles.listCardBadgeText, { color: colors.secondary }]}>{t('orders.lrp')}</Text>
+                              </View>
+                            ) : null}
+                            {o.amount != null ? (
+                              <View style={styles.listCardBadge}>
+                                <Text style={styles.listCardBadgeText}>{o.amount.toFixed(0)}€</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                }
+                <TouchableOpacity style={styles.addRowBtn} onPress={() => router.push(`/(app)/clients/${id}/orders`)} activeOpacity={0.7}>
+                  <Text style={styles.addRowBtnText}>+ {t('orders.add')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ─ Interactions ─ */}
+            {activeTab === 'interactions' && (
+              <View style={styles.listTab}>
+                {interactions.length === 0
+                  ? <Text style={styles.emptyText}>{t('interactions.empty')}</Text>
+                  : interactions
+                      .slice()
+                      .sort((a, b) => new Date(b.scheduled_at ?? 0).getTime() - new Date(a.scheduled_at ?? 0).getTime())
+                      .map(item => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={[styles.listCard, !!item.completed_at && styles.listCardDone]}
+                          onPress={() => router.push(`/(app)/clients/${id}/interactions`)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.listCardLeft}>
+                            <Text style={styles.listCardDate}>
+                              {item.scheduled_at
+                                ? new Date(item.scheduled_at).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
+                                : '—'}
+                            </Text>
+                            {item.subject ? <Text style={styles.listCardSub} numberOfLines={2}>{item.subject}</Text> : null}
+                          </View>
+                          <View style={styles.listCardBadge}>
+                            <Text style={styles.listCardBadgeText}>{t(`interaction_types.${item.interaction_type}`)}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                }
+                <TouchableOpacity style={styles.addRowBtn} onPress={() => router.push(`/(app)/clients/${id}/interactions`)} activeOpacity={0.7}>
+                  <Text style={styles.addRowBtnText}>+ {t('interactions.add')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ─ Équipe ─ */}
+            {activeTab === 'team' && (
+              <View style={styles.listTab}>
+                {team.length === 0
+                  ? <Text style={styles.emptyText}>{t('network.empty')}</Text>
+                  : team.map(m => (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={styles.listCard}
+                        onPress={() => router.push(`/(app)/clients/${m.id}` as any)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.listCardLeft}>
+                          <Text style={styles.listCardTitle}>{m.full_name}</Text>
+                          {m.email ? <Text style={styles.listCardSub} numberOfLines={1}>{m.email}</Text> : null}
+                        </View>
+                        <View style={styles.listCardBadge}>
+                          <Text style={styles.listCardBadgeText}>
+                            {t(`clients.contact_role.${m.contact_role}`)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                }
+                <TouchableOpacity style={styles.addRowBtn} onPress={() => router.push(`/(app)/clients/${id}/team` as any)} activeOpacity={0.7}>
+                  <Text style={styles.addRowBtnText}>→ {t('clients.tab_team')}</Text>
                 </TouchableOpacity>
               </View>
             )}

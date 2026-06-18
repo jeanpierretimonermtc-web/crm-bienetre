@@ -6,9 +6,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jptim09.oryalis",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -29,7 +37,19 @@
     "plugins": [
       "expo-router",
       "expo-localization",
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Oryalis a besoin d'accéder à votre calendrier pour synchroniser vos rendez-vous."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a46318d3-1be7-4b61-93de-d90af0b256c2"
+      }
+    }
   }
 }

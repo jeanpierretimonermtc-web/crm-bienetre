@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
-import { router, Stack, useFocusEffect } from 'expo-router'
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { useClients, useClientSearch } from '@/features/clients/useClients'
+import { computeProspectScore } from '@/features/clients/clientService'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { Client, ClientStatus } from '@/shared/lib/types'
 
-const STATUS_FILTERS: (ClientStatus | 'all')[] = ['all', 'active', 'prospect', 'inactive', 'vip', 'advisor']
+const STATUS_FILTERS: (ClientStatus | 'all')[] = ['all', 'active', 'new_client', 'loyal', 'prospect', 'inactive', 'vip', 'advisor']
 
 function initials(name: string) {
   const parts = name.trim().split(' ').filter(Boolean)
@@ -43,6 +44,18 @@ function StatusPill({ status }: { status: ClientStatus }) {
   )
 }
 
+function ScoreBadge({ score }: { score: number }) {
+  const { colors } = useTheme()
+  if (score <= 0) return null
+  const bg   = score >= 70 ? colors.dangerLight  : score >= 40 ? colors.warningLight : colors.bgDim
+  const text = score >= 70 ? colors.danger        : score >= 40 ? colors.warning      : colors.textSecondary
+  return (
+    <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: bg }}>
+      <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: text }}>{score}</Text>
+    </View>
+  )
+}
+
 function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
   const { t, i18n } = useTranslation()
   const { colors } = useTheme()
@@ -53,14 +66,19 @@ function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
     ? `${t('clients.last_rdv')} : ${new Date(lastRdv).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}`
     : t('clients.no_rdv')
 
+  const score = computeProspectScore({ client, lastRdvDate: lastRdv })
+
   return (
     <View style={styles.card}>
-      {/* Top: avatar + name/badge + menu */}
+      {/* Top: avatar + name/badge + score + menu */}
       <View style={styles.cardTop}>
         <ClientAvatar name={client.full_name} status={client.status} />
         <View style={styles.cardTitle}>
           <Text style={styles.cardName}>{client.full_name}</Text>
-          <StatusPill status={client.status} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <StatusPill status={client.status} />
+            <ScoreBadge score={score} />
+          </View>
         </View>
         <TouchableOpacity
           style={styles.menuBtn}
@@ -115,8 +133,11 @@ export default function ClientsScreen() {
   const { colors, statusColors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
+  const { status: statusParam } = useLocalSearchParams<{ status?: ClientStatus }>()
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>(
+    statusParam && STATUS_FILTERS.includes(statusParam) ? statusParam : 'all'
+  )
   const { clients, loading, refresh } = useClients()
   const { results, search } = useClientSearch()
   const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
@@ -124,6 +145,12 @@ export default function ClientsScreen() {
   const isWide = width >= 768
 
   useFocusEffect(useCallback(() => { refresh() }, []))
+
+  useEffect(() => {
+    if (statusParam && STATUS_FILTERS.includes(statusParam)) {
+      setStatusFilter(statusParam)
+    }
+  }, [statusParam])
 
   useEffect(() => {
     if (query.length > 0) search(query, statusFilter === 'all' ? undefined : statusFilter)
@@ -134,14 +161,14 @@ export default function ClientsScreen() {
     if (!session || clients.length === 0) return
     supabase
       .from('appointments')
-      .select('client_id, appointment_date')
+      .select('client_id, start_at')
       .eq('user_id', session.user.id)
-      .order('appointment_date', { ascending: false })
+      .order('start_at', { ascending: false })
       .then(({ data }) => {
         if (!data) return
         const map: Record<string, string> = {}
         for (const row of data) {
-          if (!map[row.client_id]) map[row.client_id] = row.appointment_date
+          if (!map[row.client_id]) map[row.client_id] = row.start_at
         }
         setLastRdvMap(map)
       })

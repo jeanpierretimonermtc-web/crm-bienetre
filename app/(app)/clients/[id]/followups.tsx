@@ -12,7 +12,12 @@ import { Card } from '@/shared/components/ui/Card'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import type { Followup } from '@/shared/lib/types'
+import type { Followup, NextActionType } from '@/shared/lib/types'
+
+const ACTION_TYPES: NextActionType[] = ['call', 'whatsapp', 'sms', 'email', 'rdv']
+const ACTION_ICONS: Record<NextActionType, string> = {
+  call: '📞', whatsapp: '💬', sms: '📱', email: '✉️', rdv: '📅',
+}
 
 export default function ClientFollowupsScreen() {
   const { t, i18n } = useTranslation()
@@ -57,6 +62,12 @@ export default function ClientFollowupsScreen() {
                       <Text style={styles.checkboxText}>{item.done ? '✅' : '⬜'}</Text>
                     </TouchableOpacity>
                     <View style={styles.info}>
+                      {item.action_type ? (
+                        <View style={styles.actionTypeBadge}>
+                          <Text style={styles.actionTypeIcon}>{ACTION_ICONS[item.action_type]}</Text>
+                          <Text style={styles.actionTypeText}>{t(`next_action_types.${item.action_type}`)}</Text>
+                        </View>
+                      ) : null}
                       {item.title ? <Text style={[styles.title, item.done && styles.doneText]}>{item.title}</Text> : null}
                       {item.content ? <Text style={[styles.content, item.done && styles.doneText]} numberOfLines={2}>{item.content}</Text> : null}
                       <Text style={styles.date}>
@@ -104,6 +115,7 @@ function FollowupModal({ clientId, userId, onClose, onSaved }: {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
+  const [actionType, setActionType] = useState<NextActionType | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0])
@@ -123,6 +135,7 @@ function FollowupModal({ clientId, userId, onClose, onSaved }: {
         content: content.trim() || null,
         due_date: dueDate,
         done: false,
+        action_type: actionType,
       })
       onSaved()
     } catch (e) {
@@ -141,6 +154,24 @@ function FollowupModal({ clientId, userId, onClose, onSaved }: {
         <Button label={t('common.save')} size="sm" onPress={handleSave} loading={loading} />
       </View>
       <ScrollView style={{ padding: 16 }} contentContainerStyle={{ gap: 12 }}>
+        <View style={{ gap: 8 }}>
+          <Text style={styles.fieldLabel}>{t('followups.action_type')}</Text>
+          <View style={styles.actionTypeRow}>
+            {ACTION_TYPES.map(at => (
+              <TouchableOpacity
+                key={at}
+                style={[styles.actionTypeChip, actionType === at && styles.actionTypeChipActive]}
+                onPress={() => setActionType(actionType === at ? null : at)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.actionTypeChipIcon}>{ACTION_ICONS[at]}</Text>
+                <Text style={[styles.actionTypeChipLabel, actionType === at && styles.actionTypeChipLabelActive]}>
+                  {t(`next_action_types.${at}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
         <Input label={t('followups.title_label')} value={title} onChangeText={setTitle} />
         <Input label={`${t('followups.description')} (${t('common.optional')})`} value={content} onChangeText={setContent} />
         <Input label={t('followups.due_date')} value={dueDate} onChangeText={setDueDate} placeholder="YYYY-MM-DD" />
@@ -178,5 +209,17 @@ function makeStyles(colors: ThemeColors) {
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle:  { fontSize: 17, fontFamily: fonts.semibold, color: colors.text },
   modalCancel: { fontSize: 16, fontFamily: fonts.body, color: colors.primary },
+
+  fieldLabel:           { fontSize: 12, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  actionTypeRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actionTypeChip:       { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border },
+  actionTypeChipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  actionTypeChipIcon:   { fontSize: 13 },
+  actionTypeChipLabel:  { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
+  actionTypeChipLabelActive: { color: colors.primary, fontFamily: fonts.semibold },
+
+  actionTypeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  actionTypeIcon:  { fontSize: 11 },
+  actionTypeText:  { fontSize: 11, fontFamily: fonts.semibold, color: colors.primaryAction },
   })
 }

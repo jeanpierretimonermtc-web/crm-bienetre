@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native'
+import { View, Text, TextInput, FlatList, ScrollView, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useCatalogs, useCatalogProducts } from './useCatalog'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 import type { Catalog, CatalogProduct } from '@/shared/lib/types'
 
 export interface CatalogPickerResult {
@@ -25,7 +26,8 @@ export function CatalogProductPicker({ onSelect, onClose }: Props) {
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { catalogs, loading: catalogsLoading } = useCatalogs()
-  const [selectedCatalog, setSelectedCatalog] = useState<Catalog | null>(null)
+  const [selectedCatalog,   setSelectedCatalog]   = useState<Catalog | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const { products, loading: productsLoading } = useCatalogProducts(selectedCatalog?.id ?? null)
   const [query, setQuery] = useState('')
 
@@ -34,12 +36,21 @@ export function CatalogProductPicker({ onSelect, onClose }: Props) {
     setSelectedCatalog(catalogs[0])
   }
 
-  const filtered = query.length >= 1
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        (p.category ?? '').toLowerCase().includes(query.toLowerCase())
-      )
-    : products
+  const categories = useMemo(() => {
+    const cats = new Set<string>()
+    products.forEach(p => { if (p.category) cats.add(p.category) })
+    return Array.from(cats).sort()
+  }, [products])
+
+  const filtered = useMemo(() => {
+    let list = products
+    if (selectedCategory) list = list.filter(p => p.category === selectedCategory)
+    if (query.length >= 1) list = list.filter(p =>
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      (p.category ?? '').toLowerCase().includes(query.toLowerCase())
+    )
+    return list
+  }, [products, selectedCategory, query])
 
   function handleSelect(product: CatalogProduct) {
     if (!selectedCatalog) return
@@ -82,7 +93,7 @@ export function CatalogProductPicker({ onSelect, onClose }: Props) {
                 return (
                   <TouchableOpacity
                     style={[styles.tab, active && { borderColor: item.color, backgroundColor: item.color + '15' }]}
-                    onPress={() => { setSelectedCatalog(item); setQuery('') }}
+                    onPress={() => { setSelectedCatalog(item); setQuery(''); setSelectedCategory(null) }}
                     activeOpacity={0.75}
                   >
                     <Text style={styles.tabIcon}>{item.icon}</Text>
@@ -94,6 +105,31 @@ export function CatalogProductPicker({ onSelect, onClose }: Props) {
               }}
             />
           </View>
+        )}
+
+        {/* Category chips */}
+        {!productsLoading && categories.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRow} contentContainerStyle={styles.catContent}>
+            <TouchableOpacity
+              style={[styles.catChip, !selectedCategory && styles.catChipActive]}
+              onPress={() => setSelectedCategory(null)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.catChipText, !selectedCategory && styles.catChipTextActive]}>
+                {t('catalog.all_categories')}
+              </Text>
+            </TouchableOpacity>
+            {categories.map(cat => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.catChip, selectedCategory === cat && styles.catChipActive]}
+                onPress={() => setSelectedCategory(cat)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.catChipText, selectedCategory === cat && styles.catChipTextActive]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
         {/* Search */}
@@ -145,6 +181,13 @@ function makeStyles(colors: ThemeColors) {
   tab:         { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.bg },
   tabIcon:     { fontSize: 14 },
   tabLabel:    { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
+
+  catRow:          { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  catContent:      { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
+  catChip:         { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  catChipActive:   { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  catChipText:     { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
+  catChipTextActive: { color: colors.primary, fontFamily: fonts.semibold },
 
   search:      { margin: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: colors.card, color: colors.text },
 

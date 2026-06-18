@@ -1,38 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getCatalogs, getCatalogProducts } from './catalogService'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { supabase } from '@/shared/lib/supabase'
 import type { Catalog, CatalogProduct } from '@/shared/lib/types'
 
-export function useCatalogs(refreshKey = 0) {
+export function useCatalogs(activeSlugs: string[] | null = null, refreshKey = 0) {
   const { session } = useAuth()
-  const [catalogs, setCatalogs] = useState<Catalog[]>([])
+  const [allCatalogs, setAllCatalogs] = useState<Catalog[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!session) return
-    setLoading(true)
-    Promise.all([
-      getCatalogs(session.user.id),
-      supabase
-        .from('profiles')
-        .select('active_catalog_slugs')
-        .eq('id', session.user.id)
-        .single(),
-    ])
-      .then(([allCatalogs, { data: profile }]) => {
-        const active = profile?.active_catalog_slugs as string[] | null
-        if (!active || active.length === 0) {
-          setCatalogs(allCatalogs)
-        } else {
-          setCatalogs(allCatalogs.filter(c =>
-            c.type === 'custom' || (c.slug && active.includes(c.slug))
-          ))
-        }
-      })
+    if (allCatalogs.length === 0) setLoading(true)
+    getCatalogs(session.user.id)
+      .then(setAllCatalogs)
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [session, refreshKey])
+
+  const catalogs = useMemo(() => {
+    if (!activeSlugs || activeSlugs.length === 0) return allCatalogs
+    return allCatalogs.filter(c => c.type === 'custom' || (c.slug && activeSlugs.includes(c.slug)))
+  }, [allCatalogs, activeSlugs])
 
   return { catalogs, loading }
 }

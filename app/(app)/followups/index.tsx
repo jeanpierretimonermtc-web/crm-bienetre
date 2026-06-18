@@ -10,15 +10,35 @@ import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { FollowupWithClient } from '@/shared/lib/types'
 
-type Tab = 'overdue' | 'today' | 'upcoming'
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-function getTabConfig(colors: ThemeColors): Record<Tab, { labelKey: string; accent: string; emptyKey: string }> {
-  return {
-    overdue:  { labelKey: 'followups.overdue',  accent: colors.danger,        emptyKey: 'followups.none_overdue'  },
-    today:    { labelKey: 'followups.today',    accent: colors.secondary,     emptyKey: 'followups.none_today'    },
-    upcoming: { labelKey: 'followups.upcoming', accent: colors.primaryAction, emptyKey: 'followups.none_upcoming' },
-  }
+const TEMP_EMOJI: Record<string, string> = {
+  cold: '❄️', warm: '🌤️', hot: '🔥', very_hot: '🔥',
 }
+
+// ── Scoring ───────────────────────────────────────────────────────────────────
+
+function computeScore(f: FollowupWithClient, today: string): number {
+  let score = 0
+  if (f.prospect_temperature === 'very_hot') score += 40
+  if (f.due_date < today) score += 30
+  if (f.pipeline_stage === 'follow_up' || f.pipeline_stage === 'proposal_sent') score += 20
+  if (
+    f.client?.status === 'vip' ||
+    f.client?.contact_role === 'distributor' ||
+    f.client?.contact_role === 'leader'
+  ) score += 10
+  return score
+}
+
+function getScorePalette(score: number, colors: ThemeColors) {
+  if (score >= 70) return { bg: colors.dangerLight,  text: colors.danger   }
+  if (score >= 40) return { bg: colors.warningLight, text: colors.warning  }
+  if (score > 0)   return { bg: colors.primaryLight, text: colors.primary  }
+  return              { bg: colors.bgDim,          text: colors.textTertiary }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function initials(name: string) {
   const parts = name.trim().split(' ').filter(Boolean)
@@ -27,9 +47,24 @@ function initials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-// ── FollowupCard ─────────────────────────────────────────────────────────────
-function FollowupCard({ f, accent, today, onDone }: {
-  f: FollowupWithClient; accent: string; today: string; onDone: () => Promise<void>
+// ── Tab config ────────────────────────────────────────────────────────────────
+
+type Tab = 'overdue' | 'today' | 'upcoming'
+
+function getTabConfig(colors: ThemeColors): Record<Tab, { labelKey: string; accent: string; emptyKey: string }> {
+  return {
+    overdue:  { labelKey: 'followups.overdue',  accent: colors.danger,       emptyKey: 'followups.none_overdue'  },
+    today:    { labelKey: 'followups.today',    accent: colors.secondary,    emptyKey: 'followups.none_today'    },
+    upcoming: { labelKey: 'followups.upcoming', accent: colors.primary,      emptyKey: 'followups.none_upcoming' },
+  }
+}
+
+// ── FollowupCard ──────────────────────────────────────────────────────────────
+
+function FollowupCard({ f, today, onDone }: {
+  f: FollowupWithClient & { _score: number }
+  today: string
+  onDone: () => Promise<void>
 }) {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -38,62 +73,102 @@ function FollowupCard({ f, accent, today, onDone }: {
 
   const isOverdue  = f.due_date < today
   const isToday    = f.due_date === today
-  const daysLate   = isOverdue  ? Math.ceil((new Date(today).getTime() - new Date(f.due_date).getTime()) / 86400000) : 0
+  const daysLate   = isOverdue ? Math.ceil((new Date(today).getTime() - new Date(f.due_date).getTime()) / 86400000) : 0
   const daysAhead  = !isOverdue && !isToday ? Math.ceil((new Date(f.due_date).getTime() - new Date(today).getTime()) / 86400000) : 0
+  const daysOld    = Math.floor((Date.now() - new Date(f.created_at).getTime()) / 86400000)
 
   const dateLabel = isOverdue
     ? t(daysLate === 1 ? 'followups.late_day' : 'followups.late_days', { days: daysLate })
-    : isToday
-    ? t('followups.today')
+    : isToday ? t('followups.today')
     : t(daysAhead === 1 ? 'followups.ahead_day' : 'followups.ahead_days', { days: daysAhead })
+
+  const scorePalette = getScorePalette(f._score, colors)
 
   async function handleDone() {
     setBusy(true)
     try { await onDone() } finally { setBusy(false) }
   }
 
-  // Soft tinted avatar bg from accent
-  const avatarBg = accent === colors.danger
-    ? colors.dangerLight
-    : accent === colors.secondary
-    ? colors.secondaryLight
-    : colors.primaryLight
-
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isOverdue && styles.cardOverdue]}
       onPress={() => router.push(`/(app)/clients/${f.client_id}/followups`)}
       activeOpacity={0.75}
     >
-      {/* Avatar */}
-      <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
-        <Text style={[styles.avatarText, { color: accent }]}>
-          {initials(f.client?.full_name ?? '?')}
-        </Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.cardBody}>
-        <Text style={styles.clientName} numberOfLines={1}>{f.client?.full_name}</Text>
-        <Text style={styles.taskTitle} numberOfLines={2}>{f.title ?? f.content ?? ''}</Text>
-        <View style={styles.datePill}>
-          <Text style={styles.dateIcon}>📅</Text>
-          <Text style={[styles.dateText, { color: accent }]}>{dateLabel}</Text>
+      {/* ── Row 1 : avatar + name + badges ── */}
+      <View style={styles.row1}>
+        <View style={[styles.avatar, { backgroundColor: scorePalette.bg }]}>
+          <Text style={[styles.avatarText, { color: scorePalette.text }]}>
+            {initials(f.client?.full_name ?? '?')}
+          </Text>
         </View>
+
+        <View style={styles.nameBlock}>
+          <Text style={styles.clientName} numberOfLines={1}>{f.client?.full_name}</Text>
+        </View>
+
+        <View style={styles.badgesRow}>
+          {/* Score */}
+          {f._score > 0 && (
+            <View style={[styles.badge, { backgroundColor: scorePalette.bg }]}>
+              <Text style={[styles.badgeText, { color: scorePalette.text }]}>{f._score}</Text>
+            </View>
+          )}
+          {/* Temperature */}
+          {f.prospect_temperature ? (
+            <Text style={styles.tempEmoji}>{TEMP_EMOJI[f.prospect_temperature] ?? ''}</Text>
+          ) : null}
+          {/* AUTO */}
+          {f.auto_generated ? (
+            <View style={[styles.badge, { backgroundColor: colors.secondaryLight }]}>
+              <Text style={[styles.badgeText, { color: colors.secondary }]}>{t('followups.auto_badge')}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Done button */}
+        <TouchableOpacity style={styles.doneBtn} onPress={handleDone} disabled={busy} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          {busy
+            ? <ActivityIndicator size="small" color={colors.textTertiary} />
+            : <View style={[styles.doneCircle, { borderColor: isOverdue ? colors.danger : colors.primary }]} />
+          }
+        </TouchableOpacity>
       </View>
 
-      {/* Done button */}
-      <TouchableOpacity style={styles.doneBtn} onPress={handleDone} disabled={busy} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        {busy
-          ? <ActivityIndicator size="small" color={colors.textTertiary} />
-          : <View style={[styles.doneCircle, { borderColor: accent }]} />
-        }
-      </TouchableOpacity>
+      {/* ── Row 2 : task title ── */}
+      {(f.title ?? f.content) ? (
+        <Text style={styles.taskTitle} numberOfLines={2}>{f.title ?? f.content}</Text>
+      ) : null}
+
+      {/* ── Row 3 : product context ── */}
+      {f.product_context ? (
+        <View style={styles.productRow}>
+          <Text style={styles.productIcon}>📦</Text>
+          <Text style={styles.productText} numberOfLines={1}>{f.product_context}</Text>
+        </View>
+      ) : null}
+
+      {/* ── Row 4 : date + overdue badge + created ── */}
+      <View style={styles.metaRow}>
+        <View style={styles.dateChip}>
+          <Text style={styles.dateIcon}>📅</Text>
+          <Text style={[styles.dateText, { color: isOverdue ? colors.danger : isToday ? colors.secondary : colors.textSecondary }]}>
+            {dateLabel}
+          </Text>
+        </View>
+        {isOverdue && (
+          <View style={[styles.badge, { backgroundColor: colors.dangerLight }]}>
+            <Text style={[styles.badgeText, { color: colors.danger }]}>{t('followups.overdue_badge')}</Text>
+          </View>
+        )}
+        <Text style={styles.createdText}>{t('followups.created_days', { days: daysOld })}</Text>
+      </View>
     </TouchableOpacity>
   )
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
+
 export default function FollowupsScreen() {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -106,21 +181,30 @@ export default function FollowupsScreen() {
 
   useFocusEffect(useCallback(() => { refresh() }, []))
 
-  const today    = new Date().toISOString().split('T')[0]
-  const overdue  = followups.filter(f => f.due_date < today)
-  const dueToday = followups.filter(f => f.due_date === today)
-  const upcoming = followups.filter(f => f.due_date > today)
+  const today = new Date().toISOString().split('T')[0]
 
-  const sections: Record<Tab, FollowupWithClient[]> = { overdue, today: dueToday, upcoming }
+  // Score every followup and sort descending
+  const scored = useMemo(() =>
+    followups
+      .map(f => ({ ...f, _score: computeScore(f, today) }))
+      .sort((a, b) => b._score - a._score),
+    [followups, today]
+  )
+
+  const overdue  = scored.filter(f => f.due_date < today)
+  const dueToday = scored.filter(f => f.due_date === today)
+  const upcoming = scored.filter(f => f.due_date > today)
+
+  const sections = { overdue, today: dueToday, upcoming }
   const displayed = sections[activeTab]
+
+  const tabs: Tab[] = ['overdue', 'today', 'upcoming']
+  const counts = { overdue: overdue.length, today: dueToday.length, upcoming: upcoming.length }
 
   async function handleDone(f: FollowupWithClient) {
     await toggleFollowupDone(f.id, true)
     refresh()
   }
-
-  const tabs: Tab[] = ['overdue', 'today', 'upcoming']
-  const counts: Record<Tab, number> = { overdue: overdue.length, today: dueToday.length, upcoming: upcoming.length }
 
   return (
     <>
@@ -128,64 +212,60 @@ export default function FollowupsScreen() {
       <View style={styles.container}>
         <View style={[styles.inner, isWide && styles.innerWide]}>
 
-        {/* ── Page header ───────────────────────────────── */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageTitle}>{t('followups.title')}</Text>
-          <Text style={styles.pageSub}>{t('followups.subtitle')}</Text>
-        </View>
+          {/* ── Header ─────────────────────────────────────── */}
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageTitle}>{t('followups.title')}</Text>
+            <Text style={styles.pageSub}>{t('followups.center_subtitle')}</Text>
+          </View>
 
-        {/* ── Tab bar ───────────────────────────────────── */}
-        <View style={styles.tabBar}>
-          {tabs.map(tab => {
-            const cfg    = TAB_CONFIG[tab]
-            const active = activeTab === tab
-            const count  = counts[tab]
-            return (
-              <TouchableOpacity
-                key={tab}
-                style={styles.tabItem}
-                onPress={() => setActiveTab(tab)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.tabLabelRow}>
-                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                    {t(cfg.labelKey)}
-                  </Text>
-                  {count > 0 && (
-                    <View style={[styles.tabDot, { backgroundColor: cfg.accent }]} />
-                  )}
-                </View>
-                {active && <View style={[styles.tabUnderline, { backgroundColor: colors.primaryAction }]} />}
-              </TouchableOpacity>
+          {/* ── Tab bar ────────────────────────────────────── */}
+          <View style={styles.tabBar}>
+            {tabs.map(tab => {
+              const cfg    = TAB_CONFIG[tab]
+              const active = activeTab === tab
+              const count  = counts[tab]
+              return (
+                <TouchableOpacity key={tab} style={styles.tabItem} onPress={() => setActiveTab(tab)} activeOpacity={0.7}>
+                  <View style={styles.tabLabelRow}>
+                    <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                      {t(cfg.labelKey)}
+                    </Text>
+                    {count > 0 && (
+                      <View style={[styles.tabBadge, { backgroundColor: cfg.accent }]}>
+                        <Text style={styles.tabBadgeText}>{count}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {active && <View style={[styles.tabUnderline, { backgroundColor: cfg.accent }]} />}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          {/* ── List ───────────────────────────────────────── */}
+          {loading
+            ? <ActivityIndicator style={styles.loader} color={colors.primary} />
+            : (
+              <FlatList
+                data={displayed}
+                keyExtractor={f => f.id}
+                renderItem={({ item }) => (
+                  <FollowupCard
+                    f={item}
+                    today={today}
+                    onDone={() => handleDone(item)}
+                  />
+                )}
+                ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+                contentContainerStyle={[styles.list, displayed.length === 0 && styles.listEmpty]}
+                ListEmptyComponent={
+                  <EmptyState message={t(TAB_CONFIG[activeTab].emptyKey)} icon="✅" />
+                }
+                onRefresh={refresh}
+                refreshing={loading}
+              />
             )
-          })}
-        </View>
-
-        {/* ── List ──────────────────────────────────────── */}
-        {loading
-          ? <ActivityIndicator style={styles.loader} color={colors.primaryAction} />
-          : (
-            <FlatList
-              data={displayed}
-              keyExtractor={f => f.id}
-              renderItem={({ item }) => (
-                <FollowupCard
-                  f={item}
-                  accent={TAB_CONFIG[activeTab].accent}
-                  today={today}
-                  onDone={() => handleDone(item)}
-                />
-              )}
-              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-              contentContainerStyle={[styles.list, displayed.length === 0 && styles.listEmpty]}
-              ListEmptyComponent={
-                <EmptyState message={t(TAB_CONFIG[activeTab].emptyKey)} icon="✅" />
-              }
-              onRefresh={refresh}
-              refreshing={loading}
-            />
-          )
-        }
+          }
         </View>
       </View>
     </>
@@ -198,60 +278,61 @@ function makeStyles(colors: ThemeColors) {
   inner:     { flex: 1, width: '100%' },
   innerWide: { maxWidth: 900, alignSelf: 'center' },
 
-  // Page header
   pageHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4, gap: 3 },
   pageTitle:  { fontSize: 28, fontFamily: fonts.display, color: colors.text },
   pageSub:    { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary },
 
-  // Tab bar
-  tabBar: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginHorizontal: 16,
-    marginBottom: 12,
-  },
-  tabItem:     { flex: 1, alignItems: 'center', paddingBottom: 0 },
-  tabLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 12 },
-  tabLabel:    { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  tabBar:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, marginHorizontal: 16, marginBottom: 12 },
+  tabItem:    { flex: 1, alignItems: 'center', paddingBottom: 0 },
+  tabLabelRow:{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
+  tabLabel:   { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   tabLabelActive: { fontFamily: fonts.semibold, color: colors.text },
-  tabDot:      { width: 7, height: 7, borderRadius: 4 },
+  tabBadge:   { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  tabBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: '#fff' },
   tabUnderline: { height: 2, width: '100%', borderRadius: 1, position: 'absolute', bottom: -1 },
 
-  // List
-  list:      { paddingHorizontal: 16, paddingBottom: 80 },
+  list:      { paddingHorizontal: 16, paddingBottom: 80, gap: 8 },
   listEmpty: { flex: 1 },
   loader:    { marginTop: 48 },
 
-  // Card
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
+    gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
+  cardOverdue: { borderLeftWidth: 3, borderLeftColor: colors.danger },
 
-  // Avatar
-  avatar:     { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  avatarText: { fontSize: 15, fontFamily: fonts.bold },
+  row1:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatar:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatarText:{ fontSize: 14, fontFamily: fonts.bold },
+  nameBlock: { flex: 1 },
+  clientName:{ fontSize: 14, fontFamily: fonts.bold, color: colors.text },
 
-  // Card body
-  cardBody:   { flex: 1, gap: 3 },
-  clientName: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  taskTitle:  { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 18 },
-  datePill:   { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  dateIcon:   { fontSize: 12 },
-  dateText:   { fontSize: 12, fontFamily: fonts.semibold },
+  badgesRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
+  badge:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  badgeText: { fontSize: 10, fontFamily: fonts.bold },
+  tempEmoji: { fontSize: 15 },
 
-  // Done button
   doneBtn:    { flexShrink: 0, padding: 4 },
   doneCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
+
+  taskTitle:  { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 18, paddingLeft: 50 },
+  productRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 50 },
+  productIcon:{ fontSize: 12 },
+  productText:{ fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, flex: 1 },
+
+  metaRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 50 },
+  dateChip:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dateIcon:   { fontSize: 11 },
+  dateText:   { fontSize: 12, fontFamily: fonts.semibold },
+  createdText:{ fontSize: 11, fontFamily: fonts.body, color: colors.textTertiary, marginLeft: 'auto' },
   })
 }

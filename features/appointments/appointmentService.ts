@@ -1,61 +1,265 @@
 import { supabase } from '@/shared/lib/supabase'
-import type { Appointment } from '@/shared/lib/types'
+import type {
+  Appointment,
+  AppointmentFull,
+  AppointmentTask,
+  AppointmentFilters,
+  CreateAppointmentPayload,
+  UpdateAppointmentPayload,
+  UpdateAppointmentNotesPayload,
+  UpdateBusinessContextPayload,
+  CreateTaskPayload,
+} from './appointmentTypes'
 
-export type AppointmentInput = Omit<Appointment, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+const APPT_COLS = 'id, user_id, client_id, title, appointment_type, status, start_at, end_at, duration_minutes, timezone, location, meeting_url, provider, cancelled_at, cancellation_reason, created_at, updated_at'
 
-export async function getAppointmentsByClient(clientId: string) {
-  const { data, error } = await supabase
+export async function fetchAppointments(filters: AppointmentFilters = {}): Promise<Appointment[]> {
+  let query = supabase
     .from('appointments')
-    .select('*')
-    .eq('client_id', clientId)
-    .order('appointment_date', { ascending: false })
-  if (error) throw error
-  return data as Appointment[]
+    .select(APPT_COLS)
+    .order('start_at', { ascending: true })
+
+  if (filters.from)             query = query.gte('start_at', filters.from)
+  if (filters.to)               query = query.lte('start_at', filters.to)
+  if (filters.client_id)        query = query.eq('client_id', filters.client_id)
+  if (filters.status)           query = query.eq('status', filters.status)
+  if (filters.appointment_type) query = query.eq('appointment_type', filters.appointment_type)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
-export async function getUpcomingAppointments(userId: string, limit = 10) {
+export async function fetchAppointmentById(id: string): Promise<AppointmentFull | null> {
+  const { data: appt, error: apptError } = await supabase
+    .from('appointments')
+    .select(APPT_COLS)
+    .eq('id', id)
+    .single()
+
+  if (apptError) throw new Error(apptError.message)
+  if (!appt) return null
+
+  const [notesRes, bizRes, tasksRes, attendeesRes] = await Promise.all([
+    supabase.from('appointment_notes')
+      .select('id, appointment_id, client_notes, internal_notes, objections, needs_identified, products_discussed, created_at, updated_at')
+      .eq('appointment_id', id).maybeSingle(),
+    supabase.from('appointment_business_context')
+      .select('id, appointment_id, brand_id, catalog_id, main_product_id, pipeline_stage, prospect_temperature, commercial_intent, estimated_value, currency, created_at, updated_at')
+      .eq('appointment_id', id).maybeSingle(),
+    supabase.from('appointment_tasks')
+      .select('id, appointment_id, user_id, client_id, title, task_type, priority, status, due_at, completed_at, created_at, updated_at')
+      .eq('appointment_id', id).order('due_at', { ascending: true }),
+    supabase.from('appointment_attendees')
+      .select('id, appointment_id, client_id, external_name, external_email, status, created_at')
+      .eq('appointment_id', id),
+  ])
+
+  if (notesRes.error)     throw new Error(notesRes.error.message)
+  if (bizRes.error)       throw new Error(bizRes.error.message)
+  if (tasksRes.error)     throw new Error(tasksRes.error.message)
+  if (attendeesRes.error) throw new Error(attendeesRes.error.message)
+
+  return {
+    ...appt,
+    notes: notesRes.data ?? null,
+    business_context: bizRes.data ?? null,
+    tasks: tasksRes.data ?? [],
+    attendees: attendeesRes.data ?? [],
+  }
+}
+
+export async function createAppointment(payload: CreateAppointmentPayload): Promise<Appointment> {
+  const { notes, business_context, ...apptFields } = payload
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: appt, error: apptError } = await supabase
+    .from('appointments')
+    .insert({ ...apptFields, user_id: user.id })
+    .select(APPT_COLS)
+    .single()
+
+  if (apptError) throw new Error(apptError.message)
+
+  if (notes && Object.values(notes).some(Boolean)) {
+    const { error } = await supabase.from('appointment_notes').insert({ appointment_id: appt.id, ...notes })
+    if (error) throw new Error(error.message)
+  }
+
+  if (business_context && Object.values(business_context).some(v => v !== undefined)) {
+    const { error } = await supabase.from('appointment_business_context').insert({ appointment_id: appt.id, ...business_context })
+    if (error) throw new Error(error.message)
+  }
+
+  return appt
+}
+
+export async function updateAppointment(id: string, payload: UpdateAppointmentPayload): Promise<Appointment> {
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, client:clients(id, full_name, status)')
-    .eq('user_id', userId)
-    .gte('appointment_date', new Date().toISOString())
-    .order('appointment_date')
-    .limit(limit)
-  if (error) throw error
+    .update(payload)
+    .eq('id', id)
+    .select(APPT_COLS)
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  if (payload.status === 'completed' && data.client_id) {
+    triggerPostCompletionActions(id, data.client_id, data.user_id).catch(console.error)
+  }
+
   return data
 }
 
-export async function getNextAppointmentNumber(clientId: string) {
-  const { count, error } = await supabase
-    .from('appointments')
-    .select('*', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-  if (error) throw error
-  return (count ?? 0) + 1
+async function triggerPostCompletionActions(
+  appointmentId: string,
+  clientId: string,
+  userId: string,
+): Promise<void> {
+  // Fetch business_context, notes, and existing auto followup in parallel
+  const [bizRes, notesRes, existingRes] = await Promise.all([
+    supabase
+      .from('appointment_business_context')
+      .select('commercial_intent, prospect_temperature, pipeline_stage')
+      .eq('appointment_id', appointmentId)
+      .maybeSingle(),
+    supabase
+      .from('appointment_notes')
+      .select('objections, products_discussed')
+      .eq('appointment_id', appointmentId)
+      .maybeSingle(),
+    supabase
+      .from('followups')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+      .eq('auto_generated', true)
+      .eq('done', false),
+  ])
+
+  const biz   = bizRes.data
+  const notes = notesRes.data
+  const hasExistingAuto = (existingRes.count ?? 0) > 0
+
+  function dueDate(daysFromNow: number): string {
+    const d = new Date()
+    d.setDate(d.getDate() + daysFromNow)
+    return d.toISOString().split('T')[0]
+  }
+
+  // Create followup if no pending auto followup exists for this client
+  if (biz && !hasExistingAuto) {
+    if (biz.commercial_intent === 'buy_product') {
+      await supabase.from('followups').insert({
+        client_id:            clientId,
+        user_id:              userId,
+        title:                'Relance suite RDV — achat produit',
+        due_date:             dueDate(3),
+        done:                 false,
+        auto_generated:       true,
+        prospect_temperature: biz.prospect_temperature ?? null,
+        pipeline_stage:       biz.pipeline_stage ?? null,
+        product_context:      notes?.products_discussed ?? null,
+      })
+    } else if (biz.commercial_intent === 'become_distributor') {
+      await supabase.from('followups').insert({
+        client_id:            clientId,
+        user_id:              userId,
+        title:                'Relance suite RDV — recrutement distributeur',
+        due_date:             dueDate(2),
+        done:                 false,
+        auto_generated:       true,
+        prospect_temperature: biz.prospect_temperature ?? null,
+        pipeline_stage:       biz.pipeline_stage ?? null,
+        product_context:      null,
+      })
+    }
+  }
+
+  // Create objection task regardless of existing followups
+  if (notes?.objections?.trim()) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('appointment_tasks').insert({
+        appointment_id: appointmentId,
+        client_id:      clientId,
+        user_id:        user.id,
+        title:          'Répondre aux objections détectées',
+        task_type:      'follow_up',
+        priority:       'high',
+        status:         'pending',
+        due_at:         new Date(Date.now() + 86400000).toISOString(),
+      })
+    }
+  }
 }
 
-export async function createAppointment(userId: string, input: AppointmentInput) {
-  const { data, error } = await supabase
+export async function cancelAppointment(id: string, reason?: string): Promise<void> {
+  const { error } = await supabase
     .from('appointments')
-    .insert({ ...input, user_id: userId })
-    .select()
-    .single()
-  if (error) throw error
-  return data as Appointment
-}
-
-export async function updateAppointment(id: string, input: Partial<AppointmentInput>) {
-  const { data, error } = await supabase
-    .from('appointments')
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: reason ?? null })
     .eq('id', id)
-    .select()
-    .single()
-  if (error) throw error
-  return data as Appointment
+
+  if (error) throw new Error(error.message)
 }
 
-export async function deleteAppointment(id: string) {
+export async function deleteAppointment(id: string): Promise<void> {
   const { error } = await supabase.from('appointments').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertAppointmentNotes(appointmentId: string, payload: UpdateAppointmentNotesPayload): Promise<void> {
+  const { error } = await supabase
+    .from('appointment_notes')
+    .upsert({ appointment_id: appointmentId, ...payload }, { onConflict: 'appointment_id' })
+
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertBusinessContext(appointmentId: string, payload: UpdateBusinessContextPayload): Promise<void> {
+  const { error } = await supabase
+    .from('appointment_business_context')
+    .upsert({ appointment_id: appointmentId, ...payload }, { onConflict: 'appointment_id' })
+
+  if (error) throw new Error(error.message)
+}
+
+export async function fetchTasksByUser(): Promise<AppointmentTask[]> {
+  const { data, error } = await supabase
+    .from('appointment_tasks')
+    .select('id, appointment_id, user_id, client_id, title, task_type, priority, status, due_at, completed_at, created_at, updated_at')
+    .neq('status', 'cancelled')
+    .order('due_at', { ascending: true })
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function createTask(payload: CreateTaskPayload): Promise<AppointmentTask> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('appointment_tasks')
+    .insert({ ...payload, user_id: user.id })
+    .select('id, appointment_id, user_id, client_id, title, task_type, priority, status, due_at, completed_at, created_at, updated_at')
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function completeTask(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('appointment_tasks')
+    .update({ status: 'done', completed_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from('appointment_tasks').delete().eq('id', id)
+  if (error) throw new Error(error.message)
 }

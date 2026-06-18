@@ -58,7 +58,7 @@ export default function ClientRecommendationsScreen() {
   }
 
   async function handleToggle(rec: Recommendation) {
-    await updateRecommendationStatus(rec.id, rec.status === 'advised' ? 'purchased' : 'advised')
+    await updateRecommendationStatus(rec.id, rec.status === 'advised' ? 'ordered' : 'advised')
     refresh()
   }
 
@@ -96,10 +96,10 @@ export default function ClientRecommendationsScreen() {
                     </View>
                     <View style={styles.recActions}>
                       <TouchableOpacity
-                        style={[styles.statusBtn, item.status === 'purchased' && styles.statusBtnActive]}
+                        style={[styles.statusBtn, item.status !== 'advised' && styles.statusBtnActive]}
                         onPress={() => handleToggle(item)}
                       >
-                        <Text style={[styles.statusBtnText, item.status === 'purchased' && styles.statusBtnTextActive]}>
+                        <Text style={[styles.statusBtnText, item.status !== 'advised' && styles.statusBtnTextActive]}>
                           {t(`recommendations.${item.status}`)}
                         </Text>
                       </TouchableOpacity>

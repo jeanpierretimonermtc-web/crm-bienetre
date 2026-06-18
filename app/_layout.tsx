@@ -1,7 +1,10 @@
 import '@/shared/i18n'
+import { useState } from 'react'
+import { View } from 'react-native'
 import { Slot } from 'expo-router'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { ThemeProvider } from '@/shared/theme/ThemeProvider'
+import { SplashAnimated } from '@/shared/components/ui/SplashAnimated'
 import { useFonts } from 'expo-font'
 import {
   Inter_400Regular,
@@ -17,13 +20,15 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   })
-
-  if (!fontsLoaded) return null
+  const [splashDone, setSplashDone] = useState(false)
 
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Slot />
+        <View style={{ flex: 1 }}>
+          {fontsLoaded && <Slot />}
+          {!splashDone && <SplashAnimated onDone={() => setSplashDone(true)} />}
+        </View>
       </AuthProvider>
     </ThemeProvider>
   )

@@ -1,6 +1,104 @@
-export type ClientStatus = 'prospect' | 'active' | 'inactive' | 'vip' | 'advisor'
-export type RecommendationStatus = 'advised' | 'purchased'
+// ── Scalar types ──────────────────────────────────────────────────────────────
+
+export type ClientStatus =
+  | 'prospect'
+  | 'new_client'
+  | 'active'
+  | 'loyal'
+  | 'vip'
+  | 'inactive'
+  | 'advisor'
+
+// 'purchased' kept during transition — migrate13 does NOT convert existing data yet.
+// Phase D will run: UPDATE recommendations SET status='ordered' WHERE status='purchased'
+// and remove 'purchased' from this union.
+export type RecommendationStatus = 'advised' | 'purchased' | 'ordered' | 'received' | 'completed'
+
 export type CatalogType = 'official' | 'custom'
+
+export type InteractionType =
+  | 'rdv'
+  | 'call'
+  | 'visio'
+  | 'whatsapp'
+  | 'sms'
+  | 'email'
+  | 'workshop'
+  | 'group_meeting'
+  | 'product_followup'
+
+export type InterestLevel = 'very_low' | 'low' | 'medium' | 'high' | 'very_high'
+
+export type JourneyStage =
+  | 'discovery'
+  | 'evaluation'
+  | 'first_recommendation'
+  | 'first_order'
+  | 'onboarding'
+  | 'followup_7d'
+  | 'followup_30d'
+  | 'loyal'
+
+export type AcquisitionSource =
+  | 'facebook'
+  | 'instagram'
+  | 'tiktok'
+  | 'youtube'
+  | 'website'
+  | 'calendly'
+  | 'referral'
+  | 'trade_show'
+  | 'workshop'
+  | 'conference'
+  | 'advertising'
+  | 'other'
+
+export type NetworkPotential = 'low' | 'medium' | 'high'
+
+export type ContactRole =
+  | 'prospect'
+  | 'customer'
+  | 'distributor'
+  | 'leader'
+  | 'team_member'
+  | 'inactive'
+
+export type NextActionType = 'call' | 'whatsapp' | 'sms' | 'email' | 'rdv'
+
+export type OrderStatus = 'pending' | 'ordered' | 'delivered' | 'cancelled'
+
+export type GoalMetric = 'new_clients' | 'new_distributors' | 'revenue' | 'appointments'
+
+export interface Goal {
+  id: string
+  user_id: string
+  period: string
+  metric: GoalMetric
+  target: number
+  current: number
+  updated_at: string
+}
+
+export type AlertType =
+  | 'prospect_forgotten'
+  | 'client_inactive'
+  | 'lrp_due'
+  | 'distributor_dormant'
+  | 'followup_overdue'
+  | 'leader_emerging'
+
+export interface Alert {
+  id: string
+  user_id: string
+  type: AlertType
+  client_id: string | null
+  message: string
+  action_url: string | null
+  read: boolean
+  created_at: string
+}
+
+// ── Entities ──────────────────────────────────────────────────────────────────
 
 export interface Catalog {
   id: string
@@ -39,6 +137,7 @@ export interface Profile {
   plan: string | null
   specialty: string | null
   onboarding_completed: boolean
+  active_catalog_slugs: string[] | null
   created_at: string
   updated_at: string | null
 }
@@ -65,6 +164,21 @@ export interface Client {
   welcome_email_sent: boolean
   doterra_id: string | null
   next_lrp_date: string | null
+  // ── MLM réseau (migrate15) ────────────────────────────────────────────────
+  sponsor_id: string | null
+  contact_role: ContactRole
+  // ── CRM International (migrate13) ─────────────────────────────────────────
+  country: string | null
+  first_contact_date: string | null
+  first_purchase_date: string | null
+  acquisition_source: AcquisitionSource | null
+  journey_stage: JourneyStage | null
+  next_action_date: string | null
+  next_action_type: NextActionType | null
+  referrals_count: number
+  referral_count: number
+  network_potential: NetworkPotential | null
+  // ──────────────────────────────────────────────────────────────────────────
   created_at: string
   updated_at: string | null
 }
@@ -77,6 +191,8 @@ export interface Note {
   created_at: string
 }
 
+export type ProspectTemperature = 'cold' | 'warm' | 'hot' | 'very_hot'
+
 export interface Followup {
   id: string
   client_id: string
@@ -85,6 +201,14 @@ export interface Followup {
   content: string | null
   due_date: string
   done: boolean
+  action_type: NextActionType | null
+  // ── Relance intelligente (migrate17) ──────────────────────────────────────
+  prospect_temperature: ProspectTemperature | null
+  pipeline_stage: string | null
+  product_context: string | null
+  auto_generated: boolean
+  priority_score: number | null
+  // ─────────────────────────────────────────────────────────────────────────
   created_at: string
   updated_at: string | null
 }
@@ -99,6 +223,7 @@ export interface Appointment {
   solutions_proposed: string | null
   recap_sent: boolean
   next_appointment_date: string | null
+  native_event_id: string | null
   created_at: string
   updated_at: string | null
 }
@@ -112,16 +237,82 @@ export interface Recommendation {
   status: RecommendationStatus
   catalog_id: string | null
   product_id: string | null
+  quantity: number
+  objective: string | null
+  recommendation_date: string | null
   catalog?: Pick<Catalog, 'name' | 'color' | 'icon'>
   created_at: string
   updated_at: string | null
 }
 
-// Joined types
+export interface Interaction {
+  id: string
+  client_id: string
+  user_id: string
+  interaction_type: InteractionType
+  scheduled_at: string | null
+  completed_at: string | null
+  subject: string | null
+  summary: string | null
+  needs_identified: string | null
+  objections: string | null
+  interest_level: InterestLevel | null
+  notes_brutes: string | null
+  ai_summary: string | null
+  ai_next_actions: string | null
+  ai_followup_draft: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export interface OrderProduct {
+  product_id?: string
+  name: string
+  qty: number
+  price?: number
+}
+
+export interface Order {
+  id: string
+  client_id: string
+  user_id: string
+  product_name: string
+  catalog_id: string | null
+  product_id: string | null
+  quantity: number
+  amount: number | null
+  currency: string
+  order_date: string
+  status: OrderStatus
+  notes: string | null
+  // ── MLM (migrate16) ───────────────────────────────────────────────────────
+  order_number: string | null
+  is_lrp: boolean
+  products: OrderProduct[] | null
+  // ─────────────────────────────────────────────────────────────────────────
+  created_at: string
+  updated_at: string | null
+}
+
+// ── Joined types ──────────────────────────────────────────────────────────────
+
 export interface AppointmentWithClient extends Appointment {
   client: Pick<Client, 'id' | 'full_name' | 'status'>
 }
 
+export interface NetworkNode extends Pick<Client,
+  'id' | 'full_name' | 'first_name' | 'email' | 'phone' |
+  'status' | 'contact_role' | 'sponsor_id' |
+  'next_lrp_date' | 'updated_at' | 'created_at'
+> {
+  children: NetworkNode[]
+  level: number
+}
+
 export interface FollowupWithClient extends Followup {
+  client: Pick<Client, 'id' | 'full_name' | 'status' | 'contact_role'>
+}
+
+export interface InteractionWithClient extends Interaction {
   client: Pick<Client, 'id' | 'full_name'>
 }

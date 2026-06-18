@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Tabs, Redirect, usePathname, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { StatusBar } from 'expo-status-bar'
@@ -6,6 +6,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, A
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
+import { CatalogPrefsProvider } from '@/features/catalogs/CatalogPrefsProvider'
+import { useCalendarSetup } from '@/features/appointments/useCalendarSetup'
+import { useCalendarForegroundSync } from '@/features/appointments/useCalendarForegroundSync'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
@@ -17,8 +20,10 @@ const NAV_ITEMS = [
   { segment: 'clients',      icon: '👥', labelKey: 'clients.title'      },
   { segment: 'appointments', icon: '📅', labelKey: 'appointments.title' },
   { segment: 'followups',    icon: '🔔', labelKey: 'followups.title'    },
-  { segment: 'catalog',      icon: '📦', labelKey: 'catalog.title'      },
-  { segment: 'settings',     icon: '👤', labelKey: 'settings.title'     },
+  { segment: 'network',      icon: '🌐', labelKey: 'network.title'       },
+  { segment: 'orders',       icon: '🛒', labelKey: 'orders.title'        },
+  { segment: 'catalog',      icon: '📦', labelKey: 'catalog.title'       },
+  { segment: 'settings',     icon: '👤', labelKey: 'settings.title'      },
 ]
 
 const TAB_ROUTES: { name: string; icon: string; path: string }[] = [
@@ -26,7 +31,7 @@ const TAB_ROUTES: { name: string; icon: string; path: string }[] = [
   { name: 'clients',      icon: '👥', path: '/clients'      },
   { name: 'appointments', icon: '📅', path: '/appointments' },
   { name: 'followups',    icon: '🔔', path: '/followups'    },
-  { name: 'catalog',      icon: '📦', path: '/catalog'      },
+  { name: 'network',      icon: '🌐', path: '/network'      },
 ]
 
 // ── Custom floating tab bar ─────────────────────────────────────────────────
@@ -213,15 +218,38 @@ export default function AppLayout() {
   const { width } = useWindowDimensions()
   const pathname = usePathname()
   const isWide = width >= SIDEBAR_BREAKPOINT
-  const isRootRoute = pathname === '/' || pathname === '/clients' || pathname === '/appointments' || pathname === '/followups' || pathname === '/catalog'
+  const isRootRoute = pathname === '/' || pathname === '/clients' || pathname === '/appointments' || pathname === '/followups' || pathname === '/network' || pathname === '/catalog'
 
-  if (loading) return null
+  useCalendarSetup()
+  useCalendarForegroundSync()
+
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!session) { setOnboardingDone(null); return }
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', session.user.id)
+          .single()
+        setOnboardingDone(data?.onboarding_completed ?? false)
+      } catch {
+        setOnboardingDone(true) // On error, don't block
+      }
+    })()
+  }, [session?.user.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading || onboardingDone === null) return null
   if (!session) return <Redirect href="/(auth)/login" />
+  if (!onboardingDone) return <Redirect href="/(auth)/onboarding" />
 
   const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? session?.user?.email ?? ''
   const initials = firstName.slice(0, 2).toUpperCase()
 
   return (
+    <CatalogPrefsProvider>
     <DemoProvider>
       <View style={[styles.root, isWide && styles.rootWide]}>
         {isWide
@@ -254,11 +282,15 @@ export default function AppLayout() {
             <Tabs.Screen name="appointments" options={{ title: t('appointments.title') }} />
             <Tabs.Screen name="followups"    options={{ title: t('followups.title')    }} />
             <Tabs.Screen name="catalog"      options={{ title: t('catalog.title')      }} />
+            <Tabs.Screen name="network"      options={{ title: t('network.title')      }} />
+            <Tabs.Screen name="goals"        options={{ title: t('goals.title')        }} />
+            <Tabs.Screen name="orders"       options={{ title: t('orders.title')       }} />
             <Tabs.Screen name="settings"     options={{ title: t('settings.title')     }} />
           </Tabs>
         </View>
       </View>
     </DemoProvider>
+    </CatalogPrefsProvider>
   )
 }
 

@@ -1,7 +1,9 @@
 import { supabase } from '@/shared/lib/supabase'
 import type { Followup } from '@/shared/lib/types'
 
-export type FollowupInput = Omit<Followup, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+export type FollowupInput =
+  Omit<Followup, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'auto_generated' | 'priority_score'>
+  & { auto_generated?: boolean; priority_score?: number | null }
 
 export async function getFollowupsByClient(clientId: string) {
   const { data, error } = await supabase
@@ -16,7 +18,7 @@ export async function getFollowupsByClient(clientId: string) {
 export async function getPendingFollowups(userId: string) {
   const { data, error } = await supabase
     .from('followups')
-    .select('*, client:clients(id, full_name)')
+    .select('*, client:clients(id, full_name, status, contact_role)')
     .eq('user_id', userId)
     .eq('done', false)
     .order('due_date')

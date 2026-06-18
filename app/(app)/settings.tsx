@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Switch } from 'react-native'
-import { Stack } from 'expo-router'
+import { Platform, ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Switch } from 'react-native'
+import { Stack, router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useDemoState } from '@/features/demo/DemoProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { getCatalogs } from '@/features/catalogs/catalogService'
+import { useCatalogPrefs } from '@/features/catalogs/CatalogPrefsProvider'
+import { useCalendarSync } from '@/features/appointments/useCalendarSync'
+import { getOryalisCalendarColor, changeOryalisCalendarColor } from '@/features/appointments/calendarSyncService'
 import { Input } from '@/shared/components/ui/Input'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
@@ -45,9 +48,45 @@ function nameInitials(name: string) {
 export default function ProfileScreen() {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const userId = session?.user?.id
   const { colors, mode, toggleTheme } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { hideDemoCard, setHideDemoCard } = useDemoState()
+  const { activeSlugs, setActiveSlugs } = useCatalogPrefs()
+  const { syncAllToNative, pullFromNative, syncing: calendarSyncing, error: calendarError } = useCalendarSync()
+  const [pullResult, setPullResult] = useState<number | null>(null)
+  const [calColor, setCalColor] = useState<string | null>(null)
+  const [colorChanging, setColorChanging] = useState(false)
+  const [colorChanged, setColorChanged] = useState(false)
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return
+    getOryalisCalendarColor().then(c => setCalColor(c)).catch(console.error)
+  }, [])
+
+  async function handlePullFromNative() {
+    setPullResult(null)
+    const count = await pullFromNative()
+    setPullResult(count)
+    setTimeout(() => setPullResult(null), 5000)
+  }
+
+  async function handleChangeColor() {
+    setColorChanging(true)
+    setColorChanged(false)
+    try {
+      const newColor = await changeOryalisCalendarColor()
+      if (newColor) {
+        setCalColor(newColor)
+        setColorChanged(true)
+        setTimeout(() => setColorChanged(false), 3000)
+      }
+    } catch (e) {
+      console.error('[settings.changeCalColor]', e)
+    } finally {
+      setColorChanging(false)
+    }
+  }
 
   const [fullName, setFullName] = useState('')
   const [specialty, setSpecialty] = useState('')
@@ -62,31 +101,32 @@ export default function ProfileScreen() {
   const [showTz,   setShowTz]   = useState(false)
 
   const [officialCatalogs, setOfficialCatalogs] = useState<Catalog[]>([])
-  const [activeSlugs, setActiveSlugs]           = useState<string[] | null>(null)
 
   useEffect(() => {
-    if (!session) return
-    supabase
-      .from('profiles')
-      .select('full_name, specialty, locale, timezone, plan, active_catalog_slugs')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data }) => {
+    if (!userId) return
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, specialty, locale, timezone, plan')
+          .eq('id', userId)
+          .single()
         if (data) {
           setFullName(data.full_name ?? '')
           setSpecialty(data.specialty ?? '')
           setLocale(data.locale ?? 'fr')
           setTimezone(data.timezone ?? 'Europe/Paris')
           setPlan(data.plan ?? 'free')
-          setActiveSlugs((data as any).active_catalog_slugs ?? null)
         }
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
 
-    getCatalogs(session.user.id)
+    getCatalogs(userId)
       .then(all => setOfficialCatalogs(all.filter(c => c.type === 'official')))
       .catch(console.error)
-  }, [session])
+  }, [userId])
 
   async function handleSave() {
     if (!session) return
@@ -115,8 +155,7 @@ export default function ProfileScreen() {
     return !activeSlugs || activeSlugs.includes(slug)
   }
 
-  async function toggleCatalog(slug: string) {
-    if (!session) return
+  function toggleCatalog(slug: string) {
     const allSlugs = officialCatalogs.map(c => c.slug!).filter(Boolean)
     let newSlugs: string[] | null
 
@@ -134,11 +173,6 @@ export default function ProfileScreen() {
     }
 
     setActiveSlugs(newSlugs)
-    supabase
-      .from('profiles')
-      .update({ active_catalog_slugs: newSlugs })
-      .eq('id', session.user.id)
-      .then(({ error }) => { if (error) console.error('[profile.catalogs]', error) })
   }
 
   const currentTz  = TIMEZONES.find(tz => tz.value === timezone)
@@ -274,6 +308,21 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* ── Objectifs ───────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>{t('goals.title')}</Text>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/(app)/goals' as any)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.switchRow, { paddingVertical: 14 }]}>
+              <Text style={styles.switchLabel}>{t('goals.subtitle')}</Text>
+              <Text style={{ fontSize: 18, color: colors.textTertiary }}>›</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Affichage ───────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('settings.display')}</Text>
@@ -297,7 +346,7 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={hideDemoCard}
-                onValueChange={setHideDemoCard}
+                onValueChange={(v) => { setHideDemoCard(v) }}
                 trackColor={{ true: colors.primaryAction, false: colors.border }}
                 thumbColor={colors.card}
               />
@@ -324,12 +373,84 @@ export default function ProfileScreen() {
                   </View>
                   <Switch
                     value={isCatalogActive(cat.slug)}
-                    onValueChange={() => cat.slug && toggleCatalog(cat.slug)}
+                    onValueChange={(_v: boolean): void => { if (cat.slug) toggleCatalog(cat.slug) }}
                     trackColor={{ true: cat.color, false: colors.border }}
                     thumbColor={colors.card}
                   />
                 </View>
               ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Calendrier ──────────────────────────────────── */}
+        {Platform.OS !== 'web' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{t('calendar.section')}</Text>
+            <View style={styles.card}>
+              {calendarError === 'calendar_permission_denied' && (
+                <Text style={styles.errText}>{t('calendar.permissionDenied')}</Text>
+              )}
+
+              {/* Couleur du calendrier Oryalis */}
+              <View style={styles.calPullRow}>
+                <View style={[styles.calColorSwatch, { backgroundColor: calColor ?? '#6D3BFF' }]} />
+                <View style={styles.calPullInfo}>
+                  <Text style={styles.switchLabel}>{t('calendar.colorLabel')}</Text>
+                  {colorChanged && (
+                    <Text style={[styles.switchDesc, { color: colors.success }]}>{t('calendar.colorChanged')}</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={[styles.pullBtn, colorChanging && styles.pullBtnMuted]}
+                  onPress={handleChangeColor}
+                  disabled={colorChanging}
+                  activeOpacity={0.75}
+                >
+                  {colorChanging
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <Text style={styles.pullBtnText}>🎨</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+
+              {/* Oryalis → Calendrier natif */}
+              <TouchableOpacity
+                style={[styles.saveBtn, calendarSyncing && styles.saveBtnMuted]}
+                onPress={syncAllToNative}
+                disabled={calendarSyncing}
+                activeOpacity={0.85}
+              >
+                {calendarSyncing
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.saveBtnText}>{t('calendar.syncAll')}</Text>
+                }
+              </TouchableOpacity>
+
+              {/* Calendrier natif → Oryalis */}
+              <View style={[styles.calPullRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14, marginTop: 2 }]}>
+                <View style={styles.calPullInfo}>
+                  <Text style={styles.switchLabel}>{t('calendar.pull')}</Text>
+                  {pullResult !== null && (
+                    <Text style={[styles.switchDesc, { color: pullResult > 0 ? colors.success : colors.textTertiary }]}>
+                      {pullResult > 0
+                        ? t('calendar.pull_done', { count: pullResult })
+                        : t('calendar.pull_up_to_date')}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={[styles.pullBtn, calendarSyncing && styles.pullBtnMuted]}
+                  onPress={handlePullFromNative}
+                  disabled={calendarSyncing}
+                  activeOpacity={0.75}
+                >
+                  {calendarSyncing
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <Text style={styles.pullBtnText}>↓</Text>
+                  }
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
@@ -512,6 +633,14 @@ function makeStyles(colors: ThemeColors) {
   switchInfo: { flex: 1, gap: 2 },
   switchLabel: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
   switchDesc:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 17 },
+
+  // ── Calendar pull ────────────────────────────────────────────────────────────
+  calColorSwatch: { width: 26, height: 26, borderRadius: 13 },
+  calPullRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  calPullInfo: { flex: 1, gap: 3 },
+  pullBtn:     { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgDim, alignItems: 'center', justifyContent: 'center' },
+  pullBtnMuted: { opacity: 0.5 },
+  pullBtnText: { fontSize: 20, color: colors.primary, lineHeight: 24 },
 
   // ── Plan card ───────────────────────────────────────────────────────────────
   planCard:     { borderRadius: 16, padding: 18, gap: 12 },

@@ -4,14 +4,16 @@ import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useDemoState } from '@/features/demo/DemoProvider'
-import { useDashboardStats, useUpcomingLrp } from '@/features/dashboard/useDashboard'
+import { useDashboardStats, useUpcomingLrp, usePipelineStats, useMonthlyRevenue, useAlerts } from '@/features/dashboard/useDashboard'
+import { useGoals } from '@/features/goals/useGoals'
 import { useUpcomingAppointments } from '@/features/appointments/useAppointments'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
 import { Avatar } from '@/shared/components/ui/Avatar'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import type { AppointmentWithClient, FollowupWithClient, Client } from '@/shared/lib/types'
+import type { FollowupWithClient, Client } from '@/shared/lib/types'
+import type { Appointment } from '@/features/appointments/appointmentTypes'
 
 function useLocale() {
   const { i18n } = useTranslation()
@@ -72,42 +74,33 @@ function SectionHeader({ title, sub, onMore }: { title: string; sub?: string; on
 }
 
 // ── Appointment row (inside unified card) ────────────────────────────────────
-function ApptRow({ appt, isToday }: { appt: AppointmentWithClient; isToday: boolean }) {
+function ApptRow({ appt }: { appt: Appointment }) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
-  const locale = useLocale()
-  const date = new Date(appt.appointment_date)
-
-  const timeMain = isToday
-    ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString(locale, { weekday: 'short' })
-  const timeSub = isToday
-    ? t('appointments.number', { number: appt.appointment_number })
-    : date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
-
-  const type = appt.themes_discussed?.split(/\n/)[0]?.trim()
-    || t('appointments.number', { number: appt.appointment_number })
-  const confirmed = appt.recap_sent
+  const d = new Date(appt.start_at)
+  const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const done = appt.status === 'completed'
 
   return (
     <TouchableOpacity
       style={styles.apptRow}
-      onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments`)}
+      onPress={() => appt.client_id
+        ? router.push(`/(app)/clients/${appt.client_id}/appointments`)
+        : router.push('/(app)/appointments')}
       activeOpacity={0.7}
     >
       <View style={styles.apptTimeCol}>
-        <Text style={styles.apptTimeMain}>{timeMain}</Text>
-        <Text style={styles.apptTimeSub}>{timeSub}</Text>
+        <Text style={styles.apptTimeMain}>{timeStr}</Text>
       </View>
-      <Avatar name={appt.client?.full_name ?? '?'} size={38} />
+      <Avatar name={appt.title} size={38} status="active" />
       <View style={styles.apptInfo}>
-        <Text style={styles.apptName} numberOfLines={1}>{appt.client?.full_name}</Text>
-        <Text style={styles.apptType} numberOfLines={1}>{type}</Text>
+        <Text style={styles.apptName} numberOfLines={1}>{appt.title}</Text>
+        <Text style={styles.apptType}>{t(`appointment_types.${appt.appointment_type}` as any)}</Text>
       </View>
-      <View style={[styles.statusBadge, confirmed ? styles.confirmedBadge : styles.pendingBadge]}>
-        <Text style={[styles.statusText, confirmed ? styles.confirmedText : styles.pendingText]}>
-          {confirmed ? t('dashboard.confirmed') : t('dashboard.pending_appt')}
+      <View style={[styles.statusBadge, done ? styles.confirmedBadge : styles.pendingBadge]}>
+        <Text style={[styles.statusText, done ? styles.confirmedText : styles.pendingText]}>
+          {done ? t('dashboard.confirmed') : t('dashboard.pending_appt')}
         </Text>
       </View>
     </TouchableOpacity>
@@ -188,6 +181,104 @@ function LrpCard({ client }: { client: Client }) {
   )
 }
 
+// ── Pipeline strip ────────────────────────────────────────────────────────────
+const PIPELINE_ORDER: string[] = ['prospect', 'new_client', 'active', 'loyal', 'vip', 'advisor', 'inactive']
+
+function PipelineStrip({ byStatus }: { byStatus: Record<string, number> }) {
+  const { t } = useTranslation()
+  const { colors, statusColors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+
+  const pills = PIPELINE_ORDER.map(s => ({ status: s, count: byStatus[s] ?? 0 })).filter(p => p.count > 0)
+  if (pills.length === 0) return null
+
+  return (
+    <View style={styles.pipelineWrap}>
+      <Text style={styles.pipelineLabel}>{t('dashboard.pipeline')}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pipelineRow}>
+        {pills.map(({ status, count }) => {
+          const sc = statusColors[status] ?? { bg: colors.surfaceContainerHigh, text: colors.textSecondary }
+          return (
+            <TouchableOpacity
+              key={status}
+              style={[styles.pipelinePill, { backgroundColor: sc.bg }]}
+              onPress={() => router.push({ pathname: '/(app)/clients', params: { status } } as any)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.pipelinePillCount, { color: sc.text }]}>{count}</Text>
+              <Text style={[styles.pipelinePillLabel, { color: sc.text }]}>{t(`clients.status.${status}`)}</Text>
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
+    </View>
+  )
+}
+
+// ── Zone 1 — Priority strip ───────────────────────────────────────────────────
+function PriorityItem({ count, label, onPress, accent, bg }: {
+  count: number; label: string; onPress: () => void; accent: string; bg: string
+}) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  if (count === 0) return null
+  return (
+    <TouchableOpacity style={[styles.priorityItem, { backgroundColor: bg, borderColor: accent }]} onPress={onPress} activeOpacity={0.8}>
+      <Text style={[styles.priorityCount, { color: accent }]}>{count}</Text>
+      <Text style={[styles.priorityLabel, { color: accent }]}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
+function PriorityStrip({ overdueCount, lrpSoonCount, rdvTodayCount }: {
+  overdueCount: number; lrpSoonCount: number; rdvTodayCount: number
+}) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  const total = overdueCount + lrpSoonCount + rdvTodayCount
+  if (total === 0) return (
+    <View style={styles.allClearRow}>
+      <Text style={styles.allClearText}>{t('dashboard.no_priorities')}</Text>
+    </View>
+  )
+  return (
+    <View style={styles.priorityStrip}>
+      <Text style={styles.priorityStripTitle}>{t('dashboard.priorities_title')}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.priorityRow}>
+        <PriorityItem count={overdueCount}  label={t('dashboard.priority_followups')} onPress={() => router.push('/(app)/followups')} accent={colors.danger}    bg={colors.dangerLight}    />
+        <PriorityItem count={lrpSoonCount}  label={t('dashboard.priority_lrp')}       onPress={() => router.push('/(app)/clients')}  accent={colors.secondary}  bg={colors.secondaryLight} />
+        <PriorityItem count={rdvTodayCount} label={t('dashboard.priority_rdv')}       onPress={() => router.push('/(app)/appointments')} accent={colors.primary} bg={colors.primaryLight}  />
+      </ScrollView>
+    </View>
+  )
+}
+
+// ── Zone 2 — Opportunity cards ────────────────────────────────────────────────
+function OpportunityCard({ emoji, title, actionLabel, onPress, highlight = false }: {
+  emoji: string; title: string; actionLabel: string; onPress: () => void; highlight?: boolean
+}) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  const cardBg     = highlight ? colors.tertiaryLight : colors.card
+  const cardBorder = highlight ? colors.tertiary       : colors.border
+  const actionClr  = highlight ? colors.tertiary       : colors.primary
+  return (
+    <TouchableOpacity
+      style={[styles.oppCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.oppEmoji}>{emoji}</Text>
+      <Text style={styles.oppTitle} numberOfLines={2}>{title}</Text>
+      <View style={styles.oppAction}>
+        <Text style={[styles.oppActionText, { color: actionClr }]}>{actionLabel}</Text>
+        <Text style={[styles.oppArrow, { color: actionClr }]}>→</Text>
+      </View>
+    </TouchableOpacity>
+  )
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { t } = useTranslation()
@@ -200,7 +291,11 @@ export default function DashboardScreen() {
   const { stats, loading: statsLoading, refresh: refreshStats } = useDashboardStats()
   const { appointments, loading: apptLoading, refresh: refreshAppts } = useUpcomingAppointments(10)
   const { followups, loading: fuLoading, refresh: refreshFu } = usePendingFollowups()
-  const { clients: lrpClients, refresh: refreshLrp } = useUpcomingLrp(5)
+  const { clients: lrpClients, refresh: refreshLrp } = useUpcomingLrp(8)
+  const { byStatus, refresh: refreshPipeline } = usePipelineStats()
+  const { amount: monthRevenue, refresh: refreshRevenue } = useMonthlyRevenue()
+  const { alerts, reload: refreshAlerts } = useAlerts()
+  const { goals } = useGoals()
 
   const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? ''
   const hour = new Date().getHours()
@@ -213,7 +308,7 @@ export default function DashboardScreen() {
   // ── Shared demo state (context) ────────────────────────────────────────────
   const { demoCount, demoLoading, demoFailed, demoVersion, hideDemoCard, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
 
-  function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp() }
+  function refreshAll() { refreshStats(); refreshAppts(); refreshFu(); refreshLrp(); refreshPipeline(); refreshRevenue(); refreshAlerts() }
 
   // Refresh on focus (back-navigation, tab switch)
   useFocusEffect(
@@ -240,13 +335,40 @@ export default function DashboardScreen() {
   const showDemoActive = !statsLoading && demoCount > 0
   const showDemoLink   = !statsLoading && stats.totalClients > 0 && demoCount === 0
 
-  const todayStr = new Date().toISOString().split('T')[0]
-  const todayAppts    = appointments.filter(a => a.appointment_date.startsWith(todayStr))
-  const upcomingAppts = appointments.filter(a => !a.appointment_date.startsWith(todayStr)).slice(0, 5)
-  const overdueToday  = followups.filter(f => f.due_date <= todayStr)
+  const now = new Date()
+  const todayStr   = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const todayAppts   = appointments.filter(a => a.start_at.startsWith(todayStr))
+  const overdueToday = followups.filter(f => f.due_date <= todayStr)
 
-  const shownAppts   = todayAppts.length > 0 ? todayAppts : upcomingAppts
-  const showingToday = todayAppts.length > 0
+  // Zone 1 — counts
+  const lrpSoon = lrpClients.filter(c => {
+    const days = c.next_lrp_date
+      ? Math.ceil((new Date(c.next_lrp_date).getTime() - Date.now()) / 86400000)
+      : null
+    return days !== null && days >= 0 && days <= 5
+  })
+
+  // Zone 2 — opportunity cards (max 6 total)
+  const oppLrp = lrpSoon.slice(0, 3).map(c => {
+    const days = Math.ceil((new Date(c.next_lrp_date!).getTime() - Date.now()) / 86400000)
+    return { key: `lrp-${c.id}`, emoji: '📦', title: `${c.full_name} — ${t('dashboard.opp_lrp', { days })}`, action: t('dashboard.opp_lrp_action'), href: `/(app)/clients/${c.id}` as const, highlight: false }
+  })
+  const oppFollowups = overdueToday.slice(0, 3).map(f => {
+    const days = Math.ceil((new Date(todayStr).getTime() - new Date(f.due_date).getTime()) / 86400000)
+    return { key: `fu-${f.id}`, emoji: '⚡', title: `${f.client?.full_name ?? '—'} — ${t('dashboard.opp_followup', { days })}`, action: t('dashboard.opp_followup_action'), href: `/(app)/clients/${f.client_id}/followups` as const, highlight: false }
+  })
+  const oppLeaders = alerts
+    .filter(a => a.type === 'leader_emerging')
+    .slice(0, 2)
+    .map(a => ({
+      key: `leader-${a.id}`,
+      emoji: '🌟',
+      title: a.message,
+      action: t('dashboard.opp_leader_action'),
+      href: (a.action_url ?? '/(app)/network') as string,
+      highlight: true,
+    }))
+  const opportunities = [...oppFollowups, ...oppLeaders, ...oppLrp]
 
   const activePct = stats.totalClients > 0
     ? Math.round(stats.activeClients / stats.totalClients * 100)
@@ -322,6 +444,30 @@ export default function DashboardScreen() {
           </>
         )}
 
+        {/* ── Zone 1 — Priorités du jour ───────────── */}
+        <PriorityStrip
+          overdueCount={overdueToday.length}
+          lrpSoonCount={lrpSoon.length}
+          rdvTodayCount={todayAppts.length}
+        />
+
+        {/* ── Zone 2 — Opportunités détectées ──────── */}
+        {opportunities.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title={t('dashboard.opportunities_title')} />
+            {opportunities.map(opp => (
+              <OpportunityCard
+                key={opp.key}
+                emoji={opp.emoji}
+                title={opp.title}
+                actionLabel={opp.action}
+                highlight={'highlight' in opp ? opp.highlight : false}
+                onPress={() => router.push(opp.href as any)}
+              />
+            ))}
+          </View>
+        )}
+
         {/* ── KPI grid (2×2 mobile / 4-col wide) ──────── */}
         <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
           <KpiCard wide={isWide}
@@ -329,13 +475,14 @@ export default function DashboardScreen() {
             label={t('dashboard.stats.total_clients')}
             delta={t('dashboard.kpi.new_month', { count: stats.newThisMonth })}
             accent={colors.secondary} bg={colors.secondaryLight}
-            onPress={() => router.push('/(app)/clients')}
+            onPress={() => router.push({ pathname: '/(app)/clients', params: { status: 'all' } } as any)}
           />
           <KpiCard wide={isWide}
-            icon="📅" value={stats.appointmentsThisMonth}
-            label={t('dashboard.stats.sessions')}
-            delta={t('dashboard.kpi.sessions_since')}
+            icon="🌱" value={stats.prospects}
+            label={t('dashboard.stats.prospects')}
+            delta={t('dashboard.kpi.prospects_delta')}
             accent={colors.primary} bg={colors.primaryLight}
+            onPress={() => router.push({ pathname: '/(app)/clients', params: { status: 'prospect' } } as any)}
           />
           <KpiCard wide={isWide}
             icon="🔔" value={stats.pendingFollowups}
@@ -348,30 +495,31 @@ export default function DashboardScreen() {
             onPress={() => router.push('/(app)/followups')}
           />
           <KpiCard wide={isWide}
-            icon="✨" value={lrpClients.length}
-            label={t('dashboard.next_lrp')}
-            delta={t('dashboard.kpi.lrp_delta')}
+            icon="💬" value={stats.interactionsToday}
+            label={t('dashboard.stats.interactions_today')}
+            delta={t('dashboard.kpi.today_delta')}
             accent={colors.tertiary} bg={colors.tertiaryLight}
           />
         </View>
 
+        {/* ── Pipeline strip ────────────────────────── */}
+        <PipelineStrip byStatus={byStatus} />
+
         <View style={isWide ? styles.twoCol : styles.oneCol}>
           {/* ── Left column ─────────────────────────────── */}
           <View style={isWide ? styles.col : undefined}>
-            {shownAppts.length > 0 && (
+            {todayAppts.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader
                   title={t('dashboard.today_agenda')}
-                  sub={showingToday
-                    ? `${todayAppts.length} RDV`
-                    : t('dashboard.next_appointments')}
+                  sub={`${todayAppts.length} RDV`}
                   onMore={() => router.push('/(app)/appointments')}
                 />
                 <View style={styles.listCard}>
-                  {shownAppts.map((a, i) => (
+                  {todayAppts.map((a, i) => (
                     <View key={a.id}>
-                      <ApptRow appt={a} isToday={showingToday} />
-                      {i < shownAppts.length - 1 && <View style={styles.divider} />}
+                      <ApptRow appt={a} />
+                      {i < todayAppts.length - 1 && <View style={styles.divider} />}
                     </View>
                   ))}
                 </View>
@@ -415,8 +563,81 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* ── Zone 3 — KPIs réseau (conditionnel) ─────── */}
+        {stats.networkSize > 0 && (
+          <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
+            <KpiCard wide={isWide}
+              icon="🌐" value={stats.networkSize}
+              label={t('dashboard.kpi_network_size')}
+              accent={colors.tertiary} bg={colors.tertiaryLight}
+              onPress={() => router.push('/(app)/network' as any)}
+            />
+            <KpiCard wide={isWide}
+              icon="🆕" value={stats.newRecruits}
+              label={t('dashboard.kpi_new_recruits')}
+              accent={colors.secondary} bg={colors.secondaryLight}
+              onPress={() => router.push('/(app)/network' as any)}
+            />
+          </View>
+        )}
+
+        {/* ── Zone 3 — KPIs secondaires ────────────────── */}
+        <View style={[styles.kpiGrid, isWide && styles.kpiGridWide]}>
+          <KpiCard wide={isWide}
+            icon="💶" value={Math.round(monthRevenue)}
+            label={t('dashboard.kpi_revenue')}
+            accent={colors.success} bg={colors.successLight}
+            onPress={() => router.push('/(app)/orders' as any)}
+          />
+          <KpiCard wide={isWide}
+            icon="✅" value={stats.completedThisMonth}
+            label={t('dashboard.kpi_completed_rdv')}
+            accent={colors.primary} bg={colors.primaryLight}
+            onPress={() => router.push('/(app)/appointments')}
+          />
+          <KpiCard wide={isWide}
+            icon="🌱" value={stats.newThisMonth}
+            label={t('dashboard.kpi_new_contacts')}
+            accent={colors.secondary} bg={colors.secondaryLight}
+            onPress={() => router.push({ pathname: '/(app)/clients', params: { status: 'new_client' } } as any)}
+          />
+        </View>
+
+        {/* ── Objectifs du mois ───────────────────────────── */}
+        {goals.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title={t('goals.section_title')}
+              onMore={() => router.push('/(app)/goals' as any)}
+            />
+            <View style={styles.listCard}>
+              {goals.map((g, i) => {
+                const accent = g.pct >= 100 ? colors.success : g.pct >= 60 ? colors.primary : g.pct >= 30 ? colors.warning : colors.danger
+                return (
+                  <View key={g.id}>
+                    {i > 0 && <View style={styles.divider} />}
+                    <View style={{ padding: 14, gap: 6 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.text }}>
+                          {t(`goals.metrics.${g.metric}`)}
+                        </Text>
+                        <Text style={{ fontSize: 13, fontFamily: fonts.semibold, color: accent }}>
+                          {g.current} / {g.target}
+                        </Text>
+                      </View>
+                      <View style={{ height: 6, backgroundColor: colors.bgDim, borderRadius: 3, overflow: 'hidden' }}>
+                        <View style={{ height: 6, width: `${g.pct}%`, backgroundColor: accent, borderRadius: 3 }} />
+                      </View>
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          </View>
+        )}
+
         {/* ── Free day ────────────────────────────────────── */}
-        {shownAppts.length === 0 && overdueToday.length === 0 && (
+        {todayAppts.length === 0 && overdueToday.length === 0 && (
           <View style={styles.emptyDay}>
             <Text style={styles.emptyDayEmoji}>✨</Text>
             <Text style={styles.emptyDayTitle}>{t('dashboard.free_day')}</Text>
@@ -527,5 +748,30 @@ function makeStyles(colors: ThemeColors) {
   demoLink:      { alignSelf: 'flex-start', paddingVertical: 4 },
   demoLinkText:  { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
   demoErrorText: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
+
+  // ── Zone 1 — Priority strip ────────────────────────────────────────────────
+  priorityStrip:      { backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: colors.border },
+  priorityStripTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  priorityRow:        { gap: 8 },
+  priorityItem:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5 },
+  priorityCount:      { fontSize: 22, fontFamily: fonts.display, lineHeight: 26 },
+  priorityLabel:      { fontSize: 12, fontFamily: fonts.medium, flex: 1 },
+  allClearRow:        { backgroundColor: colors.successLight, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
+  allClearText:       { fontSize: 14, fontFamily: fonts.semibold, color: colors.success },
+
+  // ── Zone 2 — Opportunity cards ──────────────────────────────────────────────
+  oppCard:       { backgroundColor: colors.card, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  oppEmoji:      { fontSize: 20, width: 28, textAlign: 'center' },
+  oppTitle:      { flex: 1, fontSize: 13, fontFamily: fonts.medium, color: colors.text, lineHeight: 18 },
+  oppAction:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  oppActionText: { fontSize: 12, fontFamily: fonts.semibold, color: colors.primary },
+  oppArrow:      { fontSize: 14, color: colors.primary },
+
+  pipelineWrap:       { gap: 10 },
+  pipelineLabel:      { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  pipelineRow:        { gap: 8, paddingBottom: 2 },
+  pipelinePill:       { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, minWidth: 72, gap: 3 },
+  pipelinePillCount:  { fontSize: 22, fontFamily: fonts.display, lineHeight: 26, letterSpacing: -0.5 },
+  pipelinePillLabel:  { fontSize: 10, fontFamily: fonts.semibold, textTransform: 'uppercase', letterSpacing: 0.4, opacity: 0.85 },
   })
 }

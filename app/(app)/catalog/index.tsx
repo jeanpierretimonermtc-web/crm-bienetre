@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Modal, ActivityIndicator, useWindowDimensions, ScrollView,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useFocusEffect } from 'expo-router'
 import { useCatalogs, useCatalogProducts } from '@/features/catalogs/useCatalog'
+import { useCatalogPrefs } from '@/features/catalogs/CatalogPrefsProvider'
 import { createRecommendation } from '@/features/recommendations/recommendationService'
 import { supabase } from '@/shared/lib/supabase'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -216,7 +218,11 @@ export default function CatalogScreen() {
   const { width } = useWindowDimensions()
   const isWide = width >= 768
 
-  const { catalogs, loading: catalogsLoading } = useCatalogs()
+  const { activeSlugs } = useCatalogPrefs()
+  const [refreshKey, setRefreshKey] = useState(0)
+  useFocusEffect(useCallback(() => { setRefreshKey(k => k + 1) }, []))
+
+  const { catalogs, loading: catalogsLoading } = useCatalogs(activeSlugs, refreshKey)
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null)
   const { products, loading: productsLoading } = useCatalogProducts(selectedCatalogId)
 
@@ -238,10 +244,10 @@ export default function CatalogScreen() {
   const [successMsg, setSuccessMsg]         = useState<string | null>(null)
 
   useEffect(() => {
-    if (catalogs.length > 0 && !selectedCatalogId) {
-      setSelectedCatalogId(catalogs[0].id)
-    }
-  }, [catalogs, selectedCatalogId])
+    if (catalogs.length === 0) return
+    const stillActive = catalogs.find(c => c.id === selectedCatalogId)
+    if (!stillActive) setSelectedCatalogId(catalogs[0].id)
+  }, [catalogs])
 
   useEffect(() => {
     setSearchQuery('')

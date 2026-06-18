@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +13,9 @@ import {
 import { Link } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/shared/lib/supabase'
+import { useTheme } from '@/shared/theme/ThemeProvider'
+import { fonts } from '@/shared/theme/fonts'
+import type { ThemeColors } from '@/shared/theme/colors'
 
 const RESET_REDIRECT = 'https://crm-bienetre.vercel.app/reset-password'
 
@@ -18,16 +23,16 @@ type Mode = 'login' | 'forgot'
 
 export default function LoginScreen() {
   const { t } = useTranslation()
+  const { colors, mode } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
 
-  const [mode, setMode] = useState<Mode>('login')
+  const [screen, setScreen] = useState<Mode>('login')
 
-  // Login state
-  const [email, setEmail]       = useState('')
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [loading,  setLoading]  = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Forgot-password state
   const [resetEmail,   setResetEmail]   = useState('')
   const [resetLoading, setResetLoading] = useState(false)
   const [resetSent,    setResetSent]    = useState(false)
@@ -71,215 +76,379 @@ export default function LoginScreen() {
   }
 
   function goToForgot() {
-    setResetEmail(email) // pre-fill if already typed
+    setResetEmail(email)
     setResetSent(false)
     setResetError(null)
-    setMode('forgot')
+    setScreen('forgot')
   }
 
   function goToLogin() {
-    setMode('login')
+    setScreen('login')
     setErrorMsg(null)
   }
 
-  // ── Forgot-password view ───────────────────────────────────────────────────
-  if (mode === 'forgot') {
+  const wordmark = mode === 'dark'
+    ? require('@/assets/wordmark-dark.png')
+    : require('@/assets/wordmark-day.png')
+
+  // ── Brand block (shared) ────────────────────────────────────────────────────
+
+  const BrandBlock = (
+    <View style={styles.brand}>
+      <View style={styles.brandLogoRow}>
+        <Image source={require('@/assets/logo-icon.png')} style={styles.brandIcon} resizeMode="contain" />
+        <Image source={wordmark} style={styles.brandWordmark} resizeMode="contain" />
+      </View>
+      <Text style={styles.appName}>ORYALIS</Text>
+      <Text style={styles.tagline}>Connect people, products and opportunities</Text>
+    </View>
+  )
+
+  // ── Forgot password ─────────────────────────────────────────────────────────
+
+  if (screen === 'forgot') {
     return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <TouchableOpacity onPress={goToLogin} style={styles.backRow}>
-          <Text style={styles.backArrow}>←</Text>
-          <Text style={styles.backText}>{t('auth.back_to_login')}</Text>
-        </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.inner}>
+          <View style={styles.card}>
+            {BrandBlock}
+            <View style={styles.divider} />
 
-        <Text style={styles.title}>{t('auth.forgot_password')}</Text>
-
-        {resetSent ? (
-          <View style={styles.successBox}>
-            <Text style={styles.successIcon}>✉️</Text>
-            <Text style={styles.successTitle}>{t('auth.reset_email_sent_title')}</Text>
-            <Text style={styles.successBody}>
-              {t('auth.reset_email_sent_body', { email: resetEmail })}
-            </Text>
-            <TouchableOpacity style={styles.button} onPress={goToLogin}>
-              <Text style={styles.buttonText}>{t('auth.back_to_login')}</Text>
+            <TouchableOpacity onPress={goToLogin} style={styles.backRow}>
+              <Text style={styles.backArrow}>←</Text>
+              <Text style={styles.backText}>{t('auth.back_to_login')}</Text>
             </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>{t('auth.forgot_password')}</Text>
+
+            {resetSent ? (
+              <View style={styles.successBox}>
+                <View style={styles.successIconWrap}>
+                  <Text style={styles.successIconText}>✉</Text>
+                </View>
+                <Text style={styles.successTitle}>{t('auth.reset_email_sent_title')}</Text>
+                <Text style={styles.successBody}>
+                  {t('auth.reset_email_sent_body', { email: resetEmail })}
+                </Text>
+                <TouchableOpacity style={styles.btn} onPress={goToLogin}>
+                  <Text style={styles.btnText}>{t('auth.back_to_login')}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.hint}>{t('auth.forgot_password_hint')}</Text>
+                <View style={styles.fieldWrap}>
+                  <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="you@example.com"
+                    placeholderTextColor={colors.textTertiary}
+                    value={resetEmail}
+                    onChangeText={setResetEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                  />
+                </View>
+                {resetError ? <Text style={styles.errorText}>{resetError}</Text> : null}
+                <TouchableOpacity
+                  style={[styles.btn, resetLoading && styles.btnDisabled]}
+                  onPress={handleForgotPassword}
+                  disabled={resetLoading}
+                >
+                  <Text style={styles.btnText}>
+                    {resetLoading ? t('common.loading') : t('auth.send_reset_link')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        ) : (
-          <>
-            <Text style={styles.forgotHint}>{t('auth.forgot_password_hint')}</Text>
+        </KeyboardAvoidingView>
+      </ScrollView>
+    )
+  }
+
+  // ── Login ───────────────────────────────────────────────────────────────────
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.inner}>
+        <View style={styles.card}>
+
+          {BrandBlock}
+          <View style={styles.divider} />
+
+          {/* Email */}
+          <View style={styles.fieldWrap}>
+            <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
             <TextInput
               style={styles.input}
-              placeholder={t('auth.email')}
-              value={resetEmail}
-              onChangeText={setResetEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.textTertiary}
+              value={email}
+              onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
             />
-            {resetError ? <Text style={styles.error}>{resetError}</Text> : null}
-            <TouchableOpacity
-              style={[styles.button, resetLoading && styles.buttonDisabled]}
-              onPress={handleForgotPassword}
-              disabled={resetLoading}
-            >
-              <Text style={styles.buttonText}>
-                {resetLoading ? t('common.loading') : t('auth.send_reset_link')}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
+          </View>
+
+          {/* Password */}
+          <View style={styles.fieldWrap}>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>{t('auth.password')}</Text>
+              <TouchableOpacity onPress={goToForgot}>
+                <Text style={styles.forgotLink}>{t('auth.forgot_password')}</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textTertiary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+            />
+          </View>
+
+          {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+
+          {/* Sign in */}
+          <TouchableOpacity
+            style={[styles.btn, loading && styles.btnDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.btnText}>
+              {loading ? t('common.loading') : t('auth.login')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Register */}
+          <View style={styles.footerRow}>
+            <Text style={styles.footerHint}>No account? </Text>
+            <Link href="/(auth)/register">
+              <Text style={styles.footerLink}>{t('auth.register')}</Text>
+            </Link>
+          </View>
+
+        </View>
       </KeyboardAvoidingView>
-    )
-  }
-
-  // ── Login view ─────────────────────────────────────────────────────────────
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Text style={styles.title}>{t('auth.login')}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder={t('auth.email')}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        autoComplete="email"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder={t('auth.password')}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoComplete="password"
-      />
-
-      <TouchableOpacity onPress={goToForgot} style={styles.forgotLink}>
-        <Text style={styles.forgotLinkText}>{t('auth.forgot_password')}</Text>
-      </TouchableOpacity>
-
-      {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? t('common.loading') : t('auth.login')}
-        </Text>
-      </TouchableOpacity>
-      <Link href="/(auth)/register" style={styles.link}>
-        <Text style={styles.linkText}>{t('auth.register')}</Text>
-      </Link>
-    </KeyboardAvoidingView>
+    </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-    color: '#1a1a1a',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: '#fafafa',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#334f2b',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  link: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#334f2b',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginTop: -4,
-  },
-  forgotLinkText: {
-    color: '#4a6741',
-    fontSize: 13,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-    alignSelf: 'flex-start',
-  },
-  backArrow: {
-    fontSize: 18,
-    color: '#4a6741',
-  },
-  backText: {
-    fontSize: 14,
-    color: '#4a6741',
-  },
-  forgotHint: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  successBox: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-  },
-  successIcon: {
-    fontSize: 48,
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    textAlign: 'center',
-  },
-  successBody: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-})
+function makeStyles(colors: ThemeColors) {
+  const isWeb = Platform.OS === 'web'
+
+  return StyleSheet.create({
+    scroll: {
+      flexGrow: 1,
+      backgroundColor: colors.bg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 48,
+      paddingHorizontal: isWeb ? 24 : 0,
+    },
+    inner: {
+      width: '100%',
+      maxWidth: isWeb ? 460 : undefined,
+      alignItems: 'center',
+    },
+
+    // ── Card ────────────────────────────────────────────────────────────────────
+    card: {
+      width: '100%',
+      backgroundColor: colors.card,
+      borderRadius: isWeb ? 16 : 0,
+      borderWidth: isWeb ? 1 : 0,
+      borderColor: colors.border,
+      padding: isWeb ? 40 : 28,
+      paddingHorizontal: isWeb ? 40 : 24,
+      gap: 20,
+      ...(isWeb && {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 24,
+      }),
+    },
+
+    // ── Brand section ────────────────────────────────────────────────────────────
+    brand: {
+      gap: 8,
+    },
+    brandLogoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 4,
+    },
+    brandIcon: {
+      width: 36,
+      height: 36,
+    },
+    brandWordmark: {
+      height: 20,
+      width: 108,
+    },
+    appName: {
+      fontFamily: fonts.display,
+      fontSize: 32,
+      color: colors.text,
+      letterSpacing: 2,
+      lineHeight: 38,
+    },
+    tagline: {
+      fontFamily: fonts.body,
+      fontSize: 15,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+
+    // ── Divider ─────────────────────────────────────────────────────────────────
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+    },
+
+    // ── Fields ──────────────────────────────────────────────────────────────────
+    fieldWrap: {
+      gap: 7,
+    },
+    fieldRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    fieldLabel: {
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    forgotLink: {
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      color: colors.primary,
+    },
+    input: {
+      backgroundColor: colors.bgDim,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      fontSize: 15,
+      fontFamily: fonts.body,
+      color: colors.text,
+    },
+
+    // ── Error ────────────────────────────────────────────────────────────────────
+    errorText: {
+      fontFamily: fonts.body,
+      fontSize: 13,
+      color: colors.danger,
+      textAlign: 'center',
+    },
+
+    // ── Hint ─────────────────────────────────────────────────────────────────────
+    hint: {
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.textSecondary,
+      lineHeight: 21,
+    },
+
+    // ── Button ───────────────────────────────────────────────────────────────────
+    btn: {
+      backgroundColor: colors.primary,
+      borderRadius: 12,
+      paddingVertical: 15,
+      alignItems: 'center',
+    },
+    btnDisabled: {
+      opacity: 0.55,
+    },
+    btnText: {
+      fontFamily: fonts.semibold,
+      fontSize: 15,
+      color: '#FFFFFF',
+      letterSpacing: 0.2,
+    },
+
+    // ── Footer row ────────────────────────────────────────────────────────────────
+    footerRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: 4,
+    },
+    footerHint: {
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    footerLink: {
+      fontFamily: fonts.semibold,
+      fontSize: 14,
+      color: colors.primary,
+    },
+
+    // ── Forgot / Back ─────────────────────────────────────────────────────────────
+    backRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+    },
+    backArrow: {
+      fontSize: 16,
+      color: colors.primary,
+    },
+    backText: {
+      fontFamily: fonts.medium,
+      fontSize: 14,
+      color: colors.primary,
+    },
+    sectionTitle: {
+      fontFamily: fonts.semibold,
+      fontSize: 20,
+      color: colors.text,
+      lineHeight: 26,
+    },
+
+    // ── Success ──────────────────────────────────────────────────────────────────
+    successBox: {
+      alignItems: 'center',
+      gap: 16,
+      paddingVertical: 8,
+    },
+    successIconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    successIconText: {
+      fontSize: 24,
+      color: colors.primary,
+    },
+    successTitle: {
+      fontFamily: fonts.semibold,
+      fontSize: 18,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    successBody: {
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 21,
+    },
+  })
+}

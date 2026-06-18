@@ -10,9 +10,32 @@ import { Button } from '@/shared/components/ui/Button'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import type { ClientStatus } from '@/shared/lib/types'
+import type { ClientStatus, JourneyStage, NextActionType, NetworkPotential, ContactRole } from '@/shared/lib/types'
 
-const STATUSES: ClientStatus[] = ['prospect', 'active', 'inactive', 'vip', 'advisor']
+const STATUSES: ClientStatus[] = ['prospect', 'new_client', 'active', 'loyal', 'inactive', 'vip', 'advisor']
+const CONTACT_ROLES: ContactRole[] = ['prospect', 'customer', 'distributor', 'leader', 'team_member', 'inactive']
+const JOURNEY_STAGES: JourneyStage[] = [
+  'discovery', 'evaluation', 'first_recommendation', 'first_order',
+  'onboarding', 'followup_7d', 'followup_30d', 'loyal',
+]
+const NEXT_ACTION_TYPES: NextActionType[] = ['call', 'whatsapp', 'sms', 'email', 'rdv']
+const ACTION_ICONS: Record<NextActionType, string> = { call: '📞', whatsapp: '💬', sms: '📱', email: '✉️', rdv: '📅' }
+const NETWORK_POTENTIALS: NetworkPotential[] = ['low', 'medium', 'high']
+
+function SectionCard({ icon, titleKey, children }: { icon: string; titleKey: string; children: React.ReactNode }) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardIcon}>{icon}</Text>
+        <Text style={styles.cardTitle}>{t(titleKey)}</Text>
+      </View>
+      <View style={styles.cardBody}>{children}</View>
+    </View>
+  )
+}
 
 export default function NewClientScreen() {
   const { t } = useTranslation()
@@ -22,59 +45,76 @@ export default function NewClientScreen() {
   const { width } = useWindowDimensions()
   const isWide = width >= 768
 
-  const [firstName, setFirstName] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [status, setStatus] = useState<ClientStatus>('prospect')
+  const [firstName, setFirstName]           = useState('')
+  const [lastName, setLastName]             = useState('')
+  const [email, setEmail]                   = useState('')
+  const [phone, setPhone]                   = useState('')
+  const [status, setStatus]                 = useState<ClientStatus>('prospect')
   const [inscriptionDate, setInscriptionDate] = useState(new Date().toISOString().split('T')[0])
-  const [birthDate, setBirthDate] = useState('')
-  const [profession, setProfession] = useState('')
-  const [children, setChildren] = useState('')
-  const [source, setSource] = useState('')
+  const [birthDate, setBirthDate]           = useState('')
+  const [profession, setProfession]         = useState('')
+  const [children, setChildren]             = useState('')
+  const [source, setSource]                 = useState('')
+  const [country, setCountry]               = useState('')
+  const [clientType, setClientType]         = useState('')
+  const [interests, setInterests]           = useState('')
   const [particularities, setParticularities] = useState('')
   const [medicalTreatment, setMedicalTreatment] = useState(false)
-  const [medicalNotes, setMedicalNotes] = useState('')
-  const [doterraId, setDoterraId] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [medicalNotes, setMedicalNotes]     = useState('')
+  const [journeyStage, setJourneyStage]     = useState<JourneyStage | null>(null)
+  const [nextActionType, setNextActionType] = useState<NextActionType | null>(null)
+  const [nextActionDate, setNextActionDate] = useState('')
+  const [networkPotential, setNetworkPotential] = useState<NetworkPotential | null>(null)
+  const [doterraId, setDoterraId]           = useState('')
+  const [contactRole, setContactRole]       = useState<ContactRole>('customer')
+  const [loading, setLoading]               = useState(false)
+  const [errorMsg, setErrorMsg]             = useState<string | null>(null)
 
-  const displayName = [firstName.trim(), fullName.trim()].filter(Boolean).join(' ') || firstName.trim() || fullName.trim()
+  const displayName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
 
   async function handleSave() {
     setErrorMsg(null)
-    if (!firstName.trim() && !fullName.trim()) {
-      setErrorMsg(t('clients.error_name_required'))
-      return
-    }
+    if (!firstName.trim() && !lastName.trim()) { setErrorMsg(t('clients.error_name_required')); return }
     if (!session) { setErrorMsg(t('clients.error_session')); return }
     setLoading(true)
     try {
+      const interestList = interests.split(',').map(s => s.trim()).filter(Boolean)
       await createClient(session.user.id, {
         first_name: firstName.trim() || null,
         full_name: displayName,
-        email: email || null,
-        phone: phone || null,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
         status,
         inscription_date: inscriptionDate || null,
         birth_date: birthDate || null,
-        profession: profession || null,
-        children: children || null,
-        source: source || null,
-        particularities: particularities || null,
+        profession: profession.trim() || null,
+        children: children.trim() || null,
+        source: source.trim() || null,
+        country: country.trim() || null,
+        client_type: clientType.trim() || null,
+        interests: interestList,
+        particularities: particularities.trim() || null,
         medical_treatment: medicalTreatment,
-        medical_notes: medicalNotes || null,
-        doterra_id: doterraId || null,
-        interests: [],
-        client_type: null,
+        medical_notes: medicalNotes.trim() || null,
+        doterra_id: doterraId.trim() || null,
         language: 'fr',
         next_lrp_date: null,
         welcome_email_sent: false,
+        first_contact_date: null,
+        first_purchase_date: null,
+        acquisition_source: null,
+        journey_stage: journeyStage,
+        next_action_date: nextActionDate || null,
+        next_action_type: nextActionType,
+        referrals_count: 0,
+        referral_count: 0,
+        network_potential: networkPotential,
+        contact_role: contactRole,
+        sponsor_id: null,
       })
       router.back()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : t('common.error')
-      setErrorMsg(msg)
+      setErrorMsg(e instanceof Error ? e.message : t('common.error'))
       console.error('[createClient]', e)
     } finally {
       setLoading(false)
@@ -83,79 +123,204 @@ export default function NewClientScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('clients.add') }} />
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
+      <Stack.Screen options={{ title: t('clients.add'), headerBackTitle: '' }} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Identité ───────────────────────────────────────────── */}
+        <SectionCard icon="👤" titleKey="clients.sections.personal">
+          <View style={isWide ? styles.fieldRow : undefined}>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={t('clients.fields.first_name')} value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder="Marie" />
+            </View>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={t('clients.fields.last_name')} value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder="Dupont" />
+            </View>
+          </View>
+          {displayName ? (
+            <View style={styles.namePreviewCard}>
+              <Text style={styles.namePreviewLabel}>{t('clients.name_preview')}</Text>
+              <Text style={styles.namePreviewValue}>{displayName}</Text>
+            </View>
+          ) : null}
+          <View style={isWide ? styles.fieldRow : undefined}>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            </View>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            </View>
+          </View>
+          <View style={isWide ? styles.fieldRow : undefined}>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={t('clients.fields.inscription_date')} value={inscriptionDate} onChangeText={setInscriptionDate} placeholder="YYYY-MM-DD" />
+            </View>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD" />
+            </View>
+          </View>
+        </SectionCard>
 
-        <Text style={styles.section}>{t('clients.sections.personal')}</Text>
-        <View style={isWide ? styles.fieldRow : undefined}>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={t('clients.fields.first_name')} value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder="Marie" />
+        {/* ── Statut ─────────────────────────────────────────────── */}
+        <SectionCard icon="🏷" titleKey="clients.sections.status">
+          <View style={styles.chipRow}>
+            {STATUSES.map(s => {
+              const active = status === s
+              const cs = statusColors[s] ?? null
+              const bg     = active ? (cs ? cs.bg   : colors.primaryAction) : colors.card
+              const txtClr = active ? (cs ? cs.text : '#ffffff')            : colors.textSecondary
+              const border = active ? (cs ? cs.text : colors.primaryAction) : colors.border
+              return (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.statusChip, { backgroundColor: bg, borderColor: border }]}
+                  onPress={() => setStatus(s)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.statusChipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
+                    {t(`clients.status.${s}`)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
           </View>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={t('clients.fields.last_name')} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholder="Dupont" />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('clients.contact_role.label')}</Text>
+            <View style={styles.chipRow}>
+              {CONTACT_ROLES.map(role => {
+                const active = contactRole === role
+                return (
+                  <TouchableOpacity
+                    key={role}
+                    style={[styles.smallChip, active && styles.smallChipActive]}
+                    onPress={() => setContactRole(role)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.smallChipText, active && styles.smallChipTextActive]}>
+                      {t(`clients.contact_role.${role}`)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
           </View>
-        </View>
-        {displayName ? (
-          <Text style={styles.namePreview}>{t('clients.name_preview')} : <Text style={styles.namePreviewBold}>{displayName}</Text></Text>
-        ) : null}
-        <View style={isWide ? styles.fieldRow : undefined}>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={t('clients.fields.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          </View>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          </View>
-        </View>
-        <View style={isWide ? styles.fieldRow : undefined}>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={t('clients.fields.inscription_date')} value={inscriptionDate} onChangeText={setInscriptionDate} placeholder="YYYY-MM-DD" />
-          </View>
-          <View style={isWide ? styles.fieldHalf : undefined}>
-            <Input label={`${t('clients.fields.birth_date')} (${t('common.optional')})`} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD" />
-          </View>
-        </View>
-        <Input label={`${t('clients.fields.profession')} (${t('common.optional')})`} value={profession} onChangeText={setProfession} />
-        <Input label={`${t('clients.fields.children')} (${t('common.optional')})`} value={children} onChangeText={setChildren} />
-        <Input label={`${t('clients.fields.source')} (${t('common.optional')})`} value={source} onChangeText={setSource} />
+        </SectionCard>
 
-        <Text style={styles.section}>{t('clients.sections.status')}</Text>
-        <View style={styles.statusRow}>
-          {STATUSES.map(s => {
-            const active = status === s
-            const cs = statusColors[s] ?? null
-            const bg     = active ? (cs ? cs.bg   : colors.primaryAction) : (cs ? cs.bg + '55'  : colors.surfaceContainerHigh)
-            const txtClr = active ? (cs ? cs.text : '#ffffff')            : (cs ? cs.text        : colors.textSecondary)
-            const border = active ? (cs ? cs.text : colors.primaryAction) : (cs ? cs.bg          : colors.border)
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[styles.statusChip, { backgroundColor: bg, borderColor: border }]}
-                onPress={() => setStatus(s)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.statusChipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
-                  {t(`clients.status.${s}`)}
-                </Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
+        {/* ── Profil ─────────────────────────────────────────────── */}
+        <SectionCard icon="📋" titleKey="clients.sections.profile">
+          <View style={isWide ? styles.fieldRow : undefined}>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={`${t('clients.fields.profession')} (${t('common.optional')})`} value={profession} onChangeText={setProfession} />
+            </View>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={`${t('clients.fields.children')} (${t('common.optional')})`} value={children} onChangeText={setChildren} />
+            </View>
+          </View>
+          <View style={isWide ? styles.fieldRow : undefined}>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={`${t('clients.fields.country')} (${t('common.optional')})`} value={country} onChangeText={setCountry} />
+            </View>
+            <View style={isWide ? styles.fieldHalf : undefined}>
+              <Input label={`${t('clients.fields.source')} (${t('common.optional')})`} value={source} onChangeText={setSource} />
+            </View>
+          </View>
+          <Input label={`${t('clients.fields.client_type')} (${t('common.optional')})`} value={clientType} onChangeText={setClientType} />
+          <Input label={`${t('clients.fields.interests')} (${t('common.optional')})`} value={interests} onChangeText={setInterests} placeholder="Nutrition, Sommeil, Stress" />
+        </SectionCard>
 
-        <Text style={styles.section}>{t('clients.sections.medical')}</Text>
-        <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>{t('clients.fields.medical_treatment')}</Text>
-          <Switch value={medicalTreatment} onValueChange={setMedicalTreatment} trackColor={{ true: colors.primary }} />
-        </View>
-        {medicalTreatment && (
-          <TextArea label={t('clients.fields.medical_notes')} value={medicalNotes} onChangeText={setMedicalNotes} />
-        )}
-        <TextArea label={`${t('clients.fields.particularities')} (${t('common.optional')})`} value={particularities} onChangeText={setParticularities} />
+        {/* ── Santé ──────────────────────────────────────────────── */}
+        <SectionCard icon="🩺" titleKey="clients.sections.medical">
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>{t('clients.fields.medical_treatment')}</Text>
+            <Switch value={medicalTreatment} onValueChange={setMedicalTreatment} trackColor={{ true: colors.primary }} />
+          </View>
+          {medicalTreatment ? (
+            <TextArea label={t('clients.fields.medical_notes')} value={medicalNotes} onChangeText={setMedicalNotes} />
+          ) : null}
+          <TextArea label={`${t('clients.fields.particularities')} (${t('common.optional')})`} value={particularities} onChangeText={setParticularities} />
+        </SectionCard>
 
-        <Text style={styles.section}>{t('clients.sections.doterra')}</Text>
-        <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
+        {/* ── Parcours ───────────────────────────────────────────── */}
+        <SectionCard icon="🗺" titleKey="clients.sections.journey">
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('clients.fields.journey_stage')}</Text>
+            <View style={styles.chipRow}>
+              {JOURNEY_STAGES.map(stage => {
+                const active = journeyStage === stage
+                return (
+                  <TouchableOpacity
+                    key={stage}
+                    style={[styles.smallChip, active && styles.smallChipActive]}
+                    onPress={() => setJourneyStage(journeyStage === stage ? null : stage)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.smallChipText, active && styles.smallChipTextActive]}>
+                      {t(`journey_stages.${stage}`)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('clients.fields.next_action_type')}</Text>
+            <View style={styles.chipRow}>
+              {NEXT_ACTION_TYPES.map(at => {
+                const active = nextActionType === at
+                return (
+                  <TouchableOpacity
+                    key={at}
+                    style={[styles.smallChip, active && styles.smallChipActive]}
+                    onPress={() => setNextActionType(nextActionType === at ? null : at)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.smallChipIcon}>{ACTION_ICONS[at]}</Text>
+                    <Text style={[styles.smallChipText, active && styles.smallChipTextActive]}>
+                      {t(`next_action_types.${at}`)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+          <Input
+            label={`${t('clients.fields.next_action_date')} (${t('common.optional')})`}
+            value={nextActionDate}
+            onChangeText={setNextActionDate}
+            placeholder="YYYY-MM-DD"
+          />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('clients.fields.network_potential')}</Text>
+            <View style={styles.chipRow}>
+              {NETWORK_POTENTIALS.map(np => {
+                const active = networkPotential === np
+                return (
+                  <TouchableOpacity
+                    key={np}
+                    style={[styles.smallChip, active && styles.smallChipActive]}
+                    onPress={() => setNetworkPotential(networkPotential === np ? null : np)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.smallChipText, active && styles.smallChipTextActive]}>
+                      {t(`network_potentials.${np}`)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+        </SectionCard>
+
+        {/* ── doTERRA ────────────────────────────────────────────── */}
+        <SectionCard icon="🌿" titleKey="clients.sections.doterra">
+          <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
+        </SectionCard>
 
         {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
         <Button label={t('common.save')} onPress={handleSave} loading={loading} />
+        <View style={{ height: 32 }} />
       </ScrollView>
     </>
   )
@@ -163,19 +328,71 @@ export default function NewClientScreen() {
 
 function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  container:       { flex: 1, backgroundColor: colors.bg },
-  content:         { padding: 16, gap: 12, paddingBottom: 40 },
-  contentWide:     { maxWidth: 720, alignSelf: 'center', width: '100%', paddingHorizontal: 24 },
-  fieldRow:        { flexDirection: 'row', gap: 12 },
-  fieldHalf:       { flex: 1 },
-  section:         { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
-  statusRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statusChip:      { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
-  statusChipText:  { fontSize: 13 },
-  switchRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 10 },
-  switchLabel:     { fontSize: 16, color: colors.text },
-  namePreview:     { fontSize: 13, color: colors.textSecondary, paddingHorizontal: 4 },
-  namePreviewBold: { fontWeight: '600', color: colors.primary },
-  error:           { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 10, backgroundColor: '#fef2f2', borderRadius: 8 },
+  container:   { flex: 1, backgroundColor: colors.bg },
+  content:     { padding: 16, gap: 14, paddingBottom: 40 },
+  contentWide: { maxWidth: 720, alignSelf: 'center', width: '100%', paddingHorizontal: 24 },
+  fieldRow:    { flexDirection: 'row', gap: 12 },
+  fieldHalf:   { flex: 1 },
+
+  // ── Section card ────────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  cardIcon:  { fontSize: 14 },
+  cardTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  cardBody:  { padding: 16, gap: 12 },
+
+  // ── Name preview ─────────────────────────────────────────────────────────────
+  namePreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  namePreviewLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.primary, opacity: 0.75 },
+  namePreviewValue: { fontSize: 16, fontFamily: fonts.bold, color: colors.primary },
+
+  // ── Status chips ─────────────────────────────────────────────────────────────
+  chipRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusChip:   { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  statusChipText: { fontSize: 13 },
+
+  // ── Field group + small chips ─────────────────────────────────────────────────
+  fieldGroup:  { gap: 8 },
+  fieldLabel:  { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  smallChip:   { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border },
+  smallChipActive:      { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  smallChipIcon:        { fontSize: 13 },
+  smallChipText:        { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
+  smallChipTextActive:  { color: colors.primary, fontFamily: fonts.semibold },
+
+  // ── Switch ────────────────────────────────────────────────────────────────────
+  switchRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  switchLabel: { fontSize: 15, fontFamily: fonts.medium, color: colors.text, flex: 1 },
+
+  // ── Error ─────────────────────────────────────────────────────────────────────
+  error: { fontSize: 14, color: colors.danger, textAlign: 'center', padding: 12, backgroundColor: colors.dangerLight, borderRadius: 10 },
   })
 }

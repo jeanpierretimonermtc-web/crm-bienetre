@@ -21,16 +21,21 @@ function initials(name: string) {
 interface Props {
   name: string
   size?: number
+  status?: string
 }
 
-export function Avatar({ name, size = 44 }: Props) {
-  const { colors } = useTheme()
+export function Avatar({ name, size = 44, status }: Props) {
+  const { colors, statusColors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
-  const bg = colorFor(name)
+
+  const statusPalette = status ? statusColors[status as keyof typeof statusColors] : null
+  const bg        = statusPalette ? statusPalette.bg   : colorFor(name)
+  const textColor = statusPalette ? statusPalette.text : colors.textInverse
+
   const fontSize = size * 0.38
   return (
     <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: bg }]}>
-      <Text style={[styles.text, { fontSize }]}>{initials(name)}</Text>
+      <Text style={[styles.text, { fontSize, color: textColor }]}>{initials(name)}</Text>
     </View>
   )
 }

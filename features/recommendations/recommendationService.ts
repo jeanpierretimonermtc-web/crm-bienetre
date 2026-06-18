@@ -18,7 +18,9 @@ export async function createRecommendation(
   reason: string | null,
   status: RecommendationStatus = 'advised',
   catalogId: string | null = null,
-  productId: string | null = null
+  productId: string | null = null,
+  quantity = 1,
+  objective: string | null = null
 ) {
   const { data, error } = await supabase
     .from('recommendations')
@@ -30,6 +32,8 @@ export async function createRecommendation(
       status,
       catalog_id: catalogId,
       product_id: productId,
+      quantity,
+      objective,
     })
     .select('*, catalog:catalogs(name, color, icon)')
     .single()

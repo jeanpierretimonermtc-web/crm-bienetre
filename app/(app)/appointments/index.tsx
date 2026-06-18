@@ -1,27 +1,54 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  Platform, View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, useWindowDimensions,
 } from 'react-native'
-import { router, Stack } from 'expo-router'
+import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import type { AppointmentWithClient } from '@/shared/lib/types'
+import { fetchAllNativeEvents, type NativeCalendarEvent } from '@/features/appointments/calendarSyncService'
+import type { AppointmentType } from '@/features/appointments/appointmentTypes'
+
+// ── Local type (joins client for display) ─────────────────────────────────────
+type CalAppt = {
+  id: string
+  user_id: string
+  client_id: string | null
+  title: string
+  appointment_type: AppointmentType
+  status: string
+  start_at: string
+  end_at: string
+  client: { id: string; full_name: string; status: string } | null
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const DAY_HOUR_H  = 64   // px per hour — day view
-const WEEK_HOUR_H = 38   // px per hour — week view
-const TIME_COL_W  = 44   // px — time labels column
-const MIN_weekColW = 72 // minimum px per day column in week view
-const START_HOUR  = 8
-const END_HOUR    = 20
+const DAY_HOUR_H   = 64
+const WEEK_HOUR_H  = 38
+const TIME_COL_W   = 44
+const MIN_WEEK_COL = 72
+const START_HOUR   = 8
+const END_HOUR     = 20
 const DURATION_MIN = 60
 
-// ── Colour palette cycling by client ──────────────────────────────────────────
+const TYPE_COLORS: Record<AppointmentType, string> = {
+  discovery_call:        '#3B82F6',
+  product_presentation:  '#8B5CF6',
+  follow_up:             '#10B981',
+  closing_call:          '#F59E0B',
+  customer_support:      '#22D3EE',
+  team_training:         '#EC4899',
+  team_meeting:          '#6366F1',
+  webinar:               '#F97316',
+  onboarding:            '#06B6D4',
+  business_review:       '#84CC16',
+  other:                 '#94A3B8',
+}
+
 const EVENT_PALETTE = [
   { bg: '#ede9f8', text: '#6b4fc8', accent: '#6b4fc8' },
   { bg: '#dbeeff', text: '#2563ab', accent: '#2563ab' },
@@ -45,14 +72,14 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 function pad2(n: number) { return String(n).padStart(2, '0') }
-function formatHHMM(d: Date) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}` }
+function formatTime(d: Date) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}` }
 function clientColorIdx(id: string) {
   let h = 0
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) & 0xffff
   return h % EVENT_PALETTE.length
 }
-function firstName(fullName: string | null | undefined) {
-  return (fullName ?? '').split(' ')[0] ?? ''
+function firstWord(s: string | null | undefined) {
+  return (s ?? '').split(' ')[0] ?? ''
 }
 
 // ── Locale data ───────────────────────────────────────────────────────────────
@@ -80,11 +107,12 @@ export default function AgendaScreen() {
 
   const today = useRef((() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d })()).current
 
-  const [viewMode,   setViewMode]   = useState<'week' | 'day'>('week')
-  const [weekStart,  setWeekStart]  = useState<Date>(() => getMonday(today))
-  const [selectedDay,setSelectedDay]= useState<Date>(today)
-  const [weekAppts,  setWeekAppts]  = useState<AppointmentWithClient[]>([])
-  const [loadingWeek,setLoadingWeek]= useState(true)
+  const [viewMode,    setViewMode]    = useState<'week' | 'day'>('week')
+  const [weekStart,   setWeekStart]   = useState<Date>(() => getMonday(today))
+  const [selectedDay, setSelectedDay] = useState<Date>(today)
+  const [weekAppts,   setWeekAppts]   = useState<CalAppt[]>([])
+  const [loadingWeek, setLoadingWeek] = useState(true)
+  const [nativeEvents, setNativeEvents] = useState<NativeCalendarEvent[]>([])
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const fetchWeek = useCallback(async () => {
@@ -92,25 +120,32 @@ export default function AgendaScreen() {
     setLoadingWeek(true)
     const { data } = await supabase
       .from('appointments')
-      .select('*, client:clients(id, full_name, status)')
+      .select('id, user_id, client_id, title, appointment_type, status, start_at, end_at, client:clients(id, full_name, status)')
       .eq('user_id', session.user.id)
-      .gte('appointment_date', weekStart.toISOString())
-      .lt('appointment_date', addDays(weekStart, 7).toISOString())
-      .order('appointment_date')
-    setWeekAppts((data ?? []) as AppointmentWithClient[])
+      .gte('start_at', weekStart.toISOString())
+      .lt('start_at', addDays(weekStart, 7).toISOString())
+      .order('start_at')
+    setWeekAppts((data ?? []) as unknown as CalAppt[])
     setLoadingWeek(false)
   }, [session, weekStart])
 
-  useEffect(() => { fetchWeek() }, [fetchWeek])
+  useFocusEffect(useCallback(() => { fetchWeek() }, [fetchWeek]))
+
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS === 'web' || !session) return
+    fetchAllNativeEvents(weekStart, addDays(weekStart, 7))
+      .then(setNativeEvents)
+      .catch(console.error)
+  }, [weekStart, session]))
 
   // ── Responsive week column width ──────────────────────────────────────────
-  const sidebarW  = screenW >= 768 ? 240 : 0
-  const weekColW  = Math.max(MIN_weekColW, Math.floor((screenW - sidebarW - TIME_COL_W - 4) / 7))
+  const sidebarW   = screenW >= 768 ? 240 : 0
+  const weekColW   = Math.max(MIN_WEEK_COL, Math.floor((screenW - sidebarW - TIME_COL_W - 4) / 7))
   const totalGridW = 7 * weekColW
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-  const dayAppts  = weekAppts.filter(a => isSameDay(new Date(a.appointment_date), selectedDay))
+  const dayAppts  = weekAppts.filter(a => isSameDay(new Date(a.start_at), selectedDay))
   const isToday   = isSameDay(selectedDay, today)
   const weekEnd7  = addDays(weekStart, 6)
 
@@ -121,6 +156,12 @@ export default function AgendaScreen() {
   const dayHeaderText = isFr
     ? `${isToday ? "Aujourd'hui" : daysLong[selectedDay.getDay()]}, ${selectedDay.getDate()} ${months[selectedDay.getMonth()]}`
     : `${isToday ? 'Today' : daysLong[selectedDay.getDay()]}, ${months[selectedDay.getMonth()]} ${selectedDay.getDate()}`
+
+  function dayApptCountLabel(count: number) {
+    if (count === 0) return t('appointments.day_none')
+    if (count === 1) return t('appointments.day_one')
+    return t('appointments.day_other', { count })
+  }
 
   // ── Navigation ────────────────────────────────────────────────────────────
   function prevWeek() { setWeekStart(addDays(weekStart, -7)); setSelectedDay(addDays(selectedDay, -7)) }
@@ -133,176 +174,129 @@ export default function AgendaScreen() {
   }
 
   // ── Appointment block helpers ─────────────────────────────────────────────
-  function apptTopPx(appt: AppointmentWithClient, hourH: number) {
-    const d = new Date(appt.appointment_date)
-    const h = d.getHours(), m = d.getMinutes()
-    const hasTime = h > 0 || m > 0
-    const frac = hasTime ? h + m / 60 : START_HOUR
+  function apptTopPx(appt: CalAppt, hourH: number) {
+    const d = new Date(appt.start_at)
+    const frac = d.getHours() + d.getMinutes() / 60
     return (Math.max(frac, START_HOUR) - START_HOUR) * hourH
   }
-  function apptHeightPx(hourH: number, minH: number) {
-    return Math.max((DURATION_MIN / 60) * hourH - 6, minH)
+  function apptHeightPx(appt: CalAppt, hourH: number, minH: number) {
+    const start = new Date(appt.start_at).getTime()
+    const end   = new Date(appt.end_at).getTime()
+    const durMin = Math.max((end - start) / 60000, DURATION_MIN)
+    return Math.max((durMin / 60) * hourH - 6, minH)
   }
 
-  // ─── WEEK VIEW ─────────────────────────────────────────────────────────────
-  const GRID_H = (END_HOUR - START_HOUR) * WEEK_HOUR_H
+  // ── WEEK VIEW ──────────────────────────────────────────────────────────────
+  const GRID_H        = (END_HOUR - START_HOUR) * WEEK_HOUR_H
+  const WEEK_HEADER_H = 64
 
   function renderWeekGrid() {
     return (
-      <View style={styles.weekGridOuter}>
-        {/* Fixed time labels column */}
-        <View style={[styles.timeCol, { height: GRID_H + 8 }]}>
-          {GRID_HOURS.filter(h => h % 2 === 0).map(h => (
-            <View key={h} style={{ position: 'absolute', top: (h - START_HOUR) * WEEK_HOUR_H - 8, width: TIME_COL_W }}>
-              <Text style={styles.hourLabelWeek}>{pad2(h)}h</Text>
-            </View>
-          ))}
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ width: TIME_COL_W }}>
+          <View style={{ height: WEEK_HEADER_H, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }} />
+          <View style={[styles.timeCol, { height: GRID_H + 8 }]}>
+            {GRID_HOURS.filter(h => h % 2 === 0).map(h => (
+              <View key={h} style={{ position: 'absolute', top: (h - START_HOUR) * WEEK_HOUR_H - 8, width: TIME_COL_W }}>
+                <Text style={styles.hourLabelWeek}>{pad2(h)}h</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {/* Scrollable day columns */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-          <View style={{ width: totalGridW, height: GRID_H, position: 'relative' }}>
-
-            {/* Horizontal hour lines */}
-            {GRID_HOURS.map(h => (
-              <View key={h} style={[
-                styles.weekHourLine,
-                { top: (h - START_HOUR) * WEEK_HOUR_H },
-                h % 2 === 0 ? styles.weekHourLineMain : styles.weekHourLineMinor,
-              ]} />
-            ))}
-
-            {/* Vertical column dividers */}
-            {weekDays.map((_, i) => (
-              <View key={i} style={[styles.weekColDiv, { left: i * weekColW }]} />
-            ))}
-
-            {/* Appointments per day */}
-            {weekDays.map((day, dayIdx) => {
-              const appts = weekAppts.filter(a => isSameDay(new Date(a.appointment_date), day))
-              return appts.map(appt => {
-                const pal  = EVENT_PALETTE[clientColorIdx(appt.client_id)]
-                const topPx = apptTopPx(appt, WEEK_HOUR_H)
-                const hPx   = apptHeightPx(WEEK_HOUR_H, 24)
-                const d     = new Date(appt.appointment_date)
-                const hasTime = d.getHours() > 0 || d.getMinutes() > 0
-
+          <View style={{ width: totalGridW }}>
+            <View style={{ flexDirection: 'row', height: WEEK_HEADER_H, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: 'center' }}>
+              {weekDays.map((day, i) => {
+                const isSel = isSameDay(day, selectedDay)
+                const isTod = isSameDay(day, today)
+                const hasDot = weekAppts.some(a => isSameDay(new Date(a.start_at), day))
                 return (
-                  <TouchableOpacity
-                    key={appt.id}
-                    style={[styles.weekApptBlock, {
-                      left: dayIdx * weekColW + 3,
-                      width: weekColW - 6,
-                      top: topPx + 2,
-                      height: hPx,
-                      backgroundColor: pal.bg,
-                      borderLeftColor: pal.accent,
-                    }]}
-                    onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments` as any)}
-                    activeOpacity={0.8}
-                  >
-                    {hasTime && hPx > 30 && (
-                      <Text style={[styles.weekApptTime, { color: pal.text }]}>
-                        {formatHHMM(d)}
-                      </Text>
-                    )}
-                    <Text style={[styles.weekApptName, { color: pal.text }]} numberOfLines={1}>
-                      {firstName(appt.client?.full_name)}
-                    </Text>
+                  <TouchableOpacity key={i} style={[styles.weekDayHeaderCell, { width: weekColW, justifyContent: 'center' }]} onPress={() => selectDay(day, true)} activeOpacity={0.7}>
+                    <Text style={[styles.weekDayShort, (isSel || isTod) && styles.weekDayShortActive]}>{daysShort[day.getDay()]}</Text>
+                    <View style={[styles.weekDayCircle, isTod && styles.weekDayCircleToday, isSel && styles.weekDayCircleSel]}>
+                      <Text style={[styles.weekDayNum, isTod && !isSel && styles.weekDayNumToday, isSel && styles.weekDayNumSel]}>{day.getDate()}</Text>
+                    </View>
+                    {hasDot && <View style={[styles.dot, isSel && styles.dotSel]} />}
                   </TouchableOpacity>
                 )
-              })
-            })}
+              })}
+            </View>
 
-            {/* Tap zones per day to drill into day view */}
-            {weekDays.map((day, dayIdx) => (
-              <TouchableOpacity
-                key={`zone-${dayIdx}`}
-                style={{
-                  position: 'absolute',
-                  left: dayIdx * weekColW,
-                  width: weekColW,
-                  top: 0,
-                  height: GRID_H,
-                  zIndex: 0,
-                }}
-                onPress={() => selectDay(day, true)}
-                activeOpacity={1}
-              />
-            ))}
+            <View style={{ width: totalGridW, height: GRID_H, position: 'relative' }}>
+              {GRID_HOURS.map(h => (
+                <View key={h} style={[styles.weekHourLine, { top: (h - START_HOUR) * WEEK_HOUR_H }, h % 2 === 0 ? styles.weekHourLineMain : styles.weekHourLineMinor]} />
+              ))}
+              {weekDays.map((_, i) => (
+                <View key={i} style={[styles.weekColDiv, { left: i * weekColW }]} />
+              ))}
+
+              {weekDays.map((day, dayIdx) => {
+                const appts = weekAppts.filter(a => isSameDay(new Date(a.start_at), day))
+                return appts.map(appt => {
+                  const accent = TYPE_COLORS[appt.appointment_type] ?? '#94A3B8'
+                  const pal    = appt.client_id ? EVENT_PALETTE[clientColorIdx(appt.client_id)] : { bg: '#f1f5f9', text: '#475569', accent }
+                  const topPx  = apptTopPx(appt, WEEK_HOUR_H)
+                  const hPx    = apptHeightPx(appt, WEEK_HOUR_H, 24)
+                  const d      = new Date(appt.start_at)
+                  return (
+                    <TouchableOpacity
+                      key={appt.id}
+                      style={[styles.weekApptBlock, { left: dayIdx * weekColW + 3, width: weekColW - 6, top: topPx + 2, height: hPx, backgroundColor: pal.bg, borderLeftColor: accent }]}
+                      onPress={() => router.push(`/(app)/appointments/new?clientId=${appt.client_id}` as any)}
+                      activeOpacity={0.8}
+                    >
+                      {hPx > 30 && (
+                        <Text style={[styles.weekApptTime, { color: pal.text }]}>{formatTime(d)}</Text>
+                      )}
+                      <Text style={[styles.weekApptName, { color: pal.text }]} numberOfLines={1}>
+                        {appt.client ? firstWord(appt.client.full_name) : appt.title}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })
+              })}
+
+              {weekDays.map((day, dayIdx) =>
+                nativeEvents
+                  .filter(e => !e.isOryalis && isSameDay(new Date(e.startDate), day))
+                  .map(ev => {
+                    const d     = new Date(ev.startDate)
+                    const end   = new Date(ev.endDate)
+                    const topPx = (Math.max(d.getHours() + d.getMinutes() / 60, START_HOUR) - START_HOUR) * WEEK_HOUR_H
+                    const durMin = Math.max((end.getTime() - d.getTime()) / 60000, DURATION_MIN)
+                    const hPx   = Math.max((durMin / 60) * WEEK_HOUR_H - 6, 24)
+                    return (
+                      <View key={ev.id} style={[styles.weekApptBlock, { left: dayIdx * weekColW + 3, width: weekColW - 6, top: topPx + 2, height: hPx, backgroundColor: colors.bgDim, borderLeftColor: ev.calendarColor, opacity: 0.85 }]}>
+                        <Text style={[styles.weekApptName, { color: colors.textTertiary }]} numberOfLines={1}>{ev.title}</Text>
+                      </View>
+                    )
+                  })
+              )}
+
+              {weekDays.map((day, dayIdx) => (
+                <TouchableOpacity key={`zone-${dayIdx}`} style={{ position: 'absolute', left: dayIdx * weekColW, width: weekColW, top: 0, height: GRID_H, zIndex: 0 }} onPress={() => selectDay(day, true)} activeOpacity={1} />
+              ))}
+            </View>
           </View>
         </ScrollView>
       </View>
     )
   }
 
-  // ─── WEEK VIEW HEADER (day columns) ────────────────────────────────────────
-  function renderWeekDayHeaders() {
-    return (
-      <View style={styles.weekDayHeaders}>
-        {/* Space for time column */}
-        <View style={{ width: TIME_COL_W }} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} scrollEnabled={false}>
-          <View style={{ flexDirection: 'row', width: totalGridW }}>
-            {weekDays.map((day, i) => {
-              const isSel = isSameDay(day, selectedDay)
-              const isTod = isSameDay(day, today)
-              const hasDot = weekAppts.some(a => isSameDay(new Date(a.appointment_date), day))
-              return (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.weekDayHeaderCell, { width: weekColW }]}
-                  onPress={() => selectDay(day, true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.weekDayShort, (isSel || isTod) && styles.weekDayShortActive]}>
-                    {daysShort[day.getDay()]}
-                  </Text>
-                  <View style={[
-                    styles.weekDayCircle,
-                    isTod && styles.weekDayCircleToday,
-                    isSel && styles.weekDayCircleSel,
-                  ]}>
-                    <Text style={[
-                      styles.weekDayNum,
-                      isTod && !isSel && styles.weekDayNumToday,
-                      isSel && styles.weekDayNumSel,
-                    ]}>
-                      {day.getDate()}
-                    </Text>
-                  </View>
-                  {hasDot && <View style={[styles.dot, isSel && styles.dotSel]} />}
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    )
-  }
-
-  // ─── DAY VIEW ──────────────────────────────────────────────────────────────
+  // ── DAY VIEW ───────────────────────────────────────────────────────────────
   function renderDayView() {
     return (
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Day info bar */}
         <View style={styles.dayInfoBar}>
           <View>
             <Text style={styles.dayHeaderText}>{dayHeaderText}</Text>
-            <Text style={styles.dayApptCount}>
-              {dayAppts.length === 0
-                ? (isFr ? 'Aucun rendez-vous' : 'No appointments')
-                : dayAppts.length === 1
-                ? (isFr ? '1 rendez-vous' : '1 appointment')
-                : `${dayAppts.length} ${isFr ? 'rendez-vous' : 'appointments'}`}
-            </Text>
+            <Text style={styles.dayApptCount}>{dayApptCountLabel(dayAppts.length)}</Text>
           </View>
-          {loadingWeek && <ActivityIndicator size="small" color={colors.primaryAction} />}
+          {loadingWeek && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
 
-        {/* Time grid */}
         <View style={[styles.timeGrid, { height: (END_HOUR - START_HOUR) * DAY_HOUR_H + 32 }]}>
-
           {GRID_HOURS.map(h => (
             <View key={h} style={[styles.hourRow, { top: (h - START_HOUR) * DAY_HOUR_H }]}>
               <Text style={styles.hourLabel}>{pad2(h)}h</Text>
@@ -310,7 +304,6 @@ export default function AgendaScreen() {
             </View>
           ))}
 
-          {/* Background tap zone — tap empty slot to create appointment */}
           <TouchableOpacity
             style={styles.dayTapZone}
             onPress={(e) => {
@@ -322,124 +315,100 @@ export default function AgendaScreen() {
             activeOpacity={0.95}
           />
 
-          {/* Appointment blocks — zIndex: 1, above the tap zone */}
           {dayAppts.map(appt => {
-            const d      = new Date(appt.appointment_date)
-            const end    = new Date(d.getTime() + DURATION_MIN * 60000)
-            const hasTime = d.getHours() > 0 || d.getMinutes() > 0
+            const d      = new Date(appt.start_at)
+            const end    = new Date(appt.end_at)
             const topPx  = apptTopPx(appt, DAY_HOUR_H) + 4
-            const hPx    = apptHeightPx(DAY_HOUR_H, 56)
-            const pal    = EVENT_PALETTE[clientColorIdx(appt.client_id)]
-
+            const hPx    = apptHeightPx(appt, DAY_HOUR_H, 56)
+            const accent = TYPE_COLORS[appt.appointment_type] ?? '#94A3B8'
+            const pal    = appt.client_id ? EVENT_PALETTE[clientColorIdx(appt.client_id)] : { bg: '#f1f5f9', text: '#475569', accent }
             return (
               <TouchableOpacity
                 key={appt.id}
-                style={[styles.dayApptBlock, {
-                  top: topPx,
-                  height: hPx,
-                  backgroundColor: pal.bg,
-                  borderLeftColor: pal.accent,
-                  zIndex: 1,
-                }]}
+                style={[styles.dayApptBlock, { top: topPx, height: hPx, backgroundColor: pal.bg, borderLeftColor: accent, zIndex: 1 }]}
                 onPress={() => router.push(`/(app)/clients/${appt.client_id}/appointments` as any)}
                 activeOpacity={0.8}
               >
-                {/* Time row */}
                 <View style={styles.dayApptHeaderRow}>
-                  {hasTime ? (
-                    <Text style={[styles.dayApptTime, { color: pal.accent }]}>
-                      {formatHHMM(d)} – {formatHHMM(end)}
-                    </Text>
-                  ) : (
-                    <Text style={[styles.dayApptTime, { color: pal.accent }]}>Toute la journée</Text>
-                  )}
-                  <View style={[styles.apptNumBadge, { backgroundColor: pal.accent + '22' }]}>
-                    <Text style={[styles.apptNumText, { color: pal.accent }]}>
-                      #{appt.appointment_number}
-                    </Text>
-                  </View>
-                  {appt.recap_sent && (
-                    <View style={[styles.recapBadge, { backgroundColor: pal.accent }]}>
-                      <Text style={styles.recapBadgeText}>{isFr ? 'Récap' : 'Recap'} ✓</Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Client name */}
-                <Text style={[styles.dayApptClient, { color: pal.text }]} numberOfLines={1}>
-                  {appt.client?.full_name}
-                </Text>
-
-                {/* Themes / notes */}
-                {appt.themes_discussed && hPx > 72 ? (
-                  <Text style={[styles.dayApptTheme, { color: pal.text }]} numberOfLines={2}>
-                    {appt.themes_discussed}
+                  <Text style={[styles.dayApptTime, { color: accent }]}>
+                    {formatTime(d)} – {formatTime(end)}
                   </Text>
+                </View>
+                <Text style={[styles.dayApptClient, { color: pal.text }]} numberOfLines={1}>
+                  {appt.client ? appt.client.full_name : appt.title}
+                </Text>
+                {appt.client && hPx > 72 ? (
+                  <Text style={[styles.dayApptTheme, { color: pal.text }]} numberOfLines={1}>{appt.title}</Text>
                 ) : null}
               </TouchableOpacity>
             )
           })}
 
-          {/* Empty state */}
-          {dayAppts.length === 0 && !loadingWeek && (
+          {nativeEvents
+            .filter(e => !e.isOryalis && isSameDay(new Date(e.startDate), selectedDay))
+            .map(ev => {
+              const d   = new Date(ev.startDate)
+              const end = new Date(ev.endDate)
+              const topPx = (Math.max(d.getHours() + d.getMinutes() / 60, START_HOUR) - START_HOUR) * DAY_HOUR_H + 4
+              const durMin = Math.max((end.getTime() - d.getTime()) / 60000, DURATION_MIN)
+              const hPx = Math.max((durMin / 60) * DAY_HOUR_H - 6, 56)
+              return (
+                <View key={ev.id} style={[styles.dayApptBlock, { top: topPx, height: hPx, backgroundColor: colors.bgDim, borderLeftColor: ev.calendarColor, zIndex: 1, opacity: 0.9 }]}>
+                  <View style={styles.dayApptHeaderRow}>
+                    <Text style={[styles.dayApptTime, { color: colors.textSecondary }]}>
+                      {formatTime(d)} – {formatTime(end)}
+                    </Text>
+                    <View style={[styles.tagBadge, { backgroundColor: colors.border }]}>
+                      <Text style={[styles.tagBadgeText, { color: colors.textTertiary }]}>{t('calendar.personal')}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.dayApptClient, { color: colors.textSecondary, fontSize: 14 }]} numberOfLines={1}>{ev.title}</Text>
+                </View>
+              )
+            })
+          }
+
+          {dayAppts.length === 0 && !loadingWeek && nativeEvents.filter(e => !e.isOryalis && isSameDay(new Date(e.startDate), selectedDay)).length === 0 && (
             <View style={styles.emptyDay}>
               <Text style={styles.emptyDayEmoji}>✨</Text>
-              <Text style={styles.emptyDayTitle}>{isFr ? 'Journée libre' : 'Free day'}</Text>
-              <Text style={styles.emptyDaySub}>
-                {isFr ? 'Aucun rendez-vous ce jour' : 'No appointments scheduled'}
-              </Text>
+              <Text style={styles.emptyDayTitle}>{t('appointments.free_day')}</Text>
+              <Text style={styles.emptyDaySub}>{t('appointments.free_day_sub')}</Text>
             </View>
           )}
         </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
     )
   }
 
-  // ─── ROOT ──────────────────────────────────────────────────────────────────
+  // ── ROOT ───────────────────────────────────────────────────────────────────
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
 
-        {/* ── Page header ──────────────────────────────────────────────────── */}
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>{t('appointments.title')}</Text>
           <View style={styles.headerRight}>
             {!isToday && (
               <TouchableOpacity style={styles.todayBtn} onPress={jumpToToday} activeOpacity={0.7}>
-                <Text style={styles.todayBtnText}>{isFr ? "Auj." : 'Today'}</Text>
+                <Text style={styles.todayBtnText}>{t('appointments.today_short')}</Text>
               </TouchableOpacity>
             )}
-            {loadingWeek && <ActivityIndicator size="small" color={colors.primaryAction} />}
+            {loadingWeek && <ActivityIndicator size="small" color={colors.primary} />}
           </View>
         </View>
 
-        {/* ── View mode toggle ─────────────────────────────────────────────── */}
         <View style={styles.viewToggleRow}>
           <View style={styles.viewToggle}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'week' && styles.toggleBtnActive]}
-              onPress={() => setViewMode('week')}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.toggleBtnText, viewMode === 'week' && styles.toggleBtnTextActive]}>
-                {isFr ? 'Semaine' : 'Week'}
-              </Text>
+            <TouchableOpacity style={[styles.toggleBtn, viewMode === 'week' && styles.toggleBtnActive]} onPress={() => setViewMode('week')} activeOpacity={0.75}>
+              <Text style={[styles.toggleBtnText, viewMode === 'week' && styles.toggleBtnTextActive]}>{t('appointments.view_week')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'day' && styles.toggleBtnActive]}
-              onPress={() => setViewMode('day')}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.toggleBtnText, viewMode === 'day' && styles.toggleBtnTextActive]}>
-                {isFr ? 'Jour' : 'Day'}
-              </Text>
+            <TouchableOpacity style={[styles.toggleBtn, viewMode === 'day' && styles.toggleBtnActive]} onPress={() => setViewMode('day')} activeOpacity={0.75}>
+              <Text style={[styles.toggleBtnText, viewMode === 'day' && styles.toggleBtnTextActive]}>{t('appointments.view_day')}</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Week navigation */}
           <View style={styles.weekNavCompact}>
             <TouchableOpacity onPress={prevWeek} style={styles.weekArrow} hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}>
               <Text style={styles.weekArrowText}>‹</Text>
@@ -451,33 +420,25 @@ export default function AgendaScreen() {
           </View>
         </View>
 
-        {/* ── Week view ────────────────────────────────────────────────────── */}
         {viewMode === 'week' && (
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-            {renderWeekDayHeaders()}
             {renderWeekGrid()}
             <View style={{ height: 80 }} />
           </ScrollView>
         )}
 
-        {/* ── Day view — strip + time grid ─────────────────────────────────── */}
         {viewMode === 'day' && (
           <>
-            {/* Day strip */}
             <View style={styles.dayStrip}>
               {weekDays.map((day, i) => {
-                const sel = isSameDay(day, selectedDay)
-                const tod = isSameDay(day, today)
-                const hasDot = weekAppts.some(a => isSameDay(new Date(a.appointment_date), day))
+                const sel    = isSameDay(day, selectedDay)
+                const tod    = isSameDay(day, today)
+                const hasDot = weekAppts.some(a => isSameDay(new Date(a.start_at), day))
                 return (
                   <TouchableOpacity key={i} style={styles.dayCell} onPress={() => setSelectedDay(day)} activeOpacity={0.7}>
-                    <Text style={[styles.dayShort, (sel || tod) && styles.dayShortActive]}>
-                      {daysShort[day.getDay()]}
-                    </Text>
+                    <Text style={[styles.dayShort, (sel || tod) && styles.dayShortActive]}>{daysShort[day.getDay()]}</Text>
                     <View style={[styles.dayCircle, sel && styles.dayCircleSel, tod && !sel && styles.dayCircleToday]}>
-                      <Text style={[styles.dayNum, sel && styles.dayNumSel, tod && !sel && styles.dayNumToday]}>
-                        {day.getDate()}
-                      </Text>
+                      <Text style={[styles.dayNum, sel && styles.dayNumSel, tod && !sel && styles.dayNumToday]}>{day.getDate()}</Text>
                     </View>
                     <View style={styles.dotWrap}>
                       {hasDot ? <View style={[styles.dot, sel && styles.dotSel]} /> : null}
@@ -490,12 +451,13 @@ export default function AgendaScreen() {
           </>
         )}
 
-        {/* ── Bottom bar ───────────────────────────────────────────────────── */}
         <View style={styles.bottomBar}>
           <View style={styles.bottomLeft}>
-            <Text style={styles.bottomWeekLabel}>{isFr ? 'Cette semaine' : 'This week'}</Text>
+            <Text style={styles.bottomWeekLabel}>{t('appointments.this_week')}</Text>
             <Text style={styles.bottomWeekCount}>
-              {weekAppts.length} {isFr ? 'rendez-vous' : weekAppts.length === 1 ? 'appointment' : 'appointments'}
+              {weekAppts.length === 1
+                ? t('appointments.week_appt_one')
+                : t('appointments.week_appt_other', { count: weekAppts.length })}
             </Text>
           </View>
           <TouchableOpacity
@@ -506,7 +468,7 @@ export default function AgendaScreen() {
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.newRdvText}>+ {isFr ? 'Rendez-vous' : 'Appointment'}</Text>
+            <Text style={styles.newRdvText}>+ {t('appointments.add')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -518,112 +480,64 @@ function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  // ── Page header ───────────────────────────────────────────────────────────
-  pageHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
-  },
-  pageTitle:  { fontSize: 28, fontFamily: fonts.display, color: colors.text },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  todayBtn:   { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, backgroundColor: colors.primaryLight },
-  todayBtnText: { fontSize: 12, fontFamily: fonts.semibold, color: colors.primaryAction },
+  pageHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  pageTitle:    { fontSize: 28, fontFamily: fonts.display, color: colors.text },
+  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  todayBtn:     { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, backgroundColor: colors.primaryLight },
+  todayBtnText: { fontSize: 12, fontFamily: fonts.semibold, color: colors.primary },
 
-  // ── View toggle ───────────────────────────────────────────────────────────
-  viewToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  viewToggle:          { flexDirection: 'row', backgroundColor: colors.surfaceContainerLow, borderRadius: 10, padding: 3, gap: 2 },
+  viewToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  viewToggle:          { flexDirection: 'row', backgroundColor: colors.bgDim, borderRadius: 10, padding: 3, gap: 2 },
   toggleBtn:           { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8 },
   toggleBtnActive:     { backgroundColor: colors.card, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   toggleBtnText:       { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   toggleBtnTextActive: { color: colors.text, fontFamily: fonts.semibold },
 
-  // ── Week navigation ───────────────────────────────────────────────────────
   weekNavCompact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   weekArrow:      { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   weekArrowText:  { fontSize: 24, color: colors.textSecondary, lineHeight: 28 },
   weekLabel:      { fontSize: 12, fontFamily: fonts.semibold, color: colors.text, textAlign: 'center', maxWidth: 120 },
 
-  // ── Week view — day column headers ────────────────────────────────────────
-  weekDayHeaders:     { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
   weekDayHeaderCell:  { alignItems: 'center', gap: 3 },
   weekDayShort:       { fontSize: 9, fontFamily: fonts.bold, color: colors.textTertiary, letterSpacing: 0.5 },
-  weekDayShortActive: { color: colors.primaryAction },
+  weekDayShortActive: { color: colors.primary },
   weekDayCircle:      { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  weekDayCircleToday: { borderWidth: 1.5, borderColor: colors.primaryAction },
-  weekDayCircleSel:   { backgroundColor: colors.primaryAction },
+  weekDayCircleToday: { borderWidth: 1.5, borderColor: colors.primary },
+  weekDayCircleSel:   { backgroundColor: colors.primary },
   weekDayNum:         { fontSize: 13, fontFamily: fonts.medium, color: colors.text },
-  weekDayNumToday:    { color: colors.primaryAction, fontFamily: fonts.semibold },
+  weekDayNumToday:    { color: colors.primary, fontFamily: fonts.semibold },
   weekDayNumSel:      { color: '#ffffff', fontFamily: fonts.bold },
 
-  // ── Week view — grid ──────────────────────────────────────────────────────
-  weekGridOuter: { flexDirection: 'row', paddingTop: 8 },
-  timeCol:       { width: TIME_COL_W, position: 'relative' },
-  hourLabelWeek: { fontSize: 10, fontFamily: fonts.medium, color: colors.textTertiary, textAlign: 'right', paddingRight: 8 },
+  timeCol:           { width: TIME_COL_W, position: 'relative' },
+  hourLabelWeek:     { fontSize: 10, fontFamily: fonts.medium, color: colors.textTertiary, textAlign: 'right', paddingRight: 8 },
   weekHourLine:      { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
   weekHourLineMain:  { backgroundColor: colors.border, opacity: 0.9 },
   weekHourLineMinor: { backgroundColor: colors.border, opacity: 0.35 },
-  weekColDiv:    { position: 'absolute', top: 0, bottom: 0, width: StyleSheet.hairlineWidth, backgroundColor: colors.border, opacity: 0.5 },
+  weekColDiv:        { position: 'absolute', top: 0, bottom: 0, width: StyleSheet.hairlineWidth, backgroundColor: colors.border, opacity: 0.5 },
 
-  // ── Week appointment block ────────────────────────────────────────────────
-  weekApptBlock: {
-    position: 'absolute',
-    borderRadius: 5,
-    borderLeftWidth: 2.5,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    overflow: 'hidden',
-    zIndex: 2,
-  },
-  weekApptTime: { fontSize: 9, fontFamily: fonts.medium, opacity: 0.85 },
-  weekApptName: { fontSize: 11, fontFamily: fonts.bold },
+  weekApptBlock: { position: 'absolute', borderRadius: 5, borderLeftWidth: 2.5, paddingHorizontal: 4, paddingVertical: 2, overflow: 'hidden', zIndex: 2 },
+  weekApptTime:  { fontSize: 9, fontFamily: fonts.medium, opacity: 0.85 },
+  weekApptName:  { fontSize: 11, fontFamily: fonts.bold },
 
-  // ── Day strip (day view) ──────────────────────────────────────────────────
-  dayStrip: {
-    flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingTop: 10,
-    paddingBottom: 6,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
+  dayStrip:       { flexDirection: 'row', paddingHorizontal: 8, paddingTop: 10, paddingBottom: 6, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   dayCell:        { flex: 1, alignItems: 'center', gap: 2 },
   dayShort:       { fontSize: 10, fontFamily: fonts.medium, color: colors.textTertiary, letterSpacing: 0.3 },
-  dayShortActive: { color: colors.primaryAction },
+  dayShortActive: { color: colors.primary },
   dayCircle:      { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  dayCircleSel:   { backgroundColor: colors.primaryAction },
-  dayCircleToday: { borderWidth: 1.5, borderColor: colors.primaryAction },
+  dayCircleSel:   { backgroundColor: colors.primary },
+  dayCircleToday: { borderWidth: 1.5, borderColor: colors.primary },
   dayNum:         { fontSize: 15, fontFamily: fonts.medium, color: colors.text },
   dayNumSel:      { color: '#ffffff', fontFamily: fonts.bold },
-  dayNumToday:    { color: colors.primaryAction, fontFamily: fonts.semibold },
+  dayNumToday:    { color: colors.primary, fontFamily: fonts.semibold },
   dotWrap:        { height: 5, alignItems: 'center', justifyContent: 'center' },
-  dot:            { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primaryAction },
+  dot:            { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary },
   dotSel:         { backgroundColor: '#ffffff' },
 
-  // ── Day view — info bar ───────────────────────────────────────────────────
-  dayInfoBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
+  dayInfoBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   dayHeaderText:  { fontSize: 16, fontFamily: fonts.semibold, color: colors.text },
   dayApptCount:   { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, marginTop: 1 },
 
-  // ── Scroll body ───────────────────────────────────────────────────────────
-  body: { flex: 1 },
-
-  // ── Time grid ─────────────────────────────────────────────────────────────
+  body:          { flex: 1 },
   timeGrid:      { position: 'relative', paddingTop: 4 },
   hourRow:       { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', height: DAY_HOUR_H },
   hourLabel:     { width: TIME_COL_W, fontSize: 11, fontFamily: fonts.medium, color: colors.textTertiary, textAlign: 'right', paddingRight: 10, lineHeight: 16 },
@@ -631,46 +545,26 @@ function makeStyles(colors: ThemeColors) {
   hourLineMain:  { backgroundColor: colors.border },
   hourLineMinor: { backgroundColor: colors.border, opacity: 0.4 },
 
-  // ── Day tap zone (background, behind appointments) ───────────────────────
-  dayTapZone: { position: 'absolute', top: 0, left: TIME_COL_W, right: 0, bottom: 0, zIndex: 0 },
+  dayTapZone:   { position: 'absolute', top: 0, left: TIME_COL_W, right: 0, bottom: 0, zIndex: 0 },
 
-  // ── Day appointment block ─────────────────────────────────────────────────
-  dayApptBlock: {
-    position: 'absolute',
-    left: TIME_COL_W + 4,
-    right: 8,
-    borderRadius: 10,
-    borderLeftWidth: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    overflow: 'hidden',
-  },
+  dayApptBlock:     { position: 'absolute', left: TIME_COL_W + 4, right: 8, borderRadius: 10, borderLeftWidth: 4, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' },
   dayApptHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' },
   dayApptTime:      { fontSize: 11, fontFamily: fonts.medium, opacity: 0.9 },
-  apptNumBadge:     { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
-  apptNumText:      { fontSize: 10, fontFamily: fonts.bold, letterSpacing: 0.3 },
-  recapBadge:       { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 },
-  recapBadgeText:   { fontSize: 9, fontFamily: fonts.bold, color: '#ffffff', letterSpacing: 0.3 },
+  tagBadge:         { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  tagBadgeText:     { fontSize: 10, fontFamily: fonts.bold, letterSpacing: 0.3 },
   dayApptClient:    { fontSize: 16, fontFamily: fonts.bold, lineHeight: 20 },
   dayApptTheme:     { fontSize: 12, fontFamily: fonts.body, opacity: 0.72, marginTop: 3, lineHeight: 16 },
 
-  // ── Empty day ─────────────────────────────────────────────────────────────
   emptyDay:      { position: 'absolute', top: 80, left: TIME_COL_W, right: 8, alignItems: 'center', gap: 8, paddingVertical: 24 },
   emptyDayEmoji: { fontSize: 36 },
   emptyDayTitle: { fontSize: 16, fontFamily: fonts.semibold, color: colors.text },
   emptyDaySub:   { fontSize: 13, fontFamily: fonts.body, color: colors.textTertiary, textAlign: 'center' },
 
-  // ── Bottom bar ────────────────────────────────────────────────────────────
-  bottomBar: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16,
-    backgroundColor: colors.card,
-    borderTopWidth: 1, borderTopColor: colors.border, gap: 12,
-  },
+  bottomBar:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, gap: 12 },
   bottomLeft:      { flex: 1, gap: 1 },
   bottomWeekLabel: { fontSize: 11, fontFamily: fonts.body, color: colors.textSecondary },
   bottomWeekCount: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
-  newRdvBtn:       { backgroundColor: colors.primaryAction, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, alignItems: 'center' },
+  newRdvBtn:       { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, alignItems: 'center' },
   newRdvText:      { fontSize: 14, fontFamily: fonts.semibold, color: '#ffffff' },
   })
 }

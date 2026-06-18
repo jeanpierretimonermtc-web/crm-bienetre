@@ -1,5 +1,46 @@
 import { supabase } from '@/shared/lib/supabase'
-import type { Client, ClientStatus } from '@/shared/lib/types'
+import type { Client, ClientStatus, ProspectTemperature } from '@/shared/lib/types'
+
+export interface ProspectScoreInput {
+  client: Client
+  lastRdvDate?: string | null
+  totalRdv?: number
+  followupTemperature?: ProspectTemperature | null
+  pipelineStage?: string | null
+}
+
+export function computeProspectScore({
+  client, lastRdvDate, totalRdv = 0, followupTemperature, pipelineStage,
+}: ProspectScoreInput): number {
+  let score = 0
+
+  // Temperature signal (from most recent followup)
+  if (followupTemperature === 'very_hot') score += 35
+  else if (followupTemperature === 'hot') score += 20
+
+  // Pipeline stage signal
+  if (pipelineStage === 'follow_up' || pipelineStage === 'proposal_sent') score += 20
+
+  // Recent appointment bonus
+  if (lastRdvDate) {
+    const days = Math.floor((Date.now() - new Date(lastRdvDate).getTime()) / 86400000)
+    if (days < 7) score += 15
+  }
+
+  // Engagement depth bonus
+  if (totalRdv > 2) score += 10
+
+  // Network role bonus
+  if (client.contact_role === 'distributor' || client.contact_role === 'leader') score += 10
+
+  // Inactivity penalty
+  if (client.updated_at) {
+    const days = Math.floor((Date.now() - new Date(client.updated_at).getTime()) / 86400000)
+    if (days > 30) score -= 20
+  }
+
+  return Math.max(0, Math.min(100, score))
+}
 
 export type ClientInput = Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 
