@@ -12,6 +12,7 @@ import { useClientInteractions } from '@/features/interactions/useInteractions'
 import { useClientOrders } from '@/features/orders/useOrders'
 import { useDirectTeam } from '@/features/network/useNetwork'
 import { computeProspectScore } from '@/features/clients/clientService'
+import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
@@ -70,12 +71,14 @@ export default function ClientDetailScreen() {
 
   const TABS = useMemo(() => {
     const isNetworkRole = client?.contact_role === 'distributor' || client?.contact_role === 'leader'
-    return isNetworkRole
-      ? [...BASE_TABS, { key: 'team' as Tab, labelKey: 'clients.tab_team' }]
-      : BASE_TABS
-  }, [client?.contact_role])
+    let tabs = [...BASE_TABS]
+    if (!isModuleActive('products')) tabs = tabs.filter(t => t.key !== 'reco')
+    if (isNetworkRole) tabs.push({ key: 'team' as Tab, labelKey: 'clients.tab_team' })
+    return tabs
+  }, [client?.contact_role, isModuleActive])
 
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
+  const { getStatusLabel, isModuleActive } = useAppConfig()
 
   const userInitials = (() => {
     const name = session?.user?.user_metadata?.full_name
@@ -162,7 +165,7 @@ export default function ClientDetailScreen() {
             <View style={styles.heroBadges}>
               <View style={[styles.heroPill, { backgroundColor: sc.bg }]}>
                 <Text style={[styles.heroPillText, { color: sc.text }]}>
-                  {t(`clients.status.${client.status}`).toUpperCase()}
+                  {getStatusLabel(client.status as ClientStatus).toUpperCase()}
                 </Text>
               </View>
               {client.contact_role && client.contact_role !== 'customer' ? (() => {

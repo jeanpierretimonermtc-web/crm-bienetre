@@ -128,25 +128,35 @@ export async function computeAndSaveAlerts(userId: string): Promise<void> {
     })
   }
 
-  // ── Rule 4 — distributor_dormant (distributeur sans activité >30j) ───────────
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
-  const { data: dormant } = await supabase
-    .from('clients')
-    .select('id, full_name')
+  // ── Rule 4 — distributor_dormant (module downline requis) ────────────────────
+  const { data: bizProfile } = await supabase
+    .from('user_business_profiles')
+    .select('active_modules')
     .eq('user_id', userId)
-    .in('contact_role', ['distributor', 'leader'])
-    .lt('updated_at', thirtyDaysAgo)
-    .limit(10)
+    .single()
 
-  for (const c of dormant ?? []) {
-    add({
-      user_id:    userId,
-      type:       'distributor_dormant',
-      client_id:  c.id,
-      message:    `${c.full_name} — distributeur sans activité depuis plus de 30 jours`,
-      action_url: `/(app)/clients/${c.id}`,
-      read:       false,
-    })
+  const downlineActive = !bizProfile || (bizProfile.active_modules as string[]).includes('downline')
+
+  if (downlineActive) {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
+    const { data: dormant } = await supabase
+      .from('clients')
+      .select('id, full_name')
+      .eq('user_id', userId)
+      .in('contact_role', ['distributor', 'leader'])
+      .lt('updated_at', thirtyDaysAgo)
+      .limit(10)
+
+    for (const c of dormant ?? []) {
+      add({
+        user_id:    userId,
+        type:       'distributor_dormant',
+        client_id:  c.id,
+        message:    `${c.full_name} — distributeur sans activité depuis plus de 30 jours`,
+        action_url: `/(app)/clients/${c.id}`,
+        read:       false,
+      })
+    }
   }
 
   // ── Rule 5 — followup_overdue (relances en retard, max 5) ────────────────────

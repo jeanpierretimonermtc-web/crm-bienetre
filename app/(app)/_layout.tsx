@@ -9,41 +9,49 @@ import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
 import { CatalogPrefsProvider } from '@/features/catalogs/CatalogPrefsProvider'
 import { useCalendarSetup } from '@/features/appointments/useCalendarSetup'
 import { useCalendarForegroundSync } from '@/features/appointments/useCalendarForegroundSync'
+import { AppConfigProvider, useAppConfig } from '@/features/settings/AppConfigProvider'
+import type { ModuleKey } from '@/shared/lib/types'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 
 const SIDEBAR_BREAKPOINT = 768
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { segment: string; icon: string; labelKey: string; module?: string }[] = [
   { segment: '',             icon: '🏠', labelKey: 'dashboard.title'    },
   { segment: 'clients',      icon: '👥', labelKey: 'clients.title'      },
   { segment: 'appointments', icon: '📅', labelKey: 'appointments.title' },
   { segment: 'followups',    icon: '🔔', labelKey: 'followups.title'    },
-  { segment: 'network',      icon: '🌐', labelKey: 'network.title'       },
-  { segment: 'orders',       icon: '🛒', labelKey: 'orders.title'        },
-  { segment: 'catalog',      icon: '📦', labelKey: 'catalog.title'       },
-  { segment: 'settings',     icon: '👤', labelKey: 'settings.title'      },
+  { segment: 'network',      icon: '🌐', labelKey: 'network.title',     module: 'downline'  },
+  { segment: 'orders',       icon: '🛒', labelKey: 'orders.title'       },
+  { segment: 'catalog',      icon: '📦', labelKey: 'catalog.title',     module: 'products'  },
+  { segment: 'settings',     icon: '👤', labelKey: 'settings.title'     },
 ]
 
-const TAB_ROUTES: { name: string; icon: string; path: string }[] = [
+const TAB_ROUTES_BASE: { name: string; icon: string; path: string; module?: string }[] = [
   { name: 'index',        icon: '🏠', path: '/'             },
   { name: 'clients',      icon: '👥', path: '/clients'      },
   { name: 'appointments', icon: '📅', path: '/appointments' },
   { name: 'followups',    icon: '🔔', path: '/followups'    },
-  { name: 'network',      icon: '🌐', path: '/network'      },
+  { name: 'network',      icon: '🌐', path: '/network',      module: 'downline' },
 ]
 
 // ── Custom floating tab bar ─────────────────────────────────────────────────
 
-function CustomTabBar({ insets }: any) {
+type TabRoute = typeof TAB_ROUTES_BASE[0]
+
+function CustomTabBar({ insets }: { insets?: any }) {
   const { width } = useWindowDimensions()
   const pathname  = usePathname()
   const { colors } = useTheme()
+  const { isModuleActive } = useAppConfig()
   const tabStyles = useMemo(() => makeTabStyles(colors), [colors])
+
+  const routes = TAB_ROUTES_BASE.filter(r => !r.module || isModuleActive(r.module as ModuleKey))
+
   if (width >= SIDEBAR_BREAKPOINT) return null
 
-  function isTabActive(tab: typeof TAB_ROUTES[0]) {
+  function isTabActive(tab: TabRoute) {
     if (tab.name === 'index') return pathname === '/'
     return pathname === tab.path || pathname.startsWith(tab.path + '/')
   }
@@ -51,7 +59,7 @@ function CustomTabBar({ insets }: any) {
   return (
     <View style={[tabStyles.wrapper, { paddingBottom: Math.max(insets?.bottom ?? 0, 12) }]}>
       <View style={tabStyles.bar}>
-        {TAB_ROUTES.map(tab => {
+        {routes.map(tab => {
           const isFocused = isTabActive(tab)
           return (
             <TouchableOpacity
@@ -125,6 +133,8 @@ function Sidebar({ pathname }: { pathname: string }) {
   const { colors, mode } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { demoCount, demoLoading, demoFailed, checkDemo, handleLoadDemo, handleDeleteDemo } = useDemoState()
+  const { isModuleActive } = useAppConfig()
+  const visibleNavItems = NAV_ITEMS.filter(item => !item.module || isModuleActive(item.module as ModuleKey))
 
   useEffect(() => { checkDemo() }, [checkDemo, pathname])
 
@@ -161,7 +171,7 @@ function Sidebar({ pathname }: { pathname: string }) {
         </View>
 
         <View style={styles.sidebarNav}>
-          {NAV_ITEMS.map(item => {
+          {visibleNavItems.map(item => {
             const active = isActive(item.segment)
             return (
               <TouchableOpacity
@@ -223,6 +233,7 @@ export default function AppLayout() {
   useCalendarSetup()
   useCalendarForegroundSync()
 
+
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -241,8 +252,17 @@ export default function AppLayout() {
     })()
   }, [session?.user.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading || onboardingDone === null) return null
+  if (loading) return (
+    <View style={styles.loader}>
+      <ActivityIndicator color={colors.primary} />
+    </View>
+  )
   if (!session) return <Redirect href="/(auth)/login" />
+  if (onboardingDone === null) return (
+    <View style={styles.loader}>
+      <ActivityIndicator color={colors.primary} />
+    </View>
+  )
   if (!onboardingDone) return <Redirect href="/(auth)/onboarding" />
 
   const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? session?.user?.email ?? ''
@@ -251,6 +271,7 @@ export default function AppLayout() {
   return (
     <CatalogPrefsProvider>
     <DemoProvider>
+    <AppConfigProvider>
       <View style={[styles.root, isWide && styles.rootWide]}>
         {isWide
           ? <Sidebar pathname={pathname} />
@@ -274,7 +295,7 @@ export default function AppLayout() {
         }
         <View style={styles.content}>
           <Tabs
-            tabBar={props => <CustomTabBar {...props} />}
+            tabBar={props => <CustomTabBar insets={props.insets} />}
             screenOptions={{ headerShown: false }}
           >
             <Tabs.Screen name="index"        options={{ title: t('dashboard.title')    }} />
@@ -284,11 +305,26 @@ export default function AppLayout() {
             <Tabs.Screen name="catalog"      options={{ title: t('catalog.title')      }} />
             <Tabs.Screen name="network"      options={{ title: t('network.title')      }} />
             <Tabs.Screen name="goals"        options={{ title: t('goals.title')        }} />
+            <Tabs.Screen name="import"              options={{ title: t('settings.import_title'),      href: null }} />
+            <Tabs.Screen name="settings-profile"      options={{ href: null }} />
+            <Tabs.Screen name="settings-identity"    options={{ href: null }} />
+            <Tabs.Screen name="settings-contact"     options={{ href: null }} />
+            <Tabs.Screen name="settings-org"         options={{ href: null }} />
+            <Tabs.Screen name="settings-language"    options={{ href: null }} />
+            <Tabs.Screen name="settings-crm"         options={{ href: null }} />
+            <Tabs.Screen name="settings-activity"    options={{ href: null }} />
+            <Tabs.Screen name="settings-modules"     options={{ href: null }} />
+            <Tabs.Screen name="settings-labels"      options={{ href: null }} />
+            <Tabs.Screen name="settings-integrations" options={{ href: null }} />
+            <Tabs.Screen name="settings-google"      options={{ href: null }} />
+            <Tabs.Screen name="settings-catalogs"    options={{ href: null }} />
+            <Tabs.Screen name="settings-display"     options={{ href: null }} />
             <Tabs.Screen name="orders"       options={{ title: t('orders.title')       }} />
             <Tabs.Screen name="settings"     options={{ title: t('settings.title')     }} />
           </Tabs>
         </View>
       </View>
+    </AppConfigProvider>
     </DemoProvider>
     </CatalogPrefsProvider>
   )
@@ -299,6 +335,7 @@ function makeStyles(colors: ThemeColors) {
   root:     { flex: 1, flexDirection: 'column', backgroundColor: colors.bg },
   rootWide: { flexDirection: 'row' },
   content:  { flex: 1 },
+  loader:   { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
 
   // ── Mobile header ────────────────────────────────────────────────────────────
   mobileHeader: {

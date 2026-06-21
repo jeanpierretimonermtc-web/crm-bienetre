@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { useClients, useClientSearch } from '@/features/clients/useClients'
 import { computeProspectScore } from '@/features/clients/clientService'
+import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
@@ -33,13 +34,13 @@ function ClientAvatar({ name, status }: { name: string; status: ClientStatus }) 
 }
 
 function StatusPill({ status }: { status: ClientStatus }) {
-  const { t } = useTranslation()
   const { colors, statusColors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
+  const { getStatusLabel } = useAppConfig()
   const sc = statusColors[status] ?? { bg: colors.surfaceContainerHighest, text: colors.textTertiary }
   return (
     <View style={[styles.pill, { backgroundColor: sc.bg }]}>
-      <Text style={[styles.pillText, { color: sc.text }]}>{t(`clients.status.${status}`)}</Text>
+      <Text style={[styles.pillText, { color: sc.text }]}>{getStatusLabel(status)}</Text>
     </View>
   )
 }
@@ -140,6 +141,7 @@ export default function ClientsScreen() {
   )
   const { clients, loading, refresh } = useClients()
   const { results, search } = useClientSearch()
+  const { labels: statusLabels, getStatusLabel } = useAppConfig()
   const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
   const { width } = useWindowDimensions()
   const isWide = width >= 768
@@ -234,7 +236,7 @@ export default function ClientsScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.chipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
-                  {t(`clients.filter_labels.${s}`)}
+                  {s === 'all' ? t('clients.filter_all') : getStatusLabel(s as ClientStatus)}
                 </Text>
               </TouchableOpacity>
             )
@@ -251,6 +253,7 @@ export default function ClientsScreen() {
               columnWrapperStyle={isWide ? styles.columnWrapper : undefined}
               data={displayed}
               keyExtractor={c => c.id}
+              extraData={statusLabels}
               renderItem={({ item }) => (
                 <View style={isWide ? styles.colCard : undefined}>
                   <ClientCard client={item} lastRdv={lastRdvMap[item.id]} />

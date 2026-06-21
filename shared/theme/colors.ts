@@ -130,23 +130,27 @@ const dark: typeof light = {
 
 // ── Status colors — CRM client statuses ───────────────────────────────────────
 export const lightStatusColors: Record<string, { bg: string; text: string }> = {
-  active:     { bg: '#D1FAE5', text: '#059669' },   // green  — client actif
-  new_client: { bg: '#CCFBF1', text: '#0F766E' },   // teal   — nouveau client
-  prospect:   { bg: '#DBEAFE', text: '#1D4ED8' },   // blue   — prospect
-  inactive:   { bg: '#FEF3C7', text: '#B45309' },   // amber  — à relancer
-  loyal:      { bg: '#FFE4E6', text: '#BE123C' },   // rose   — client fidèle
-  vip:        { bg: '#EDE9FE', text: '#5B21B6' },   // violet — VIP
-  advisor:    { bg: '#ECFEFF', text: '#0E7490' },   // cyan   — conseillère
+  active:      { bg: '#D1FAE5', text: '#059669' },   // green  — client actif
+  new_client:  { bg: '#CCFBF1', text: '#0F766E' },   // teal   — nouveau client
+  prospect:    { bg: '#DBEAFE', text: '#1D4ED8' },   // blue   — prospect
+  inactive:    { bg: '#FEF3C7', text: '#B45309' },   // amber  — à relancer
+  loyal:       { bg: '#FFE4E6', text: '#BE123C' },   // rose   — client fidèle
+  vip:         { bg: '#EDE9FE', text: '#5B21B6' },   // violet — VIP
+  advisor:     { bg: '#ECFEFF', text: '#0E7490' },   // cyan   — conseillère
+  team_member: { bg: '#F0FDF4', text: '#15803D' },   // green light — membre équipe
+  lost:        { bg: '#F1F5F9', text: '#64748B' },   // gray   — perdu
 }
 
 export const darkStatusColors: Record<string, { bg: string; text: string }> = {
-  active:     { bg: '#064E3B', text: '#34D399' },
-  new_client: { bg: '#042F2E', text: '#2DD4BF' },
-  prospect:   { bg: '#1E3A5F', text: '#60A5FA' },
-  inactive:   { bg: '#451A03', text: '#FCD34D' },
-  loyal:      { bg: '#4C0519', text: '#FDA4AF' },
-  vip:        { bg: '#1E1547', text: '#A78BFA' },
-  advisor:    { bg: '#0C3B47', text: '#67E8F9' },
+  active:      { bg: '#064E3B', text: '#34D399' },
+  new_client:  { bg: '#042F2E', text: '#2DD4BF' },
+  prospect:    { bg: '#1E3A5F', text: '#60A5FA' },
+  inactive:    { bg: '#451A03', text: '#FCD34D' },
+  loyal:       { bg: '#4C0519', text: '#FDA4AF' },
+  vip:         { bg: '#1E1547', text: '#A78BFA' },
+  advisor:     { bg: '#0C3B47', text: '#67E8F9' },
+  team_member: { bg: '#052E16', text: '#4ADE80' },
+  lost:        { bg: '#1E293B', text: '#94A3B8' },
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

@@ -11,7 +11,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jptim09.oryalis",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Oryalis utilise l'appareil photo pour mettre à jour votre photo de profil.",
+        "NSPhotoLibraryUsageDescription": "Oryalis accède à vos photos pour mettre à jour votre photo de profil.",
+        "NSPhotoLibraryAddUsageDescription": "Oryalis peut enregistrer des photos dans votre bibliothèque."
       }
     },
     "android": {
@@ -24,7 +27,10 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.READ_CALENDAR",
-        "android.permission.WRITE_CALENDAR"
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -38,6 +44,14 @@
       "expo-router",
       "expo-localization",
       "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Oryalis accède à vos photos pour mettre à jour votre photo de profil.",
+          "cameraPermission": "Oryalis utilise l'appareil photo pour mettre à jour votre photo de profil."
+        }
+      ],
       [
         "expo-calendar",
         {

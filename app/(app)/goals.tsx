@@ -9,6 +9,7 @@ import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { GoalMetric } from '@/shared/lib/types'
+import { settingsScreenOptions } from '@/features/settings/SettingsBackButton'
 
 const METRICS: GoalMetric[] = ['new_clients', 'new_distributors', 'revenue', 'appointments']
 
@@ -60,7 +61,7 @@ export default function GoalsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('goals.title'), headerBackTitle: '' }} />
+      <Stack.Screen options={settingsScreenOptions(t('goals.title'))} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         <Text style={styles.subtitle}>{t('goals.subtitle')}</Text>

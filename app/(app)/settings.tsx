@@ -1,685 +1,467 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Platform, ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Switch } from 'react-native'
-import { Stack, router } from 'expo-router'
+import { useState, useCallback, useMemo } from 'react'
+import type { ComponentType } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native'
+import { Stack, router, useFocusEffect } from 'expo-router'
+import {
+  AtSign,
+  BriefcaseBusiness,
+  Building2,
+  CalendarDays,
+  ChevronRight,
+  CreditCard,
+  FlaskConical,
+  IdCard,
+  Languages,
+  LayoutGrid,
+  LogOut,
+  MonitorCog,
+  Package,
+  Tags,
+  Target,
+  Upload,
+} from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { useDemoState } from '@/features/demo/DemoProvider'
 import { supabase } from '@/shared/lib/supabase'
-import { getCatalogs } from '@/features/catalogs/catalogService'
-import { useCatalogPrefs } from '@/features/catalogs/CatalogPrefsProvider'
-import { useCalendarSync } from '@/features/appointments/useCalendarSync'
-import { getOryalisCalendarColor, changeOryalisCalendarColor } from '@/features/appointments/calendarSyncService'
-import { Input } from '@/shared/components/ui/Input'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
-import i18n from '@/shared/i18n'
-import type { Catalog } from '@/shared/lib/types'
+import { useAppConfig } from '@/features/settings/AppConfigProvider'
+import { useGoogleCalendar } from '@/features/appointments/useGoogleCalendar'
+import { useDemoState } from '@/features/demo/DemoProvider'
 
-const LANGUAGES = [
-  { label: 'Français', value: 'fr' },
-  { label: 'English',  value: 'en' },
-]
-
-const TIMEZONES = [
-  { label: 'Paris (GMT+1)',        value: 'Europe/Paris'        },
-  { label: 'London (GMT+0)',       value: 'Europe/London'       },
-  { label: 'New York (GMT-5)',     value: 'America/New_York'    },
-  { label: 'Chicago (GMT-6)',      value: 'America/Chicago'     },
-  { label: 'Los Angeles (GMT-8)', value: 'America/Los_Angeles'  },
-  { label: 'Dubai (GMT+4)',        value: 'Asia/Dubai'          },
-  { label: 'Tokyo (GMT+9)',        value: 'Asia/Tokyo'          },
-  { label: 'Sydney (GMT+11)',      value: 'Australia/Sydney'    },
-]
-
-const PLAN_CONFIG: Record<string, { label: string; descKey: string }> = {
-  free:    { label: 'Plan Gratuit', descKey: 'settings.plan_free_desc'    },
-  pro:     { label: 'Pro',          descKey: 'settings.plan_pro_desc'     },
-  cabinet: { label: 'Cabinet',      descKey: 'settings.plan_cabinet_desc' },
-}
+const SETTINGS_WIDE_BREAKPOINT = 900
 
 function nameInitials(name: string) {
-  const parts = (name ?? '').trim().split(' ').filter(Boolean)
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0][0].toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  const p = (name ?? '').trim().split(' ').filter(Boolean)
+  if (!p.length) return '?'
+  if (p.length === 1) return p[0][0].toUpperCase()
+  return (p[0][0] + p[p.length - 1][0]).toUpperCase()
 }
 
-export default function ProfileScreen() {
+type NavIcon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>
+
+function NavRow({ icon: Icon, title, desc, meta, onPress, styles, colors, danger }: {
+  icon: NavIcon
+  title: string
+  desc?: string
+  meta?: string
+  onPress: () => void
+  styles: ReturnType<typeof makeStyles>
+  colors: ThemeColors
+  danger?: boolean
+}) {
+  return (
+    <TouchableOpacity style={styles.navRow} onPress={onPress} activeOpacity={0.75}>
+      <View style={[styles.navIconWrap, danger && { backgroundColor: colors.dangerLight }]}>
+        <Icon size={18} color={danger ? colors.danger : colors.primary} strokeWidth={2.15} />
+      </View>
+      <View style={styles.navBody}>
+        <Text style={[styles.navTitle, danger && { color: colors.danger }]}>{title}</Text>
+        {desc ? <Text style={styles.navDesc}>{desc}</Text> : null}
+      </View>
+      {meta ? <View style={styles.navMetaBadge}><Text style={styles.navMetaText}>{meta}</Text></View> : null}
+      {!danger && <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2.2} />}
+    </TouchableOpacity>
+  )
+}
+
+function GroupLabel({ label, styles }: { label: string; styles: ReturnType<typeof makeStyles> }) {
+  return <Text style={styles.groupLabel}>{label.toUpperCase()}</Text>
+}
+
+export default function SettingsMenuScreen() {
   const { t } = useTranslation()
   const { session } = useAuth()
-  const userId = session?.user?.id
   const { colors, mode, toggleTheme } = useTheme()
+  const { width } = useWindowDimensions()
   const styles = useMemo(() => makeStyles(colors), [colors])
+  const { profile: businessProfile, isModuleActive } = useAppConfig()
+  const { isConnected: gcConnected } = useGoogleCalendar()
   const { hideDemoCard, setHideDemoCard } = useDemoState()
-  const { activeSlugs, setActiveSlugs } = useCatalogPrefs()
-  const { syncAllToNative, pullFromNative, syncing: calendarSyncing, error: calendarError } = useCalendarSync()
-  const [pullResult, setPullResult] = useState<number | null>(null)
-  const [calColor, setCalColor] = useState<string | null>(null)
-  const [colorChanging, setColorChanging] = useState(false)
-  const [colorChanged, setColorChanged] = useState(false)
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return
-    getOryalisCalendarColor().then(c => setCalColor(c)).catch(console.error)
-  }, [])
-
-  async function handlePullFromNative() {
-    setPullResult(null)
-    const count = await pullFromNative()
-    setPullResult(count)
-    setTimeout(() => setPullResult(null), 5000)
-  }
-
-  async function handleChangeColor() {
-    setColorChanging(true)
-    setColorChanged(false)
-    try {
-      const newColor = await changeOryalisCalendarColor()
-      if (newColor) {
-        setCalColor(newColor)
-        setColorChanged(true)
-        setTimeout(() => setColorChanged(false), 3000)
-      }
-    } catch (e) {
-      console.error('[settings.changeCalColor]', e)
-    } finally {
-      setColorChanging(false)
-    }
-  }
 
   const [fullName, setFullName] = useState('')
   const [specialty, setSpecialty] = useState('')
-  const [locale,    setLocale]    = useState('fr')
-  const [timezone,  setTimezone]  = useState('Europe/Paris')
-  const [plan,      setPlan]      = useState('free')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [bio, setBio] = useState('')
+  const [phone, setPhone] = useState('')
+  const [website, setWebsite] = useState('')
+  const [linkedin, setLinkedin] = useState('')
+  const [company, setCompany] = useState('')
+  const [city, setCity] = useState('')
+  const [locale, setLocale] = useState('fr')
+  const [timezone, setTimezone] = useState('Europe/Paris')
+  const [plan, setPlan] = useState('free')
+  const [loading, setLoading] = useState(true)
 
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [saved,    setSaved]    = useState(false)
-  const [saveErr,  setSaveErr]  = useState('')
-  const [showTz,   setShowTz]   = useState(false)
-
-  const [officialCatalogs, setOfficialCatalogs] = useState<Catalog[]>([])
-
-  useEffect(() => {
-    if (!userId) return
+  const loadProfile = useCallback(() => {
+    if (!session?.user.id) {
+      setLoading(false)
+      return
+    }
+    let active = true
     ;(async () => {
       try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('full_name, specialty, locale, timezone, plan')
-          .eq('id', userId)
+        const { data } = await supabase.from('profiles')
+          .select('full_name, specialty, avatar_url, bio, phone, website, linkedin_url, company, city, locale, timezone, plan')
+          .eq('id', session.user.id)
           .single()
-        if (data) {
+        if (active && data) {
           setFullName(data.full_name ?? '')
           setSpecialty(data.specialty ?? '')
+          setAvatarUrl(data.avatar_url ?? '')
+          setBio(data.bio ?? '')
+          setPhone(data.phone ?? '')
+          setWebsite(data.website ?? '')
+          setLinkedin(data.linkedin_url ?? '')
+          setCompany(data.company ?? '')
+          setCity(data.city ?? '')
           setLocale(data.locale ?? 'fr')
           setTimezone(data.timezone ?? 'Europe/Paris')
           setPlan(data.plan ?? 'free')
         }
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     })()
+    return () => { active = false }
+  }, [session?.user.id])
 
-    getCatalogs(userId)
-      .then(all => setOfficialCatalogs(all.filter(c => c.type === 'official')))
-      .catch(console.error)
-  }, [userId])
+  useFocusEffect(loadProfile)
 
-  async function handleSave() {
-    if (!session) return
-    setSaving(true)
-    setSaved(false)
-    setSaveErr('')
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName, specialty: specialty || null, locale, timezone, updated_at: new Date().toISOString() })
-        .eq('id', session.user.id)
-      if (error) throw error
-      if (i18n.language !== locale) await i18n.changeLanguage(locale)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (e) {
-      console.error('[profile.save]', e)
-      setSaveErr(t('common.error'))
-    } finally {
-      setSaving(false)
-    }
-  }
+  const isWide = width >= SETTINGS_WIDE_BREAKPOINT
+  const initials = nameInitials(fullName || session?.user?.email || '')
+  const planLabel = plan === 'pro' ? 'Pro' : plan === 'cabinet' ? 'Cabinet' : t('settings.plan_free')
+  const displayName = fullName || session?.user?.email || t('settings.profile_unnamed')
+  const profileFields = [fullName, specialty, avatarUrl, bio, phone, website || linkedin, company, city, locale, timezone]
+  const completedFields = profileFields.filter(value => typeof value === 'string' && value.trim()).length
+  const completion = Math.round((completedFields / profileFields.length) * 100)
+  const missingIdentity = !fullName || !specialty || !avatarUrl
+  const activeModulesCount = businessProfile.active_modules?.length ?? 0
+  const previewMeta = [specialty, company, city].filter(Boolean).join(' / ')
+  const nextProfilePath = !fullName || !specialty || !avatarUrl
+    ? '/(app)/settings-identity'
+    : !phone && !website && !linkedin
+      ? '/(app)/settings-contact'
+      : !company && !city
+        ? '/(app)/settings-org'
+        : '/(app)/settings-language'
+  const nav = (path: string) => () => router.push(path as any)
 
-  function isCatalogActive(slug: string | null) {
-    if (!slug) return false
-    return !activeSlugs || activeSlugs.includes(slug)
-  }
-
-  function toggleCatalog(slug: string) {
-    const allSlugs = officialCatalogs.map(c => c.slug!).filter(Boolean)
-    let newSlugs: string[] | null
-
-    if (!activeSlugs) {
-      const updated = allSlugs.filter(s => s !== slug)
-      if (updated.length === 0) return
-      newSlugs = updated
-    } else if (activeSlugs.includes(slug)) {
-      const updated = activeSlugs.filter(s => s !== slug)
-      if (updated.length === 0) return
-      newSlugs = updated
-    } else {
-      const updated = [...activeSlugs, slug]
-      newSlugs = allSlugs.every(s => updated.includes(s)) ? null : updated
-    }
-
-    setActiveSlugs(newSlugs)
-  }
-
-  const currentTz  = TIMEZONES.find(tz => tz.value === timezone)
-  const planCfg    = PLAN_CONFIG[plan] ?? PLAN_CONFIG.free
-  const isPaidPlan = plan === 'pro' || plan === 'cabinet'
-  const initials   = nameInitials(fullName || session?.user?.email || '')
-
-  if (loading) {
-    return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.loadingBox}>
-          <ActivityIndicator color={colors.primaryAction} />
-        </View>
-      </>
-    )
-  }
+  if (loading) return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.loader}><ActivityIndicator color={colors.primary} /></View>
+    </>
+  )
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Hero ────────────────────────────────────────── */}
-        <View style={styles.hero}>
-          <View style={styles.heroAvatar}>
-            <Text style={styles.heroAvatarText}>{initials}</Text>
-          </View>
-          <Text style={styles.heroName}>{fullName || session?.user?.email}</Text>
-          {specialty ? (
-            <Text style={styles.heroSpecialty}>{specialty}</Text>
-          ) : (
-            <Text style={styles.heroSpecialtyEmpty}>{t('settings.specialty_placeholder')}</Text>
-          )}
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>{t('settings.title')}</Text>
+          <Text style={styles.pageSubtitle}>{t('settings.subtitle')}</Text>
         </View>
 
-        <View style={styles.sectionsInner}>
-
-        {/* ── Informations ────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('settings.profile')}</Text>
-          <View style={styles.card}>
-            <Input
-              label={t('settings.full_name')}
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Jean Dupont"
-            />
-            <Input
-              label={t('settings.specialty')}
-              value={specialty}
-              onChangeText={setSpecialty}
-              placeholder={t('settings.specialty_placeholder')}
-            />
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>{t('settings.email')}</Text>
-              <View style={styles.disabledInput}>
-                <Text style={styles.disabledText}>{session?.user?.email}</Text>
-              </View>
-            </View>
-
-            {saveErr ? <Text style={styles.errText}>{saveErr}</Text> : null}
-
-            <TouchableOpacity
-              style={[styles.saveBtn, (saving || saved) && styles.saveBtnMuted]}
-              onPress={handleSave}
-              disabled={saving || saved}
-              activeOpacity={0.85}
-            >
-              {saving
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.saveBtnText}>
-                    {saved ? `✓  ${t('settings.saved')}` : t('settings.save')}
-                  </Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── Préférences ─────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('settings.language')} & {t('settings.timezone')}</Text>
-          <View style={styles.card}>
-            <View style={styles.twoCol}>
-              {/* Language */}
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>{t('settings.language')}</Text>
-                <View style={styles.langPicker}>
-                  {LANGUAGES.map(lang => (
-                    <TouchableOpacity
-                      key={lang.value}
-                      style={[styles.langBtn, locale === lang.value && styles.langBtnActive]}
-                      onPress={() => setLocale(lang.value)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={[styles.langBtnText, locale === lang.value && styles.langBtnTextActive]}>
-                        {lang.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Timezone */}
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>{t('settings.timezone')}</Text>
-                <TouchableOpacity style={styles.selectBtn} onPress={() => setShowTz(true)} activeOpacity={0.75}>
-                  <Text style={styles.selectBtnText} numberOfLines={1}>
-                    {currentTz?.label ?? timezone}
-                  </Text>
-                  <Text style={styles.selectArrow}>›</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveBtn, (saving || saved) && styles.saveBtnMuted]}
-              onPress={handleSave}
-              disabled={saving || saved}
-              activeOpacity={0.85}
-            >
-              {saving
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.saveBtnText}>
-                    {saved ? `✓  ${t('settings.saved')}` : t('settings.save')}
-                  </Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── Objectifs ───────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('goals.title')}</Text>
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push('/(app)/goals' as any)}
-            activeOpacity={0.75}
-          >
-            <View style={[styles.switchRow, { paddingVertical: 14 }]}>
-              <Text style={styles.switchLabel}>{t('goals.subtitle')}</Text>
-              <Text style={{ fontSize: 18, color: colors.textTertiary }}>›</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Affichage ───────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('settings.display')}</Text>
-          <View style={styles.card}>
-            <View style={styles.switchRow}>
-              <View style={styles.switchInfo}>
-                <Text style={styles.switchLabel}>{t('settings.dark_mode')}</Text>
-                <Text style={styles.switchDesc}>{t('settings.dark_mode_desc')}</Text>
-              </View>
-              <Switch
-                value={mode === 'dark'}
-                onValueChange={toggleTheme}
-                trackColor={{ true: colors.primaryAction, false: colors.border }}
-                thumbColor={colors.card}
-              />
-            </View>
-            <View style={[styles.switchRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14, marginTop: 14 }]}>
-              <View style={styles.switchInfo}>
-                <Text style={styles.switchLabel}>{t('settings.hide_demo')}</Text>
-                <Text style={styles.switchDesc}>{t('settings.hide_demo_desc')}</Text>
-              </View>
-              <Switch
-                value={hideDemoCard}
-                onValueChange={(v) => { setHideDemoCard(v) }}
-                trackColor={{ true: colors.primaryAction, false: colors.border }}
-                thumbColor={colors.card}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* ── Catalogues de produits ──────────────────────── */}
-        {officialCatalogs.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>{t('settings.catalogs')}</Text>
-            <Text style={styles.sectionDesc}>{t('settings.catalogs_desc')}</Text>
-            <View style={styles.card}>
-              {officialCatalogs.map((cat, idx) => (
-                <View
-                  key={cat.id}
-                  style={[styles.catalogRow, idx > 0 && styles.catalogRowBorder]}
-                >
-                  <View style={[styles.catalogIcon, { backgroundColor: cat.color + '20' }]}>
-                    <Text style={styles.catalogIconEmoji}>{cat.icon}</Text>
+        <View style={[styles.shell, isWide && styles.shellWide]}>
+          <View style={[styles.profileColumn, isWide && styles.profileColumnWide]}>
+            <View style={styles.hero}>
+              <View style={styles.heroTop}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.heroAvatar} />
+                ) : (
+                  <View style={styles.heroAvatarPlaceholder}>
+                    <Text style={styles.heroInitials}>{initials}</Text>
                   </View>
-                  <View style={styles.catalogInfo}>
-                    <Text style={styles.catalogName}>{cat.name}</Text>
-                  </View>
-                  <Switch
-                    value={isCatalogActive(cat.slug)}
-                    onValueChange={(_v: boolean): void => { if (cat.slug) toggleCatalog(cat.slug) }}
-                    trackColor={{ true: cat.color, false: colors.border }}
-                    thumbColor={colors.card}
-                  />
+                )}
+                <View style={styles.heroInfo}>
+                  <Text style={styles.heroEyebrow}>{t('settings.professional_identity')}</Text>
+                  <Text style={styles.heroName} numberOfLines={2}>{displayName}</Text>
+                  <Text style={styles.heroSpecialty} numberOfLines={2}>
+                    {specialty || t('settings.specialty_placeholder')}
+                  </Text>
                 </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* ── Calendrier ──────────────────────────────────── */}
-        {Platform.OS !== 'web' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>{t('calendar.section')}</Text>
-            <View style={styles.card}>
-              {calendarError === 'calendar_permission_denied' && (
-                <Text style={styles.errText}>{t('calendar.permissionDenied')}</Text>
-              )}
-
-              {/* Couleur du calendrier Oryalis */}
-              <View style={styles.calPullRow}>
-                <View style={[styles.calColorSwatch, { backgroundColor: calColor ?? '#6D3BFF' }]} />
-                <View style={styles.calPullInfo}>
-                  <Text style={styles.switchLabel}>{t('calendar.colorLabel')}</Text>
-                  {colorChanged && (
-                    <Text style={[styles.switchDesc, { color: colors.success }]}>{t('calendar.colorChanged')}</Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  style={[styles.pullBtn, colorChanging && styles.pullBtnMuted]}
-                  onPress={handleChangeColor}
-                  disabled={colorChanging}
-                  activeOpacity={0.75}
-                >
-                  {colorChanging
-                    ? <ActivityIndicator size="small" color={colors.primary} />
-                    : <Text style={styles.pullBtnText}>🎨</Text>
-                  }
-                </TouchableOpacity>
               </View>
 
-              {/* Oryalis → Calendrier natif */}
-              <TouchableOpacity
-                style={[styles.saveBtn, calendarSyncing && styles.saveBtnMuted]}
-                onPress={syncAllToNative}
-                disabled={calendarSyncing}
-                activeOpacity={0.85}
-              >
-                {calendarSyncing
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.saveBtnText}>{t('calendar.syncAll')}</Text>
-                }
+              <View style={styles.heroMetaGrid}>
+                <View style={styles.heroMetaItem}>
+                  <Text style={styles.heroMetaLabel}>{t('settings.company')}</Text>
+                  <Text style={styles.heroMetaValue} numberOfLines={1}>{company || t('settings.not_configured')}</Text>
+                </View>
+                <View style={styles.heroMetaItem}>
+                  <Text style={styles.heroMetaLabel}>{t('settings.city')}</Text>
+                  <Text style={styles.heroMetaValue} numberOfLines={1}>{city || t('settings.not_configured')}</Text>
+                </View>
+              </View>
+
+              <View style={styles.heroBadges}>
+                <View style={styles.heroPlanBadge}>
+                  <Text style={styles.heroPlanText}>{planLabel}</Text>
+                </View>
+                <View style={[styles.heroPlanBadge, gcConnected ? styles.successBadge : styles.neutralBadge]}>
+                  <Text style={[styles.heroPlanText, gcConnected ? styles.successText : styles.neutralText]}>
+                    {gcConnected ? t('settings.connected') : t('settings.not_connected')}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.completionCard}>
+              <View style={styles.completionTop}>
+                <View style={styles.completionText}>
+                  <Text style={styles.cardTitle}>{t('settings.profile_completion')}</Text>
+                  <Text style={styles.cardDesc}>
+                    {missingIdentity ? t('settings.profile_completion_desc') : t('settings.profile_ready_desc')}
+                  </Text>
+                </View>
+                <Text style={styles.completionValue}>{completion}%</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${completion}%` }]} />
+              </View>
+              <TouchableOpacity style={styles.secondaryAction} onPress={nav(nextProfilePath)} activeOpacity={0.8}>
+                <Text style={styles.secondaryActionText}>{t('settings.complete_profile')}</Text>
               </TouchableOpacity>
+            </View>
 
-              {/* Calendrier natif → Oryalis */}
-              <View style={[styles.calPullRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14, marginTop: 2 }]}>
-                <View style={styles.calPullInfo}>
-                  <Text style={styles.switchLabel}>{t('calendar.pull')}</Text>
-                  {pullResult !== null && (
-                    <Text style={[styles.switchDesc, { color: pullResult > 0 ? colors.success : colors.textTertiary }]}>
-                      {pullResult > 0
-                        ? t('calendar.pull_done', { count: pullResult })
-                        : t('calendar.pull_up_to_date')}
-                    </Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  style={[styles.pullBtn, calendarSyncing && styles.pullBtnMuted]}
-                  onPress={handlePullFromNative}
-                  disabled={calendarSyncing}
-                  activeOpacity={0.75}
-                >
-                  {calendarSyncing
-                    ? <ActivityIndicator size="small" color={colors.primary} />
-                    : <Text style={styles.pullBtnText}>↓</Text>
-                  }
-                </TouchableOpacity>
-              </View>
+            <View style={styles.previewCard}>
+              <Text style={styles.cardTitle}>{t('settings.profile_preview_title')}</Text>
+              <Text style={styles.previewName}>{displayName}</Text>
+              <Text style={styles.previewMeta}>{previewMeta || t('settings.profile_preview_empty')}</Text>
+              <Text style={styles.previewBody} numberOfLines={4}>
+                {bio || t('settings.profile_preview_desc')}
+              </Text>
             </View>
           </View>
-        )}
 
-        {/* ── Abonnement ──────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('settings.subscription')}</Text>
-          <View style={[styles.planCard, isPaidPlan ? styles.planCardPaid : styles.planCardFree]}>
-            <View style={styles.planTop}>
-              <View>
-                <Text style={[styles.planHint, !isPaidPlan && styles.planHintDark]}>
-                  {t('settings.current_plan').toUpperCase()}
-                </Text>
-                <Text style={[styles.planName, !isPaidPlan && styles.planNameDark]}>{planCfg.label}</Text>
-              </View>
-              {isPaidPlan && (
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>{t('settings.plan_active')}</Text>
+          <View style={styles.settingsColumn}>
+            <View style={styles.statusGrid}>
+              <View style={styles.statusCard}>
+                <View style={styles.statusIcon}><LayoutGrid size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View>
+                  <Text style={styles.statusValue}>{activeModulesCount}</Text>
+                  <Text style={styles.statusLabel}>{t('settings.active_modules')}</Text>
                 </View>
+              </View>
+              <View style={styles.statusCard}>
+                <View style={styles.statusIcon}><CalendarDays size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View>
+                  <Text style={styles.statusValue}>{gcConnected ? t('settings.yes_short') : t('settings.no_short')}</Text>
+                  <Text style={styles.statusLabel}>Google Agenda</Text>
+                </View>
+              </View>
+              <View style={styles.statusCard}>
+                <View style={styles.statusIcon}><CreditCard size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View>
+                  <Text style={styles.statusValue}>{planLabel}</Text>
+                  <Text style={styles.statusLabel}>{t('settings.current_plan')}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.group}>
+              <GroupLabel label={t('settings.nav_profile')} styles={styles} />
+              <NavRow icon={IdCard} title={t('settings.section_identity')} desc={t('settings.identity_desc')} meta={missingIdentity ? t('settings.to_complete') : undefined} onPress={nav('/(app)/settings-identity')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={AtSign} title={t('settings.section_contact')} desc={t('settings.contact_desc')} onPress={nav('/(app)/settings-contact')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={Building2} title={t('settings.section_org')} desc={t('settings.org_desc')} onPress={nav('/(app)/settings-org')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={Languages} title={t('settings.nav_preferences')} desc={t('settings.preferences_desc')} meta={locale.toUpperCase()} onPress={nav('/(app)/settings-language')} styles={styles} colors={colors} />
+            </View>
+
+            <View style={styles.group}>
+              <GroupLabel label={t('settings.nav_crm')} styles={styles} />
+              <NavRow icon={BriefcaseBusiness} title={t('settings.section_activity')} desc={t('settings.activity_desc')} onPress={nav('/(app)/settings-activity')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={LayoutGrid} title={t('settings.section_modules')} desc={t('settings.modules_desc')} meta={String(activeModulesCount)} onPress={nav('/(app)/settings-modules')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={Tags} title={t('settings.section_labels')} desc={t('settings.labels_desc')} onPress={nav('/(app)/settings-labels')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={Upload} title={t('settings.nav_import')} desc={t('settings.import_short_desc')} onPress={nav('/(app)/import')} styles={styles} colors={colors} />
+              {isModuleActive('goals') && (
+                <>
+                  <View style={styles.sep} />
+                  <NavRow icon={Target} title={t('goals.title')} desc={t('settings.nav_goals_desc')} onPress={nav('/(app)/goals')} styles={styles} colors={colors} />
+                </>
               )}
             </View>
-            <Text style={[styles.planDesc, !isPaidPlan && styles.planDescDark]}>
-              {t(planCfg.descKey)}
-            </Text>
-            <TouchableOpacity
-              style={[styles.upgradeBtn, isPaidPlan && styles.upgradeBtnOnDark]}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.upgradeBtnText, isPaidPlan && styles.upgradeBtnTextOnDark]}>
-                {t('settings.upgrade')}
-              </Text>
-            </TouchableOpacity>
+
+            <View style={styles.group}>
+              <GroupLabel label={t('settings.nav_integrations')} styles={styles} />
+              <NavRow icon={CalendarDays} title="Google Agenda" desc={gcConnected ? t('settings.connected') : t('settings.not_connected')} meta={gcConnected ? t('settings.ok_short') : undefined} onPress={nav('/(app)/settings-google')} styles={styles} colors={colors} />
+              <View style={styles.sep} />
+              <NavRow icon={Package} title={t('settings.section_catalogs')} desc={t('settings.catalogs_desc')} onPress={nav('/(app)/settings-catalogs')} styles={styles} colors={colors} />
+            </View>
+
+            <View style={styles.group}>
+              <GroupLabel label={t('settings.nav_display')} styles={styles} />
+              <View style={styles.navRow}>
+                <View style={styles.navIconWrap}><MonitorCog size={18} color={colors.primary} strokeWidth={2.15} /></View>
+                <View style={styles.navBody}>
+                  <Text style={styles.navTitle}>{t('settings.dark_mode')}</Text>
+                  <Text style={styles.navDesc}>{t('settings.dark_mode_desc')}</Text>
+                </View>
+                <Switch value={mode === 'dark'} onValueChange={toggleTheme}
+                  trackColor={{ true: colors.primary, false: colors.border }} thumbColor={colors.card} />
+              </View>
+              <View style={styles.sep} />
+              <View style={styles.navRow}>
+                <View style={styles.navIconWrap}><FlaskConical size={18} color={colors.primary} strokeWidth={2.15} /></View>
+                <View style={styles.navBody}>
+                  <Text style={styles.navTitle}>{t('settings.hide_demo')}</Text>
+                  <Text style={styles.navDesc}>{t('settings.hide_demo_desc')}</Text>
+                </View>
+                <Switch value={hideDemoCard} onValueChange={v => setHideDemoCard(v)}
+                  trackColor={{ true: colors.primary, false: colors.border }} thumbColor={colors.card} />
+              </View>
+              <View style={styles.sep} />
+              <NavRow icon={CreditCard} title={t('settings.subscription')} desc={planLabel} onPress={nav('/(app)/settings-display')} styles={styles} colors={colors} />
+            </View>
+
+            <View style={[styles.group, { marginBottom: 8 }]}>
+              <GroupLabel label={t('settings.section_account')} styles={styles} />
+              <NavRow icon={LogOut} title={t('auth.logout')} onPress={() => supabase.auth.signOut()} styles={styles} colors={colors} danger />
+            </View>
           </View>
         </View>
 
-        {/* ── Compte ──────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('settings.account')}</Text>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.logoutRow}
-              onPress={() => supabase.auth.signOut()}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.logoutIcon}>🚪</Text>
-              <Text style={styles.logoutText}>{t('auth.logout')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── Footer ──────────────────────────────────────── */}
         <View style={styles.footer}>
           <Text style={styles.version}>Oryalis v1.0.0</Text>
-          <View style={styles.footerLinks}>
-            <TouchableOpacity><Text style={styles.footerLink}>{t('settings.privacy')}</Text></TouchableOpacity>
-            <Text style={styles.footerDot}>·</Text>
-            <TouchableOpacity><Text style={styles.footerLink}>{t('settings.terms')}</Text></TouchableOpacity>
-          </View>
         </View>
-
-        </View>{/* /sectionsInner */}
       </ScrollView>
-
-      {/* ── Timezone picker ─────────────────────────────────── */}
-      <Modal visible={showTz} transparent animationType="slide" onRequestClose={() => setShowTz(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowTz(false)}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{t('settings.timezone')}</Text>
-            {TIMEZONES.map(tz => (
-              <TouchableOpacity
-                key={tz.value}
-                style={[styles.tzRow, timezone === tz.value && styles.tzRowActive]}
-                onPress={() => { setTimezone(tz.value); setShowTz(false) }}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.tzLabel, timezone === tz.value && styles.tzLabelActive]}>
-                  {tz.label}
-                </Text>
-                {timezone === tz.value && <Text style={styles.tzCheck}>✓</Text>}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </>
   )
 }
 
 function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  loadingBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  container:     { flex: 1, backgroundColor: colors.bg },
-  content:       { paddingBottom: 80 },
-  sectionsInner: { maxWidth: 720, alignSelf: 'center', width: '100%' },
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: colors.surface },
+  content: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40, maxWidth: 1180, alignSelf: 'center', width: '100%' },
 
-  // ── Hero ────────────────────────────────────────────────────────────────────
+  pageHeader: { marginBottom: 18, gap: 4 },
+  pageTitle: { fontSize: 28, fontFamily: fonts.display, color: colors.text },
+  pageSubtitle: { fontSize: 14, fontFamily: fonts.body, color: colors.textSecondary },
+
+  shell: { gap: 14 },
+  shellWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 20 },
+  profileColumn: { gap: 12 },
+  profileColumnWide: { width: 360 },
+  settingsColumn: { flex: 1, gap: 12 },
+
   hero: {
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    paddingTop: 64,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-    gap: 8,
-    marginBottom: 4,
-  },
-  heroAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroAvatarText:     { fontSize: 30, fontFamily: fonts.bold, color: '#ffffff' },
-  heroName:           { fontSize: 22, fontFamily: fonts.display, color: '#ffffff', textAlign: 'center' },
-  heroSpecialty:      { fontSize: 14, fontFamily: fonts.medium, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
-  heroSpecialtyEmpty: { fontSize: 13, fontFamily: fonts.body, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', textAlign: 'center' },
-
-  // ── Sections ────────────────────────────────────────────────────────────────
-  section:      { paddingHorizontal: 16, paddingTop: 20, gap: 10 },
-  sectionLabel: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 2 },
-
-  // ── Card ────────────────────────────────────────────────────────────────────
-  card: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 16,
-    gap: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 18,
+    gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
+  heroTop: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  heroAvatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: colors.primaryLight },
+  heroAvatarPlaceholder: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  heroInitials: { fontSize: 24, fontFamily: fonts.bold, color: colors.textInverse },
+  heroInfo: { flex: 1, gap: 3 },
+  heroEyebrow: { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, letterSpacing: 0.6, textTransform: 'uppercase' },
+  heroName: { fontSize: 20, fontFamily: fonts.bold, color: colors.text, lineHeight: 25 },
+  heroSpecialty: { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 18 },
+  heroMetaGrid: { flexDirection: 'row', gap: 10 },
+  heroMetaItem: { flex: 1, backgroundColor: colors.bgDim, borderRadius: 12, padding: 10, gap: 2 },
+  heroMetaLabel: { fontSize: 10, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroMetaValue: { fontSize: 13, fontFamily: fonts.semibold, color: colors.text },
+  heroBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  heroPlanBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  heroPlanText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  successBadge: { backgroundColor: colors.successLight },
+  successText: { color: colors.success },
+  neutralBadge: { backgroundColor: colors.bgDim },
+  neutralText: { color: colors.textSecondary },
 
-  // ── Fields ──────────────────────────────────────────────────────────────────
-  field:         { gap: 6 },
-  fieldLabel:    { fontSize: 11, fontFamily: fonts.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  disabledInput: { backgroundColor: colors.surfaceContainerLow, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13, borderWidth: 1, borderColor: colors.border },
-  disabledText:  { fontSize: 15, fontFamily: fonts.body, color: colors.textTertiary },
+  completionCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 14,
+  },
+  completionTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', justifyContent: 'space-between' },
+  completionText: { flex: 1, gap: 4 },
+  completionValue: { fontSize: 28, fontFamily: fonts.bold, color: colors.primary },
+  cardTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
+  cardDesc: { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 17 },
+  progressTrack: { height: 8, backgroundColor: colors.bgDim, borderRadius: 999, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 999 },
+  secondaryAction: { borderRadius: 12, backgroundColor: colors.primaryLight, paddingVertical: 12, alignItems: 'center' },
+  secondaryActionText: { fontSize: 14, fontFamily: fonts.semibold, color: colors.primary },
 
-  twoCol:    { flexDirection: 'row', gap: 10 },
-  halfField: { flex: 1, gap: 6 },
+  previewCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 8,
+  },
+  previewName: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
+  previewMeta: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  previewBody: { fontSize: 13, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 19 },
 
-  // ── Language pills ──────────────────────────────────────────────────────────
-  langPicker:        { gap: 6 },
-  langBtn:           { paddingVertical: 9, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, alignItems: 'center' },
-  langBtnActive:     { backgroundColor: colors.primaryAction, borderColor: colors.primaryAction },
-  langBtnText:       { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
-  langBtnTextActive: { color: '#ffffff' },
+  statusGrid: { flexDirection: 'row', gap: 10 },
+  statusCard: { flex: 1, minWidth: 0, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 8 },
+  statusIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  statusValue: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
+  statusLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textTertiary },
 
-  // ── Timezone ────────────────────────────────────────────────────────────────
-  selectBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, minHeight: 40 },
-  selectBtnText: { fontSize: 12, fontFamily: fonts.medium, color: colors.text, flex: 1 },
-  selectArrow:   { fontSize: 18, color: colors.textTertiary, marginLeft: 2 },
+  group: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  groupLabel: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: colors.textTertiary,
+    letterSpacing: 0.8,
+    paddingHorizontal: 16,
+    paddingTop: 13,
+    paddingBottom: 5,
+  },
+  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: 62 },
 
-  errText: { fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  navIconWrap: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.bgDim, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  navBody: { flex: 1, gap: 2, minWidth: 0 },
+  navTitle: { fontSize: 15, fontFamily: fonts.semibold, color: colors.text },
+  navDesc: { fontSize: 12, fontFamily: fonts.body, color: colors.textTertiary, lineHeight: 16 },
+  navMetaBadge: { backgroundColor: colors.bgDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  navMetaText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textSecondary },
 
-  // ── Save button ─────────────────────────────────────────────────────────────
-  saveBtn:      { backgroundColor: colors.primaryAction, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnMuted: { backgroundColor: colors.primaryLighter },
-  saveBtnText:  { fontSize: 15, fontFamily: fonts.semibold, color: '#ffffff' },
-
-  // ── Section description ─────────────────────────────────────────────────────
-  sectionDesc: { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, paddingHorizontal: 18, marginTop: -4 },
-
-  // ── Catalog toggles ─────────────────────────────────────────────────────────
-  catalogRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
-  catalogRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12, marginTop: 8 },
-  catalogIcon:      { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  catalogIconEmoji: { fontSize: 18 },
-  catalogInfo:      { flex: 1 },
-  catalogName:      { fontSize: 15, fontFamily: fonts.semibold, color: colors.text },
-
-  // ── Display toggle ──────────────────────────────────────────────────────────
-  switchRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  switchInfo: { flex: 1, gap: 2 },
-  switchLabel: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
-  switchDesc:  { fontSize: 12, fontFamily: fonts.body, color: colors.textSecondary, lineHeight: 17 },
-
-  // ── Calendar pull ────────────────────────────────────────────────────────────
-  calColorSwatch: { width: 26, height: 26, borderRadius: 13 },
-  calPullRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  calPullInfo: { flex: 1, gap: 3 },
-  pullBtn:     { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgDim, alignItems: 'center', justifyContent: 'center' },
-  pullBtnMuted: { opacity: 0.5 },
-  pullBtnText: { fontSize: 20, color: colors.primary, lineHeight: 24 },
-
-  // ── Plan card ───────────────────────────────────────────────────────────────
-  planCard:     { borderRadius: 16, padding: 18, gap: 12 },
-  planCardPaid: { backgroundColor: colors.primary },
-  planCardFree: { backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.primaryLighter },
-  planTop:      { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  planHint:          { fontSize: 10, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.5, marginBottom: 3 },
-  planHintDark:      { color: colors.textSecondary },
-  planName:          { fontSize: 20, fontFamily: fonts.display, color: '#ffffff' },
-  planNameDark:      { color: colors.primary },
-  activeBadge:       { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 },
-  activeBadgeText:   { fontSize: 12, fontFamily: fonts.semibold, color: '#ffffff' },
-  planDesc:          { fontSize: 13, fontFamily: fonts.body, color: 'rgba(255,255,255,0.85)', lineHeight: 18 },
-  planDescDark:      { color: colors.textSecondary },
-  upgradeBtn:        { backgroundColor: '#ffffff', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  upgradeBtnOnDark:  { backgroundColor: 'rgba(255,255,255,0.15)' },
-  upgradeBtnText:        { fontSize: 14, fontFamily: fonts.semibold, color: colors.primary },
-  upgradeBtnTextOnDark:  { color: '#ffffff' },
-
-  // ── Compte ──────────────────────────────────────────────────────────────────
-  logoutRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
-  logoutIcon: { fontSize: 18 },
-  logoutText: { fontSize: 15, fontFamily: fonts.semibold, color: colors.danger },
-
-  // ── Footer ──────────────────────────────────────────────────────────────────
-  footer:      { alignItems: 'center', gap: 6, paddingTop: 28, paddingBottom: 8 },
-  version:     { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
-  footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  footerLink:  { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
-  footerDot:   { fontSize: 12, color: colors.textTertiary },
-
-  // ── Timezone modal ──────────────────────────────────────────────────────────
-  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet:      { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 44, gap: 2 },
-  sheetTitle: { fontSize: 17, fontFamily: fonts.semibold, color: colors.text, marginBottom: 8 },
-  tzRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13, paddingHorizontal: 12, borderRadius: 10 },
-  tzRowActive:  { backgroundColor: colors.primaryLight },
-  tzLabel:      { fontSize: 15, fontFamily: fonts.body, color: colors.text },
-  tzLabelActive: { color: colors.primary, fontFamily: fonts.semibold },
-  tzCheck:      { fontSize: 16, color: colors.primaryAction },
+  footer: { alignItems: 'center', paddingVertical: 14 },
+  version: { fontSize: 12, fontFamily: fonts.medium, color: colors.textTertiary },
   })
 }

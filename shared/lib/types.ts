@@ -8,6 +8,58 @@ export type ClientStatus =
   | 'vip'
   | 'inactive'
   | 'advisor'
+  | 'team_member'
+  | 'lost'
+
+export type ActivityType = 'generic' | 'doterra' | 'zinzino' | 'herbalife' | 'custom' | 'multi'
+
+export type ModuleKey =
+  | 'products'
+  | 'renewals_lrp'
+  | 'downline'
+  | 'goals'
+  | 'calendar_sync'
+  | 'client_import'
+
+export const STATUS_KEYS: ClientStatus[] = [
+  'prospect', 'new_client', 'active', 'loyal', 'vip',
+  'advisor', 'team_member', 'inactive', 'lost',
+]
+
+export const DEFAULT_STATUS_LABELS: Record<ClientStatus, string> = {
+  prospect:    'Prospect',
+  new_client:  'Nouveau client',
+  active:      'Actif',
+  loyal:       'Fidèle',
+  vip:         'VIP',
+  advisor:     'Conseiller',
+  team_member: 'Membre équipe',
+  inactive:    'Inactif',
+  lost:        'Perdu',
+}
+
+export const STATUS_PRESETS: Partial<Record<ActivityType, Partial<Record<ClientStatus, string>>>> = {
+  doterra:  { loyal: 'LRP',             advisor: 'Conseillère', team_member: 'Équipe'    },
+  zinzino:  { loyal: 'Client récurrent', advisor: 'Partenaire',  team_member: 'Downline'  },
+}
+
+export interface UserBusinessProfile {
+  id: string
+  user_id: string
+  activity_type: ActivityType
+  custom_brand_name: string | null
+  active_modules: ModuleKey[]
+  created_at: string
+  updated_at: string
+}
+
+export interface UserStatusLabel {
+  id: string
+  user_id: string
+  status_key: ClientStatus
+  custom_label: string
+  created_at: string
+}
 
 // 'purchased' kept during transition — migrate13 does NOT convert existing data yet.
 // Phase D will run: UPDATE recommendations SET status='ordered' WHERE status='purchased'
@@ -138,6 +190,15 @@ export interface Profile {
   specialty: string | null
   onboarding_completed: boolean
   active_catalog_slugs: string[] | null
+  // ── Profil enrichi (migrate22) ────────────────────────────────────────────
+  avatar_url: string | null
+  phone: string | null
+  website: string | null
+  bio: string | null
+  company: string | null
+  city: string | null
+  linkedin_url: string | null
+  // ─────────────────────────────────────────────────────────────────────────
   created_at: string
   updated_at: string | null
 }

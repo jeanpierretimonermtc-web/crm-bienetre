@@ -8,6 +8,7 @@ import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
 import { useTheme } from '@/shared/theme/ThemeProvider'
+import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { ClientStatus, JourneyStage, NextActionType, NetworkPotential, ContactRole } from '@/shared/lib/types'
@@ -40,6 +41,7 @@ function SectionCard({ icon, titleKey, children }: { icon: string; titleKey: str
 export default function NewClientScreen() {
   const { t } = useTranslation()
   const { colors, statusColors } = useTheme()
+  const { getStatusLabel, isModuleActive } = useAppConfig()
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { width } = useWindowDimensions()
@@ -180,7 +182,7 @@ export default function NewClientScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.statusChipText, { color: txtClr, fontFamily: active ? fonts.bold : fonts.medium }]}>
-                    {t(`clients.status.${s}`)}
+                    {getStatusLabel(s)}
                   </Text>
                 </TouchableOpacity>
               )
@@ -313,10 +315,12 @@ export default function NewClientScreen() {
           </View>
         </SectionCard>
 
-        {/* ── doTERRA ────────────────────────────────────────────── */}
-        <SectionCard icon="🌿" titleKey="clients.sections.doterra">
-          <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
-        </SectionCard>
+        {/* ── doTERRA (module renewals_lrp) ──────────────────────── */}
+        {isModuleActive('renewals_lrp') && (
+          <SectionCard icon="🌿" titleKey="clients.sections.doterra">
+            <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
+          </SectionCard>
+        )}
 
         {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
         <Button label={t('common.save')} onPress={handleSave} loading={loading} />

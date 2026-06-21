@@ -126,7 +126,7 @@ function DetailModal({
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <View style={[styles.modalOverlay, isWide && styles.modalOverlayWide]}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.modalPanel, isWide && styles.modalPanelWide]}>
 
           {/* Header */}
@@ -459,7 +459,7 @@ export default function CatalogScreen() {
         onRequestClose={closeRecommend}
       >
         <View style={[styles.modalOverlay, isWide && styles.modalOverlayWide]}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeRecommend} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeRecommend} />
           <View style={[styles.modalPanel, isWide && styles.modalPanelWide]}>
 
             <View style={[styles.modalHeader, { borderBottomColor: recommendState?.catalogColor ?? colors.border }]}>
