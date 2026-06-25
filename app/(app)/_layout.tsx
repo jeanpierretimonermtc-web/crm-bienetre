@@ -33,7 +33,8 @@ const TAB_ROUTES_BASE: { name: string; icon: string; path: string; module?: stri
   { name: 'clients',      icon: '👥', path: '/clients'      },
   { name: 'appointments', icon: '📅', path: '/appointments' },
   { name: 'followups',    icon: '🔔', path: '/followups'    },
-  { name: 'network',      icon: '🌐', path: '/network',      module: 'downline' },
+  { name: 'catalog',      icon: '📦', path: '/catalog',      module: 'products'  },
+  { name: 'network',      icon: '🌐', path: '/network',      module: 'downline'  },
 ]
 
 // ── Custom floating tab bar ─────────────────────────────────────────────────
