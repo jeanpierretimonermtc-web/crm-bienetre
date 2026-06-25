@@ -328,6 +328,7 @@ export default function AppLayout() {
             <Tabs.Screen name="settings-crm"         options={{ href: null }} />
             <Tabs.Screen name="settings-activity"    options={{ href: null }} />
             <Tabs.Screen name="settings-modules"     options={{ href: null }} />
+            <Tabs.Screen name="settings-automations" options={{ href: null }} />
             <Tabs.Screen name="settings-labels"      options={{ href: null }} />
             <Tabs.Screen name="settings-integrations" options={{ href: null }} />
             <Tabs.Screen name="settings-google"      options={{ href: null }} />

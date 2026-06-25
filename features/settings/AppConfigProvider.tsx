@@ -19,7 +19,7 @@ const DEFAULT_PROFILE: UserBusinessProfile = {
   id: '', user_id: '',
   activity_type: 'generic',
   custom_brand_name: null,
-  active_modules: ['products', 'renewals_lrp', 'downline', 'goals', 'calendar_sync'],
+  active_modules: ['products', 'renewals_lrp', 'downline', 'goals', 'calendar_sync', 'auto_new_client', 'auto_order', 'auto_appointment', 'auto_no_contact'],
   created_at: '', updated_at: '',
 }
 

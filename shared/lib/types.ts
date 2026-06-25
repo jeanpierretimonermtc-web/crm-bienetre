@@ -20,6 +20,10 @@ export type ModuleKey =
   | 'goals'
   | 'calendar_sync'
   | 'client_import'
+  | 'auto_new_client'
+  | 'auto_order'
+  | 'auto_appointment'
+  | 'auto_no_contact'
 
 export const STATUS_KEYS: ClientStatus[] = [
   'prospect', 'new_client', 'active', 'loyal', 'vip',

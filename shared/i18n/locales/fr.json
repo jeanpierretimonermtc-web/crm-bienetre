@@ -344,31 +344,31 @@
     "other": "Autre"
   },
   "appointment_statuses": {
-    "scheduled":   "Planifié",
-    "completed":   "Complété",
-    "cancelled":   "Annulé",
-    "no_show":     "Absent",
+    "scheduled": "Planifié",
+    "completed": "Complété",
+    "cancelled": "Annulé",
+    "no_show": "Absent",
     "rescheduled": "Reporté"
   },
   "task_types": {
-    "follow_up":         "Suivi",
-    "send_catalog":      "Catalogue",
-    "send_price_list":   "Tarifs",
-    "send_sample":       "Échantillon",
+    "follow_up": "Suivi",
+    "send_catalog": "Catalogue",
+    "send_price_list": "Tarifs",
+    "send_sample": "Échantillon",
     "invite_to_webinar": "Webinaire",
-    "invite_to_training":"Formation",
+    "invite_to_training": "Formation",
     "send_payment_link": "Paiement",
-    "customer_checkin":  "Check-in",
-    "team_followup":     "Suivi équipe",
-    "ask_referral":      "Parrainage",
-    "other":             "Autre"
+    "customer_checkin": "Check-in",
+    "team_followup": "Suivi équipe",
+    "ask_referral": "Parrainage",
+    "other": "Autre"
   },
   "client_statuses": {
-    "active":   "Cliente",
+    "active": "Cliente",
     "prospect": "Prospect",
     "inactive": "Inactif",
-    "vip":      "VIP",
-    "advisor":  "Conseiller"
+    "vip": "VIP",
+    "advisor": "Conseiller"
   },
   "orders": {
     "title": "Commandes",
@@ -567,10 +567,10 @@
     "current_label": "Actuel",
     "section_title": "Objectifs du mois",
     "metrics": {
-      "new_clients":      "Nouveaux clients",
+      "new_clients": "Nouveaux clients",
       "new_distributors": "Nouveaux distributeurs",
-      "revenue":          "CA (€)",
-      "appointments":     "RDV réalisés"
+      "revenue": "CA (€)",
+      "appointments": "RDV réalisés"
     },
     "error_target": "Entrez un objectif > 0",
     "error_save": "Erreur lors de la sauvegarde"
@@ -716,7 +716,9 @@
     "activity_desc": "Marque principale et type d'activité",
     "modules_desc": "Fonctionnalités actives dans votre espace",
     "labels_desc": "Libellés CRM affichés dans l'application",
-    "import_short_desc": "Importer une liste CSV depuis Excel ou Google Sheets"
+    "import_short_desc": "Importer une liste CSV depuis Excel ou Google Sheets",
+    "section_automations": "Automatisations",
+    "automations_desc": "Relances auto après commande, RDV, nouveau client"
   },
   "calendar": {
     "section": "Calendrier",

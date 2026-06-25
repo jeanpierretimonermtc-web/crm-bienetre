@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabase'
 import type { Client, ClientStatus, ProspectTemperature } from '@/shared/lib/types'
+import { triggerNewClient } from '@/features/automations/automationService'
 
 export interface ProspectScoreInput {
   client: Client
@@ -71,7 +72,10 @@ export async function createClient(userId: string, input: ClientInput) {
     .select()
     .single()
   if (error) throw error
-  return data as Client
+  const client = data as Client
+  const prénom = client.first_name || client.full_name.split(' ')[0]
+  triggerNewClient(userId, client.id, prénom).catch(console.error)
+  return client
 }
 
 export async function updateClient(id: string, input: Partial<ClientInput>) {

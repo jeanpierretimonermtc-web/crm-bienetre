@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabase'
 import type { Order, OrderStatus, OrderProduct } from '@/shared/lib/types'
+import { triggerOrder } from '@/features/automations/automationService'
 
 export interface OrderFilters {
   client_id?: string
@@ -53,7 +54,18 @@ export async function createOrder(userId: string, input: OrderInput): Promise<Or
     .select()
     .single()
   if (error) throw error
-  return data as Order
+  const order = data as Order
+
+  // Trigger automation: récupère le prénom du client en background
+  supabase.from('clients').select('first_name, full_name').eq('id', order.client_id).single()
+    .then(({ data: c }) => {
+      if (!c) return
+      const prénom = c.first_name || c.full_name.split(' ')[0]
+      return triggerOrder(userId, order.client_id, prénom)
+    })
+    .catch(console.error)
+
+  return order
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {

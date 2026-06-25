@@ -4,6 +4,7 @@ import { supabase } from '@/shared/lib/supabase'
 import type { Client } from '@/shared/lib/types'
 import type { Alert } from '@/shared/lib/types'
 import { computeAndSaveAlerts, fetchUnreadAlerts, markAlertRead, markAllAlertsRead } from '@/features/alerts/alertService'
+import { checkNoContact } from '@/features/automations/automationService'
 
 interface DashboardStats {
   totalClients: number
@@ -162,8 +163,9 @@ export function useAlerts() {
     if (!session) return
     setLoading(true)
     try {
-      // Compute new alerts first (fire-and-forget errors)
+      // Compute new alerts + no-contact automations (fire-and-forget)
       computeAndSaveAlerts(session.user.id).catch(console.error)
+      checkNoContact(session.user.id).catch(console.error)
       setAlerts(await fetchUnreadAlerts(session.user.id))
     } catch (e) {
       console.error('[useAlerts]', e)

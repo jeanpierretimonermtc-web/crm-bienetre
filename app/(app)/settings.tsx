@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { ComponentType } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -12,24 +11,6 @@ import {
   View,
 } from 'react-native'
 import { Stack, router, useFocusEffect } from 'expo-router'
-import {
-  AtSign,
-  BriefcaseBusiness,
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  CreditCard,
-  FlaskConical,
-  IdCard,
-  Languages,
-  LayoutGrid,
-  LogOut,
-  MonitorCog,
-  Package,
-  Tags,
-  Target,
-  Upload,
-} from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
@@ -39,6 +20,8 @@ import { fonts } from '@/shared/theme/fonts'
 import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { useGoogleCalendar } from '@/features/appointments/useGoogleCalendar'
 import { useDemoState } from '@/features/demo/DemoProvider'
+import { LineIcon } from '@/shared/components/ui/LineIcon'
+import type { LineIconName } from '@/shared/components/ui/LineIcon'
 
 const SETTINGS_WIDE_BREAKPOINT = 900
 
@@ -49,10 +32,8 @@ function nameInitials(name: string) {
   return (p[0][0] + p[p.length - 1][0]).toUpperCase()
 }
 
-type NavIcon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>
-
-function NavRow({ icon: Icon, title, desc, meta, onPress, styles, colors, danger }: {
-  icon: NavIcon
+function NavRow({ icon, title, desc, meta, onPress, styles, colors, danger }: {
+  icon: LineIconName
   title: string
   desc?: string
   meta?: string
@@ -64,14 +45,14 @@ function NavRow({ icon: Icon, title, desc, meta, onPress, styles, colors, danger
   return (
     <TouchableOpacity style={styles.navRow} onPress={onPress} activeOpacity={0.75}>
       <View style={[styles.navIconWrap, danger && { backgroundColor: colors.dangerLight }]}>
-        <Icon size={18} color={danger ? colors.danger : colors.primary} strokeWidth={2.15} />
+        <LineIcon name={icon} size={18} color={danger ? colors.danger : colors.primary} strokeWidth={2.15} />
       </View>
       <View style={styles.navBody}>
         <Text style={[styles.navTitle, danger && { color: colors.danger }]}>{title}</Text>
         {desc ? <Text style={styles.navDesc}>{desc}</Text> : null}
       </View>
       {meta ? <View style={styles.navMetaBadge}><Text style={styles.navMetaText}>{meta}</Text></View> : null}
-      {!danger && <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2.2} />}
+      {!danger && <LineIcon name="chevronRight" size={18} color={colors.textTertiary} strokeWidth={2.2} />}
     </TouchableOpacity>
   )
 }
@@ -248,21 +229,21 @@ export default function SettingsMenuScreen() {
           <View style={styles.settingsColumn}>
             <View style={styles.statusGrid}>
               <View style={styles.statusCard}>
-                <View style={styles.statusIcon}><LayoutGrid size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View style={styles.statusIcon}><LineIcon name="modules" size={16} color={colors.primary} strokeWidth={2.2} /></View>
                 <View>
                   <Text style={styles.statusValue}>{activeModulesCount}</Text>
                   <Text style={styles.statusLabel}>{t('settings.active_modules')}</Text>
                 </View>
               </View>
               <View style={styles.statusCard}>
-                <View style={styles.statusIcon}><CalendarDays size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View style={styles.statusIcon}><LineIcon name="calendar" size={16} color={colors.primary} strokeWidth={2.2} /></View>
                 <View>
                   <Text style={styles.statusValue}>{gcConnected ? t('settings.yes_short') : t('settings.no_short')}</Text>
                   <Text style={styles.statusLabel}>Google Agenda</Text>
                 </View>
               </View>
               <View style={styles.statusCard}>
-                <View style={styles.statusIcon}><CreditCard size={16} color={colors.primary} strokeWidth={2.2} /></View>
+                <View style={styles.statusIcon}><LineIcon name="subscription" size={16} color={colors.primary} strokeWidth={2.2} /></View>
                 <View>
                   <Text style={styles.statusValue}>{planLabel}</Text>
                   <Text style={styles.statusLabel}>{t('settings.current_plan')}</Text>
@@ -272,43 +253,44 @@ export default function SettingsMenuScreen() {
 
             <View style={styles.group}>
               <GroupLabel label={t('settings.nav_profile')} styles={styles} />
-              <NavRow icon={IdCard} title={t('settings.section_identity')} desc={t('settings.identity_desc')} meta={missingIdentity ? t('settings.to_complete') : undefined} onPress={nav('/(app)/settings-identity')} styles={styles} colors={colors} />
+              <NavRow icon="identity" title={t('settings.section_identity')} desc={t('settings.identity_desc')} meta={missingIdentity ? t('settings.to_complete') : undefined} onPress={nav('/(app)/settings-identity')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={AtSign} title={t('settings.section_contact')} desc={t('settings.contact_desc')} onPress={nav('/(app)/settings-contact')} styles={styles} colors={colors} />
+              <NavRow icon="contact" title={t('settings.section_contact')} desc={t('settings.contact_desc')} onPress={nav('/(app)/settings-contact')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={Building2} title={t('settings.section_org')} desc={t('settings.org_desc')} onPress={nav('/(app)/settings-org')} styles={styles} colors={colors} />
+              <NavRow icon="org" title={t('settings.section_org')} desc={t('settings.org_desc')} onPress={nav('/(app)/settings-org')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={Languages} title={t('settings.nav_preferences')} desc={t('settings.preferences_desc')} meta={locale.toUpperCase()} onPress={nav('/(app)/settings-language')} styles={styles} colors={colors} />
+              <NavRow icon="language" title={t('settings.nav_preferences')} desc={t('settings.preferences_desc')} meta={locale.toUpperCase()} onPress={nav('/(app)/settings-language')} styles={styles} colors={colors} />
             </View>
 
             <View style={styles.group}>
               <GroupLabel label={t('settings.nav_crm')} styles={styles} />
-              <NavRow icon={BriefcaseBusiness} title={t('settings.section_activity')} desc={t('settings.activity_desc')} onPress={nav('/(app)/settings-activity')} styles={styles} colors={colors} />
+              <NavRow icon="activity" title={t('settings.section_activity')} desc={t('settings.activity_desc')} onPress={nav('/(app)/settings-activity')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={LayoutGrid} title={t('settings.section_modules')} desc={t('settings.modules_desc')} meta={String(activeModulesCount)} onPress={nav('/(app)/settings-modules')} styles={styles} colors={colors} />
+              <NavRow icon="modules" title={t('settings.section_modules')} desc={t('settings.modules_desc')} meta={String(activeModulesCount)} onPress={nav('/(app)/settings-modules')} styles={styles} colors={colors} />
+              <NavRow icon="activity" title={t('settings.section_automations')} desc={t('settings.automations_desc')} onPress={nav('/(app)/settings-automations')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={Tags} title={t('settings.section_labels')} desc={t('settings.labels_desc')} onPress={nav('/(app)/settings-labels')} styles={styles} colors={colors} />
+              <NavRow icon="labels" title={t('settings.section_labels')} desc={t('settings.labels_desc')} onPress={nav('/(app)/settings-labels')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={Upload} title={t('settings.nav_import')} desc={t('settings.import_short_desc')} onPress={nav('/(app)/import')} styles={styles} colors={colors} />
+              <NavRow icon="import" title={t('settings.nav_import')} desc={t('settings.import_short_desc')} onPress={nav('/(app)/import')} styles={styles} colors={colors} />
               {isModuleActive('goals') && (
                 <>
                   <View style={styles.sep} />
-                  <NavRow icon={Target} title={t('goals.title')} desc={t('settings.nav_goals_desc')} onPress={nav('/(app)/goals')} styles={styles} colors={colors} />
+                  <NavRow icon="goals" title={t('goals.title')} desc={t('settings.nav_goals_desc')} onPress={nav('/(app)/goals')} styles={styles} colors={colors} />
                 </>
               )}
             </View>
 
             <View style={styles.group}>
               <GroupLabel label={t('settings.nav_integrations')} styles={styles} />
-              <NavRow icon={CalendarDays} title="Google Agenda" desc={gcConnected ? t('settings.connected') : t('settings.not_connected')} meta={gcConnected ? t('settings.ok_short') : undefined} onPress={nav('/(app)/settings-google')} styles={styles} colors={colors} />
+              <NavRow icon="calendar" title="Google Agenda" desc={gcConnected ? t('settings.connected') : t('settings.not_connected')} meta={gcConnected ? t('settings.ok_short') : undefined} onPress={nav('/(app)/settings-google')} styles={styles} colors={colors} />
               <View style={styles.sep} />
-              <NavRow icon={Package} title={t('settings.section_catalogs')} desc={t('settings.catalogs_desc')} onPress={nav('/(app)/settings-catalogs')} styles={styles} colors={colors} />
+              <NavRow icon="catalogs" title={t('settings.section_catalogs')} desc={t('settings.catalogs_desc')} onPress={nav('/(app)/settings-catalogs')} styles={styles} colors={colors} />
             </View>
 
             <View style={styles.group}>
               <GroupLabel label={t('settings.nav_display')} styles={styles} />
               <View style={styles.navRow}>
-                <View style={styles.navIconWrap}><MonitorCog size={18} color={colors.primary} strokeWidth={2.15} /></View>
+                <View style={styles.navIconWrap}><LineIcon name="display" size={18} color={colors.primary} strokeWidth={2.15} /></View>
                 <View style={styles.navBody}>
                   <Text style={styles.navTitle}>{t('settings.dark_mode')}</Text>
                   <Text style={styles.navDesc}>{t('settings.dark_mode_desc')}</Text>
@@ -318,7 +300,7 @@ export default function SettingsMenuScreen() {
               </View>
               <View style={styles.sep} />
               <View style={styles.navRow}>
-                <View style={styles.navIconWrap}><FlaskConical size={18} color={colors.primary} strokeWidth={2.15} /></View>
+                <View style={styles.navIconWrap}><LineIcon name="demo" size={18} color={colors.primary} strokeWidth={2.15} /></View>
                 <View style={styles.navBody}>
                   <Text style={styles.navTitle}>{t('settings.hide_demo')}</Text>
                   <Text style={styles.navDesc}>{t('settings.hide_demo_desc')}</Text>
@@ -327,12 +309,12 @@ export default function SettingsMenuScreen() {
                   trackColor={{ true: colors.primary, false: colors.border }} thumbColor={colors.card} />
               </View>
               <View style={styles.sep} />
-              <NavRow icon={CreditCard} title={t('settings.subscription')} desc={planLabel} onPress={nav('/(app)/settings-display')} styles={styles} colors={colors} />
+              <NavRow icon="subscription" title={t('settings.subscription')} desc={planLabel} onPress={nav('/(app)/settings-display')} styles={styles} colors={colors} />
             </View>
 
             <View style={[styles.group, { marginBottom: 8 }]}>
               <GroupLabel label={t('settings.section_account')} styles={styles} />
-              <NavRow icon={LogOut} title={t('auth.logout')} onPress={() => supabase.auth.signOut()} styles={styles} colors={colors} danger />
+              <NavRow icon="logout" title={t('auth.logout')} onPress={() => supabase.auth.signOut()} styles={styles} colors={colors} danger />
             </View>
           </View>
         </View>

@@ -344,31 +344,31 @@
     "other": "Other"
   },
   "appointment_statuses": {
-    "scheduled":   "Scheduled",
-    "completed":   "Completed",
-    "cancelled":   "Cancelled",
-    "no_show":     "No-show",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "No-show",
     "rescheduled": "Rescheduled"
   },
   "task_types": {
-    "follow_up":         "Follow-up",
-    "send_catalog":      "Catalog",
-    "send_price_list":   "Price list",
-    "send_sample":       "Sample",
+    "follow_up": "Follow-up",
+    "send_catalog": "Catalog",
+    "send_price_list": "Price list",
+    "send_sample": "Sample",
     "invite_to_webinar": "Webinar",
-    "invite_to_training":"Training",
+    "invite_to_training": "Training",
     "send_payment_link": "Payment",
-    "customer_checkin":  "Check-in",
-    "team_followup":     "Team follow-up",
-    "ask_referral":      "Referral",
-    "other":             "Other"
+    "customer_checkin": "Check-in",
+    "team_followup": "Team follow-up",
+    "ask_referral": "Referral",
+    "other": "Other"
   },
   "client_statuses": {
-    "active":   "Client",
+    "active": "Client",
     "prospect": "Prospect",
     "inactive": "Inactive",
-    "vip":      "VIP",
-    "advisor":  "Advisor"
+    "vip": "VIP",
+    "advisor": "Advisor"
   },
   "orders": {
     "title": "Orders",
@@ -567,10 +567,10 @@
     "current_label": "Current",
     "section_title": "Monthly goals",
     "metrics": {
-      "new_clients":      "New clients",
+      "new_clients": "New clients",
       "new_distributors": "New distributors",
-      "revenue":          "Revenue (€)",
-      "appointments":     "Appointments done"
+      "revenue": "Revenue (€)",
+      "appointments": "Appointments done"
     },
     "error_target": "Enter a target > 0",
     "error_save": "Error saving goal"
@@ -716,7 +716,9 @@
     "activity_desc": "Main brand and activity type",
     "modules_desc": "Features enabled in your workspace",
     "labels_desc": "CRM labels shown in the app",
-    "import_short_desc": "Import a CSV list from Excel or Google Sheets"
+    "import_short_desc": "Import a CSV list from Excel or Google Sheets",
+    "section_automations": "Automations",
+    "automations_desc": "Auto follow-ups after order, appointment, new client"
   },
   "calendar": {
     "section": "Calendar",

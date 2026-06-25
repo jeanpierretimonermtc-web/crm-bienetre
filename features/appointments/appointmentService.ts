@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/lib/supabase'
+import { triggerAppointmentCompleted } from '@/features/automations/automationService'
 import type {
   Appointment,
   AppointmentFull,
@@ -192,6 +193,17 @@ async function triggerPostCompletionActions(
         due_at:         new Date(Date.now() + 86400000).toISOString(),
       })
     }
+  }
+
+  // Automation : relance générique J+7 après tout RDV complété
+  const { data: clientData } = await supabase
+    .from('clients')
+    .select('first_name, full_name')
+    .eq('id', clientId)
+    .single()
+  if (clientData) {
+    const prénom = clientData.first_name || clientData.full_name.split(' ')[0]
+    triggerAppointmentCompleted(userId, clientId, prénom).catch(console.error)
   }
 }
 
