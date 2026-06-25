@@ -443,7 +443,12 @@
     "members": "membres",
     "distributors": "distributeurs",
     "active_month": "actifs ce mois",
-    "children_count": "{{n}} →"
+    "children_count": "{{n}} →",
+    "filter_all": "Tous",
+    "filter_network": "Distributeurs",
+    "filter_customers": "Clients",
+    "tap_expand": "Appuyer = plier/déplier",
+    "long_press_open": "Maintenir = ouvrir la fiche"
   },
   "catalog": {
     "title": "Catalogue",

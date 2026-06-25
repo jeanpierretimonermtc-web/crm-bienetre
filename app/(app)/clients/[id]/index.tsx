@@ -14,6 +14,7 @@ import { useDirectTeam } from '@/features/network/useNetwork'
 import { computeProspectScore } from '@/features/clients/clientService'
 import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { useTheme } from '@/shared/theme/ThemeProvider'
+import { MessageModal } from '@/shared/components/ui/MessageModal'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import type { ClientStatus, ContactRole } from '@/shared/lib/types'
@@ -67,7 +68,8 @@ export default function ClientDetailScreen() {
   const { interactions } = useClientInteractions(id)
   const { orders } = useClientOrders(id)
   const { team } = useDirectTeam(id)
-  const [activeTab, setActiveTab] = useState<Tab>('apercu')
+  const [activeTab, setActiveTab]       = useState<Tab>('apercu')
+  const [messageOpen, setMessageOpen]   = useState(false)
   const { getStatusLabel, isModuleActive } = useAppConfig()
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
 
@@ -209,6 +211,22 @@ export default function ClientDetailScreen() {
                 <Text style={styles.kpiValue}>{fmtShort(nextDate, locale)}</Text>
               </View>
             </View>
+          </View>
+
+          {/* ── Quick actions ────────────────────────────────────── */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={styles.qaBtn} onPress={() => setMessageOpen(true)} activeOpacity={0.8}>
+              <Text style={styles.qaIcon}>💬</Text>
+              <Text style={styles.qaLabel}>Message</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.qaBtn} onPress={() => router.push(`/(app)/clients/${id}/appointments` as any)} activeOpacity={0.8}>
+              <Text style={styles.qaIcon}>📅</Text>
+              <Text style={styles.qaLabel}>RDV</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.qaBtn} onPress={() => router.push(`/(app)/clients/${id}/edit` as any)} activeOpacity={0.8}>
+              <Text style={styles.qaIcon}>✏️</Text>
+              <Text style={styles.qaLabel}>Modifier</Text>
+            </TouchableOpacity>
           </View>
 
           {/* ── Tab bar ──────────────────────────────────────────── */}
@@ -625,6 +643,14 @@ export default function ClientDetailScreen() {
           <Text style={styles.fabIcon}>✎</Text>
         </TouchableOpacity>
       </View>
+
+      <MessageModal
+        visible={messageOpen}
+        onClose={() => setMessageOpen(false)}
+        client={client ?? null}
+        advisorName={session?.user?.user_metadata?.full_name ?? session?.user?.email ?? ''}
+        lastProduct={recommendations[0]?.product_name}
+      />
     </>
   )
 }
@@ -677,6 +703,12 @@ function makeStyles(colors: ThemeColors) {
   kpiDivider:{ width: 1, height: 32, backgroundColor: colors.border },
   kpiLabel:  { fontSize: 11, fontFamily: fonts.medium, color: colors.textTertiary },
   kpiValue:  { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
+
+  // ── Quick actions ──────────────────────────────────────────────────────────
+  quickActions: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
+  qaBtn:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.card, borderRadius: 12, paddingVertical: 12, borderWidth: 1, borderColor: colors.border },
+  qaIcon: { fontSize: 20 },
+  qaLabel:{ fontSize: 12, fontFamily: fonts.semibold, color: colors.textSecondary },
 
   // ── Tab bar ────────────────────────────────────────────────────────────────
   tabScroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border, marginTop: 20 },
