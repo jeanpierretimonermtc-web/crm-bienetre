@@ -9,6 +9,7 @@ import { DemoProvider, useDemoState } from '@/features/demo/DemoProvider'
 import { CatalogPrefsProvider } from '@/features/catalogs/CatalogPrefsProvider'
 import { useCalendarSetup } from '@/features/appointments/useCalendarSetup'
 import { useCalendarForegroundSync } from '@/features/appointments/useCalendarForegroundSync'
+import { useNotificationSetup } from '@/features/notifications/useNotifications'
 import { AppConfigProvider, useAppConfig } from '@/features/settings/AppConfigProvider'
 import type { ModuleKey } from '@/shared/lib/types'
 import { useTheme } from '@/shared/theme/ThemeProvider'
@@ -233,6 +234,7 @@ export default function AppLayout() {
 
   useCalendarSetup()
   useCalendarForegroundSync()
+  useNotificationSetup()
 
 
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)

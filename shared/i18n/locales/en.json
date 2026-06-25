@@ -411,7 +411,7 @@
     "error_title_or_desc": "Enter a title or description",
     "action_type": "Action type",
     "overdue_badge": "LATE",
-    "auto_badge": "AUTO",
+    "auto_badge": "⚡ Auto",
     "created_days": "{{days}}d ago",
     "center_subtitle": "Sorted by priority",
     "score": "Score"

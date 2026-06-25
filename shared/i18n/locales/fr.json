@@ -411,7 +411,7 @@
     "error_title_or_desc": "Saisissez un titre ou une description",
     "action_type": "Type d'action",
     "overdue_badge": "EN RETARD",
-    "auto_badge": "AUTO",
+    "auto_badge": "⚡ Auto",
     "created_days": "Il y a {{days}}j",
     "center_subtitle": "Triées par priorité",
     "score": "Score"

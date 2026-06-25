@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
 import { toggleFollowupDone } from '@/features/followups/followupService'
+import { useFollowupBadge } from '@/features/notifications/useNotifications'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
@@ -194,6 +195,9 @@ export default function FollowupsScreen() {
   const overdue  = scored.filter(f => f.due_date < today)
   const dueToday = scored.filter(f => f.due_date === today)
   const upcoming = scored.filter(f => f.due_date > today)
+
+  // Met à jour le badge iOS avec le nb de relances urgentes (en retard + aujourd'hui)
+  useFollowupBadge(overdue.length + dueToday.length)
 
   const sections = { overdue, today: dueToday, upcoming }
   const displayed = sections[activeTab]
