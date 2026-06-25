@@ -236,6 +236,8 @@ export default function AppLayout() {
 
 
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
+  const [avatarUrl, setAvatarUrl]   = useState<string | null>(null)
+  const [profileName, setProfileName] = useState<string>('')
 
   useEffect(() => {
     if (!session) { setOnboardingDone(null); return }
@@ -243,12 +245,14 @@ export default function AppLayout() {
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('onboarding_completed')
+          .select('onboarding_completed, avatar_url, full_name')
           .eq('id', session.user.id)
           .single()
         setOnboardingDone(data?.onboarding_completed ?? false)
+        setAvatarUrl(data?.avatar_url ?? null)
+        setProfileName(data?.full_name ?? '')
       } catch {
-        setOnboardingDone(true) // On error, don't block
+        setOnboardingDone(true)
       }
     })()
   }, [session?.user.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -266,8 +270,13 @@ export default function AppLayout() {
   )
   if (!onboardingDone) return <Redirect href="/(auth)/onboarding" />
 
-  const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] ?? session?.user?.email ?? ''
-  const initials = firstName.slice(0, 2).toUpperCase()
+  const displayName = profileName || session?.user?.user_metadata?.full_name || session?.user?.email || ''
+  const initials = (() => {
+    const parts = displayName.trim().split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return '?'
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  })()
 
   return (
     <CatalogPrefsProvider>
@@ -288,7 +297,10 @@ export default function AppLayout() {
                   <Text style={styles.mobileHeaderBtnIcon}>🔍</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.mobileHeaderAvatar} onPress={() => router.push('/(app)/settings')}>
-                  <Text style={styles.mobileHeaderAvatarText}>{initials}</Text>
+                  {avatarUrl
+                    ? <Image source={{ uri: avatarUrl }} style={styles.mobileHeaderAvatarImg} />
+                    : <Text style={styles.mobileHeaderAvatarText}>{initials}</Text>
+                  }
                 </TouchableOpacity>
               </View>
             </View>
@@ -354,7 +366,8 @@ function makeStyles(colors: ThemeColors) {
   mobileHeaderRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   mobileHeaderBtn:        { padding: 4 },
   mobileHeaderBtnIcon:    { fontSize: 18 },
-  mobileHeaderAvatar:     { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  mobileHeaderAvatar:     { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  mobileHeaderAvatarImg:  { width: 32, height: 32, borderRadius: 16 },
   mobileHeaderAvatarText: { fontSize: 12, fontFamily: fonts.bold, color: '#FFFFFF' },
 
   // ── Sidebar ──────────────────────────────────────────────────────────────────
