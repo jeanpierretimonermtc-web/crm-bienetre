@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Modal } from 'react-native'
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { supabase } from '@/shared/lib/supabase'
 import { useClients, useClientSearch } from '@/features/clients/useClients'
-import { computeProspectScore } from '@/features/clients/clientService'
+import { computeProspectScore, deleteClient } from '@/features/clients/clientService'
 import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
@@ -57,7 +57,7 @@ function ScoreBadge({ score }: { score: number }) {
   )
 }
 
-function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
+function ClientCard({ client, lastRdv, onMenuPress }: { client: Client; lastRdv?: string; onMenuPress: (c: Client) => void }) {
   const { t, i18n } = useTranslation()
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
@@ -83,7 +83,7 @@ function ClientCard({ client, lastRdv }: { client: Client; lastRdv?: string }) {
         </View>
         <TouchableOpacity
           style={styles.menuBtn}
-          onPress={() => router.push(`/(app)/clients/${client.id}`)}
+          onPress={() => onMenuPress(client)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.menuDots}>⋮</Text>
@@ -145,6 +145,26 @@ export default function ClientsScreen() {
   const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
   const { width } = useWindowDimensions()
   const isWide = width >= 768
+
+  const [menuClient, setMenuClient]       = useState<Client | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting]           = useState(false)
+
+  function closeMenu() { setMenuClient(null); setConfirmDelete(false) }
+
+  async function handleDelete() {
+    if (!menuClient) return
+    setDeleting(true)
+    try {
+      await deleteClient(menuClient.id)
+      closeMenu()
+      refresh()
+    } catch (e) {
+      console.error('[deleteClient]', e)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   useFocusEffect(useCallback(() => { refresh() }, []))
 
@@ -256,7 +276,7 @@ export default function ClientsScreen() {
               extraData={statusLabels}
               renderItem={({ item }) => (
                 <View style={isWide ? styles.colCard : undefined}>
-                  <ClientCard client={item} lastRdv={lastRdvMap[item.id]} />
+                  <ClientCard client={item} lastRdv={lastRdvMap[item.id]} onMenuPress={setMenuClient} />
                 </View>
               )}
               ListEmptyComponent={<EmptyState message={t('clients.empty')} icon="👥" />}
@@ -278,6 +298,63 @@ export default function ClientsScreen() {
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ── Context menu ──────────────────────────────────────────── */}
+      <Modal
+        visible={!!menuClient}
+        transparent
+        animationType="fade"
+        onRequestClose={closeMenu}
+      >
+        <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={closeMenu}>
+          <View style={styles.menuSheet} onStartShouldSetResponder={() => true}>
+            <View style={styles.menuPill} />
+            <Text style={styles.menuSheetName} numberOfLines={1}>{menuClient?.full_name}</Text>
+
+            {!confirmDelete ? (
+              <>
+                <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { closeMenu(); router.push(`/(app)/clients/${menuClient?.id}` as any) }}>
+                  <Text style={styles.menuItemIcon}>👁</Text>
+                  <Text style={styles.menuItemText}>{t('clients.view')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { closeMenu(); router.push(`/(app)/clients/${menuClient?.id}/edit` as any) }}>
+                  <Text style={styles.menuItemIcon}>✏️</Text>
+                  <Text style={styles.menuItemText}>{t('clients.menu_edit')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { closeMenu(); router.push(`/(app)/clients/${menuClient?.id}/appointments` as any) }}>
+                  <Text style={styles.menuItemIcon}>📅</Text>
+                  <Text style={styles.menuItemText}>{t('clients.menu_new_rdv')}</Text>
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => setConfirmDelete(true)}>
+                  <Text style={styles.menuItemIcon}>🗑️</Text>
+                  <Text style={[styles.menuItemText, { color: colors.danger }]}>{t('clients.menu_delete')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.menuConfirmText}>
+                  {t('clients.menu_delete')} « {menuClient?.full_name} » ?
+                </Text>
+                <TouchableOpacity
+                  style={[styles.menuDangerBtn, deleting && { opacity: 0.6 }]}
+                  activeOpacity={0.8}
+                  onPress={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={styles.menuDangerBtnText}>{t('clients.menu_confirm_delete')}</Text>
+                  }
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => setConfirmDelete(false)}>
+                  <Text style={[styles.menuItemText, { textAlign: 'center', color: colors.textSecondary }]}>{t('clients.menu_cancel')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </>
   )
 }
@@ -353,6 +430,68 @@ function makeStyles(colors: ThemeColors) {
   btnOutlineText: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
   btnFill:        { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primaryAction, alignItems: 'center' },
   btnFillText:    { fontSize: 14, fontFamily: fonts.semibold, color: colors.textInverse },
+
+  // ── Context menu modal ────────────────────────────────────────────────────
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  menuSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    paddingTop: 12,
+    gap: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  menuPill: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  menuSheetName: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  menuItemIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  menuItemText: { fontSize: 15, fontFamily: fonts.medium, color: colors.text },
+  menuDivider:  { height: 1, backgroundColor: colors.border, marginVertical: 4 },
+  menuConfirmText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.text,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    lineHeight: 20,
+  },
+  menuDangerBtn: {
+    backgroundColor: colors.danger,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  menuDangerBtnText: { fontSize: 15, fontFamily: fonts.semibold, color: '#fff' },
 
   // ── FAB ────────────────────────────────────────────────────────────────────
   fab: {
