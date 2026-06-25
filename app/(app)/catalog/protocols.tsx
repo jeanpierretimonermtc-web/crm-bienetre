@@ -1,21 +1,27 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, Modal, FlatList, ActivityIndicator,
 } from 'react-native'
-import { router, Stack } from 'expo-router'
+import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useClients } from '@/features/clients/useClients'
 import { createRecommendation } from '@/features/recommendations/recommendationService'
 import { useTheme } from '@/shared/theme/ThemeProvider'
+import { settingsScreenOptions } from '@/features/settings/SettingsBackButton'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
 import {
-  PROTOCOLS, CATEGORIES, ROLE_LABELS, ROLE_COLORS,
+  PROTOCOLS, CATEGORIES_BY_BRAND, ROLE_LABELS, ROLE_COLORS,
 } from '@/features/protocols/protocols'
-import type { Protocol, ProtocolProduct } from '@/features/protocols/protocols'
+import type { Protocol, ProtocolProduct, ProtocolBrand } from '@/features/protocols/protocols'
 import type { Client } from '@/shared/lib/types'
+
+const BRAND_LABELS: Record<string, string> = {
+  doterra: 'doTERRA',
+  zinzino: 'Zinzino',
+}
 
 // ── Product row ───────────────────────────────────────────────────────────────
 
@@ -296,28 +302,37 @@ function ClientPicker({
 export default function ProtocolsScreen() {
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
+  const { catalog } = useLocalSearchParams<{ catalog?: string }>()
+
+  const brand = (catalog as ProtocolBrand) ?? 'all'
+  const brandLabel  = BRAND_LABELS[brand] ?? ''
+  const screenTitle = brand !== 'all' ? `🌿 Protocoles ${brandLabel}` : '🌿 Protocoles bien-être'
 
   const [search,          setSearch]          = useState('')
   const [categoryFilter,  setCategoryFilter]  = useState<string | null>(null)
   const [pickerProtocol,  setPickerProtocol]  = useState<Protocol | null>(null)
 
-  const displayed = useMemo(() => PROTOCOLS.filter(p => {
+  const brandProtocols      = useMemo(
+    () => brand === 'all' ? PROTOCOLS : PROTOCOLS.filter(p => p.brand === brand),
+    [brand]
+  )
+  const availableCategories = useMemo(
+    () => CATEGORIES_BY_BRAND[brand] ?? CATEGORIES_BY_BRAND['all'],
+    [brand]
+  )
+
+  const displayed = useMemo(() => brandProtocols.filter(p => {
     const matchesCategory = !categoryFilter || p.category === categoryFilter
-    const matchesSearch   = !search || p.title.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch   = !search
+      || p.title.toLowerCase().includes(search.toLowerCase())
       || p.subtitle.toLowerCase().includes(search.toLowerCase())
       || p.products.some(prod => prod.name.toLowerCase().includes(search.toLowerCase()))
     return matchesCategory && matchesSearch
-  }), [search, categoryFilter])
+  }), [brandProtocols, search, categoryFilter])
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: '🌿 Protocoles produits',
-        headerBackTitle: '',
-        headerStyle: { backgroundColor: colors.card } as any,
-        headerTintColor: colors.primary,
-      }} />
+      <Stack.Screen options={settingsScreenOptions(screenTitle)} />
 
       <View style={styles.container}>
         {/* Search */}
@@ -342,7 +357,7 @@ export default function ProtocolsScreen() {
           >
             <Text style={[styles.filterText, !categoryFilter && styles.filterTextActive]}>Toutes</Text>
           </TouchableOpacity>
-          {CATEGORIES.map(cat => (
+          {availableCategories.map(cat => (
             <TouchableOpacity
               key={cat}
               style={[styles.filterChip, categoryFilter === cat && styles.filterChipActive]}

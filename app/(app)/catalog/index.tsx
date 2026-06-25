@@ -385,7 +385,13 @@ export default function CatalogScreen() {
         {/* Protocols shortcut */}
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#D1FAE5', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8, alignSelf: 'flex-start' }}
-          onPress={() => router.push('/(app)/catalog/protocols' as any)}
+          onPress={() => {
+              const slug = selectedCatalog?.slug ?? null
+              const path = slug
+                ? `/(app)/catalog/protocols?catalog=${slug}`
+                : '/(app)/catalog/protocols'
+              router.push(path as any)
+            }}
           activeOpacity={0.8}
         >
           <Text style={{ fontSize: 16 }}>🌿</Text>

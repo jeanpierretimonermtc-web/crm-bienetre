@@ -1,4 +1,5 @@
-export type ProtocolRole = 'principal' | 'complémentaire' | 'optionnel'
+export type ProtocolRole  = 'principal' | 'complémentaire' | 'optionnel'
+export type ProtocolBrand = 'doterra' | 'zinzino' | 'all'
 
 export interface ProtocolProduct {
   name:      string
@@ -9,6 +10,7 @@ export interface ProtocolProduct {
 
 export interface Protocol {
   id:       string
+  brand:    ProtocolBrand
   category: string
   emoji:    string
   title:    string
@@ -18,10 +20,10 @@ export interface Protocol {
   products: ProtocolProduct[]
 }
 
-export const PROTOCOLS: Protocol[] = [
+export const PROTOCOLS_DOTERRA: Protocol[] = [
   // ── Sommeil ────────────────────────────────────────────────────────────────
   {
-    id: 'sommeil', category: 'Bien-être émotionnel', emoji: '😴',
+    id: 'sommeil', brand: 'doterra', category: 'Bien-être émotionnel', emoji: '😴',
     title: 'Sommeil & Insomnie',
     subtitle: 'Difficultés à s\'endormir, réveils nocturnes, sommeil agité',
     duration: '3–4 semaines',
@@ -41,7 +43,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Stress / Anxiété ───────────────────────────────────────────────────────
   {
-    id: 'stress', category: 'Bien-être émotionnel', emoji: '🧘',
+    id: 'stress', brand: 'doterra', category: 'Bien-être émotionnel', emoji: '🧘',
     title: 'Stress & Anxiété',
     subtitle: 'Tension nerveuse, inquiétudes, sentiment d\'oppression',
     duration: 'Usage continu',
@@ -61,7 +63,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Énergie / Fatigue ─────────────────────────────────────────────────────
   {
-    id: 'energie', category: 'Vitalité', emoji: '⚡',
+    id: 'energie', brand: 'doterra', category: 'Vitalité', emoji: '⚡',
     title: 'Énergie & Fatigue',
     subtitle: 'Coup de fatigue, manque d\'énergie, léthargie',
     duration: '2–3 semaines',
@@ -81,7 +83,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Digestion ─────────────────────────────────────────────────────────────
   {
-    id: 'digestion', category: 'Corps & Santé', emoji: '🫶',
+    id: 'digestion', brand: 'doterra', category: 'Corps & Santé', emoji: '🫶',
     title: 'Digestion & Inconforts digestifs',
     subtitle: 'Ballonnements, gaz, nausées, digestion lente, colon irritable',
     duration: '2–4 semaines',
@@ -101,7 +103,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Douleurs musculaires ──────────────────────────────────────────────────
   {
-    id: 'douleurs', category: 'Corps & Santé', emoji: '💪',
+    id: 'douleurs', brand: 'doterra', category: 'Corps & Santé', emoji: '💪',
     title: 'Douleurs musculaires & Articulaires',
     subtitle: 'Courbatures, tensions, douleurs articulaires, raideurs',
     duration: '2–6 semaines',
@@ -121,7 +123,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Immunité ──────────────────────────────────────────────────────────────
   {
-    id: 'immunite', category: 'Corps & Santé', emoji: '🛡️',
+    id: 'immunite', brand: 'doterra', category: 'Corps & Santé', emoji: '🛡️',
     title: 'Immunité & Défenses naturelles',
     subtitle: 'Prévention hivernale, récupération, renforcement général',
     duration: '3–4 semaines (cures saisonnières)',
@@ -141,7 +143,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Concentration ─────────────────────────────────────────────────────────
   {
-    id: 'concentration', category: 'Vitalité', emoji: '🧠',
+    id: 'concentration', brand: 'doterra', category: 'Vitalité', emoji: '🧠',
     title: 'Concentration & Mémoire',
     subtitle: 'Difficultés à se concentrer, brouillard mental, mémoire',
     duration: 'Usage continu',
@@ -161,7 +163,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Émotions ──────────────────────────────────────────────────────────────
   {
-    id: 'emotions', category: 'Bien-être émotionnel', emoji: '❤️',
+    id: 'emotions', brand: 'doterra', category: 'Bien-être émotionnel', emoji: '❤️',
     title: 'Équilibre émotionnel & Humeur',
     subtitle: 'Tristesse, manque de motivation, émotions lourdes, burn-out émotionnel',
     duration: '4–6 semaines',
@@ -181,7 +183,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Peau ──────────────────────────────────────────────────────────────────
   {
-    id: 'peau', category: 'Corps & Santé', emoji: '✨',
+    id: 'peau', brand: 'doterra', category: 'Corps & Santé', emoji: '✨',
     title: 'Peau & Cicatrisation',
     subtitle: 'Peaux sensibles, imperfections, cicatrices, antiâge',
     duration: '4–8 semaines',
@@ -201,7 +203,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Respiration ───────────────────────────────────────────────────────────
   {
-    id: 'respiration', category: 'Corps & Santé', emoji: '🌬️',
+    id: 'respiration', brand: 'doterra', category: 'Corps & Santé', emoji: '🌬️',
     title: 'Respiration & Voies respiratoires',
     subtitle: 'Rhume, sinusite, toux, congestion, allergies respiratoires',
     duration: '1–3 semaines ou saisonnier',
@@ -221,7 +223,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Hormones ──────────────────────────────────────────────────────────────
   {
-    id: 'hormones', category: 'Bien-être émotionnel', emoji: '🌸',
+    id: 'hormones', brand: 'doterra', category: 'Bien-être émotionnel', emoji: '🌸',
     title: 'Équilibre hormonal féminin',
     subtitle: 'SPM, règles douloureuses, ménopause, déséquilibres hormonaux',
     duration: '2–3 cycles menstruels',
@@ -241,7 +243,7 @@ export const PROTOCOLS: Protocol[] = [
 
   // ── Détox ─────────────────────────────────────────────────────────────────
   {
-    id: 'detox', category: 'Vitalité', emoji: '🌿',
+    id: 'detox', brand: 'doterra', category: 'Vitalité', emoji: '🌿',
     title: 'Détox & Drainage',
     subtitle: 'Soutien foie, drainage lymphatique, purification printanière',
     duration: '3 semaines (cure)',
@@ -259,6 +261,131 @@ export const PROTOCOLS: Protocol[] = [
     ],
   },
 ]
+
+// ── Protocoles Zinzino ────────────────────────────────────────────────────────
+
+export const ZINZINO_PROTOCOLS: Protocol[] = [
+  {
+    id: 'z-balance', brand: 'zinzino', category: 'Équilibre fondamental', emoji: '⚖️',
+    title: 'Équilibre Oméga-3 / Oméga-6',
+    subtitle: 'Déséquilibre inflammatoire, ratio oméga mal équilibré, inflammation chronique',
+    duration: '4–6 mois (rééquilibrage progressif)',
+    tips: [
+      'Prendre le Balance Oil avec un repas contenant des matières grasses pour optimiser l\'absorption',
+      'Faire le Balance Test avant de démarrer pour mesurer le ratio de départ',
+      'Faire un contrôle à 4 mois pour voir l\'évolution du ratio',
+    ],
+    products: [
+      { name: 'Balance Oil+',  role: 'principal',      usage: '2 x 10 ml/jour mélangé dans smoothie, yaourt ou jus', frequency: 'Matin et soir avec repas' },
+      { name: 'Xtend+',        role: 'complémentaire', usage: '4 comprimés par jour avec de l\'eau', frequency: 'Matin au petit-déjeuner' },
+      { name: 'Balance Test',  role: 'optionnel',      usage: 'Test sanguin avant/après cure pour mesurer le ratio Oméga-6:3', frequency: 'Début de cure et à 4 mois' },
+    ],
+  },
+  {
+    id: 'z-immunite', brand: 'zinzino', category: 'Vitalité & Immunité', emoji: '🛡️',
+    title: 'Immunité & Protection cellulaire',
+    subtitle: 'Défenses affaiblies, récupération lente, stress oxydatif',
+    duration: '3 mois minimum',
+    tips: [
+      'L\'effet est progressif — ne pas arrêter avant 3 mois',
+      'Combiner avec une alimentation riche en légumes et fruits colorés',
+      'Protect+ est particulièrement efficace à prendre le soir',
+    ],
+    products: [
+      { name: 'Xtend+',    role: 'principal',      usage: '4 comprimés par jour avec de l\'eau', frequency: 'Matin' },
+      { name: 'Protect+',  role: 'principal',      usage: '2 gélules par jour', frequency: 'Soir avec repas' },
+      { name: 'Balance Oil+', role: 'complémentaire', usage: '2 x 10 ml/jour — réduit l\'inflammation de fond', frequency: 'Matin et soir' },
+    ],
+  },
+  {
+    id: 'z-digestion', brand: 'zinzino', category: 'Microbiome & Digestion', emoji: '🫶',
+    title: 'Flore intestinale & Digestion',
+    subtitle: 'Microbiome déséquilibré, ballonnements, transit lent, côlon irritable',
+    duration: '6–8 semaines',
+    tips: [
+      'Prendre ZinoBiotic à jeun ou avant le repas principal',
+      'Augmenter progressivement la dose (commencer par 1 cuillère) pour éviter les inconforts',
+      'Bien s\'hydrater (au moins 1,5L d\'eau par jour)',
+    ],
+    products: [
+      { name: 'ZinoBiotic+',  role: 'principal',      usage: '2 cuillères à café (5g) dans un grand verre d\'eau ou yaourt, mélanger', frequency: 'Matin à jeun' },
+      { name: 'Balance Oil+', role: 'complémentaire', usage: '10 ml/jour pour réduire l\'inflammation intestinale', frequency: 'Avec repas' },
+      { name: 'Xtend+',       role: 'optionnel',      usage: '4 comprimés pour les vitamines et minéraux qui soutiennent la muqueuse', frequency: 'Matin' },
+    ],
+  },
+  {
+    id: 'z-energie', brand: 'zinzino', category: 'Vitalité & Immunité', emoji: '⚡',
+    title: 'Énergie & Vitalité',
+    subtitle: 'Fatigue chronique, manque d\'énergie, coup de barre post-repas',
+    duration: '4–6 semaines',
+    tips: [
+      'Prendre Viva+ le matin, jamais après 14h pour ne pas perturber le sommeil',
+      'L\'hydratation est clé — la fatigue est souvent liée à un manque d\'eau',
+      'Combiner avec un sport léger régulier (marche rapide, yoga)',
+    ],
+    products: [
+      { name: 'Viva+',         role: 'principal',      usage: '2 gélules avec de l\'eau', frequency: 'Matin au réveil' },
+      { name: 'Xtend+',        role: 'principal',      usage: '4 comprimés — vitamines B, magnésium et coenzymes de l\'énergie', frequency: 'Matin' },
+      { name: 'Balance Oil+',  role: 'complémentaire', usage: '10 ml pour soutenir le cerveau et réduire la fatigue mentale', frequency: 'Matin avec repas' },
+    ],
+  },
+  {
+    id: 'z-poids', brand: 'zinzino', category: 'Composition corporelle', emoji: '⚖️',
+    title: 'Poids & Composition corporelle',
+    subtitle: 'Prise de poids, fringales, perte de masse musculaire, métabolisme lent',
+    duration: '3 mois',
+    tips: [
+      'PeaZin Protein remplace efficacement une collation ou peut compléter le petit-déjeuner',
+      'ZinoBiotic augmente la satiété et réduit les envies de sucre',
+      'Ne pas prendre comme substitut de repas complet sans suivi',
+    ],
+    products: [
+      { name: 'PeaZin Protein', role: 'principal',      usage: '1–2 portions mélangées dans eau froide ou lait végétal', frequency: 'Post-sport ou collation' },
+      { name: 'ZinoBiotic+',    role: 'principal',      usage: '5g dans eau 30 min avant repas pour réduire l\'appétit', frequency: 'Avant les repas principaux' },
+      { name: 'Balance Oil+',   role: 'complémentaire', usage: '10 ml — soutient le métabolisme lipidique', frequency: 'Avec repas' },
+    ],
+  },
+  {
+    id: 'z-peau', brand: 'zinzino', category: 'Beauté & Peau', emoji: '✨',
+    title: 'Peau, Cheveux & Ongles',
+    subtitle: 'Peau terne, rides précoces, cheveux fragiles, ongles cassants',
+    duration: '2–3 mois (résultats visibles à 6–8 semaines)',
+    tips: [
+      'Les résultats sur la peau sont visibles à partir de 6–8 semaines de prise régulière',
+      'Associer avec une bonne hydratation (eau + huiles essentielles grasses alimentaires)',
+      'Protéger la peau du soleil — les oméga-3 rendent la peau plus sensible',
+    ],
+    products: [
+      { name: 'CollaZin',      role: 'principal',      usage: '1 sachet dissous dans eau froide ou tiède (pas chaude)', frequency: 'Matin à jeun' },
+      { name: 'Balance Oil+',  role: 'principal',      usage: '10 ml — oméga-3 essentiels pour la barrière cutanée', frequency: 'Avec repas' },
+      { name: 'Xtend+',        role: 'complémentaire', usage: '4 comprimés — vitamines C, E, Zinc pour la peau et les cheveux', frequency: 'Matin' },
+    ],
+  },
+  {
+    id: 'z-articulations', brand: 'zinzino', category: 'Corps & Mobilité', emoji: '💪',
+    title: 'Articulations & Mobilité',
+    subtitle: 'Douleurs articulaires, raideurs, récupération sportive, inflammation',
+    duration: '3–4 mois',
+    tips: [
+      'L\'effet anti-inflammatoire des oméga-3 sur les articulations est progressif (6–8 semaines)',
+      'Associer avec des exercices de mobilité doux (yoga, stretching)',
+      'Prendre CollaZin loin des repas pour une meilleure absorption',
+    ],
+    products: [
+      { name: 'Balance Oil+', role: 'principal',      usage: '2 x 10 ml — réduit l\'inflammation articulaire de fond', frequency: 'Matin et soir avec repas' },
+      { name: 'CollaZin',     role: 'principal',      usage: '1 sachet dans eau froide — collagène pour le cartilage', frequency: 'Matin à jeun' },
+      { name: 'Xtend+',       role: 'complémentaire', usage: '4 comprimés — vitamine D et magnésium pour les muscles', frequency: 'Matin' },
+    ],
+  },
+]
+
+export const PROTOCOLS: Protocol[] = [...PROTOCOLS_DOTERRA, ...ZINZINO_PROTOCOLS]
+
+export const CATEGORIES_BY_BRAND: Record<ProtocolBrand | 'all', string[]> = {
+  doterra: [...new Set(PROTOCOLS_DOTERRA.map(p => p.category))],
+  zinzino: [...new Set(ZINZINO_PROTOCOLS.map(p => p.category))],
+  all:     [...new Set([...PROTOCOLS_DOTERRA, ...ZINZINO_PROTOCOLS].map(p => p.category))],
+}
 
 export const CATEGORIES = [...new Set(PROTOCOLS.map(p => p.category))]
 
