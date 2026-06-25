@@ -68,6 +68,8 @@ export default function ClientDetailScreen() {
   const { orders } = useClientOrders(id)
   const { team } = useDirectTeam(id)
   const [activeTab, setActiveTab] = useState<Tab>('apercu')
+  const { getStatusLabel, isModuleActive } = useAppConfig()
+  const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
 
   const TABS = useMemo(() => {
     const isNetworkRole = client?.contact_role === 'distributor' || client?.contact_role === 'leader'
@@ -76,9 +78,6 @@ export default function ClientDetailScreen() {
     if (isNetworkRole) tabs.push({ key: 'team' as Tab, labelKey: 'clients.tab_team' })
     return tabs
   }, [client?.contact_role, isModuleActive])
-
-  const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US'
-  const { getStatusLabel, isModuleActive } = useAppConfig()
 
   const userInitials = (() => {
     const name = session?.user?.user_metadata?.full_name
