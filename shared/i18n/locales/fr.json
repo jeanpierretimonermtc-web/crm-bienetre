@@ -466,7 +466,8 @@
     "wholesale": "Prix membre",
     "pv": "PV",
     "latin_name": "Nom latin",
-    "format": "Format"
+    "format": "Format",
+    "protocols": "Protocoles bien-être"
   },
   "dashboard": {
     "title": "Aujourd'hui",

@@ -466,7 +466,8 @@
     "wholesale": "Member price",
     "pv": "PV",
     "latin_name": "Latin name",
-    "format": "Format"
+    "format": "Format",
+    "protocols": "Wellness protocols"
   },
   "dashboard": {
     "title": "Today",

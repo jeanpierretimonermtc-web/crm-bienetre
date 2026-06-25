@@ -316,6 +316,7 @@ export default function AppLayout() {
             <Tabs.Screen name="appointments" options={{ title: t('appointments.title') }} />
             <Tabs.Screen name="followups"    options={{ title: t('followups.title')    }} />
             <Tabs.Screen name="catalog"      options={{ title: t('catalog.title')      }} />
+            <Tabs.Screen name="catalog/protocols" options={{ href: null }} />
             <Tabs.Screen name="network"      options={{ title: t('network.title')      }} />
             <Tabs.Screen name="goals"        options={{ title: t('goals.title')        }} />
             <Tabs.Screen name="import"              options={{ title: t('settings.import_title'),      href: null }} />

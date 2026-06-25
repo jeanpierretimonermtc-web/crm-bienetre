@@ -4,7 +4,7 @@ import {
   Modal, ActivityIndicator, useWindowDimensions, ScrollView,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, router } from 'expo-router'
 import { useCatalogs, useCatalogProducts } from '@/features/catalogs/useCatalog'
 import { useCatalogPrefs } from '@/features/catalogs/CatalogPrefsProvider'
 import { createRecommendation } from '@/features/recommendations/recommendationService'
@@ -381,6 +381,17 @@ export default function CatalogScreen() {
             </View>
           </View>
         )}
+
+        {/* Protocols shortcut */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#D1FAE5', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8, alignSelf: 'flex-start' }}
+          onPress={() => router.push('/(app)/catalog/protocols' as any)}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 16 }}>🌿</Text>
+          <Text style={{ fontSize: 13, fontFamily: fonts.semibold, color: '#059669' }}>{t('catalog.protocols')}</Text>
+          <Text style={{ fontSize: 11, color: '#059669', opacity: 0.7 }}>→</Text>
+        </TouchableOpacity>
 
         <Input label="" value={searchQuery} onChangeText={setSearchQuery} placeholder={t('catalog.search_placeholder')} />
 
