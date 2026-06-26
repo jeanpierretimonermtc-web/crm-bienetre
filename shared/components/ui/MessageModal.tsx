@@ -50,11 +50,40 @@ export function MessageModal({ visible, onClose, client, advisorName, lastProduc
   }
 
   function handleWhatsApp() {
-    const phone = client?.phone?.replace(/\D/g, '') ?? ''
-    const url = phone
-      ? `https://wa.me/${phone}?text=${encodeURIComponent(rendered)}`
-      : `https://wa.me/?text=${encodeURIComponent(rendered)}`
-    Linking.openURL(url)
+    const raw = client?.phone?.trim() ?? ''
+    let phone = ''
+    if (raw) {
+      if (raw.startsWith('+')) {
+        phone = raw.replace(/\D/g, '')
+      } else {
+        const digits = raw.replace(/\D/g, '')
+        phone = digits.startsWith('0') && digits.length === 10
+          ? '33' + digits.slice(1)
+          : digits
+      }
+    }
+    const text = encodeURIComponent(rendered)
+
+    if (Platform.OS === 'web') {
+      // api.whatsapp.com/send évite l'écran noir que wa.me provoque sur mobile web
+      const url = phone
+        ? `https://api.whatsapp.com/send?phone=${phone}&text=${text}&type=phone_number&app_absent=0`
+        : `https://api.whatsapp.com/send?text=${text}`
+      // window.location.href (même onglet) gère mieux les deep links mobiles que window.open
+      if (typeof window !== 'undefined') {
+        window.location.href = url
+      }
+    } else {
+      const url = phone
+        ? `whatsapp://send?phone=${phone}&text=${text}`
+        : `whatsapp://send?text=${text}`
+      Linking.openURL(url).catch(() => {
+        const fallback = phone
+          ? `https://api.whatsapp.com/send?phone=${phone}&text=${text}&type=phone_number&app_absent=0`
+          : `https://api.whatsapp.com/send?text=${text}`
+        Linking.openURL(fallback)
+      })
+    }
   }
 
   function handleSMS() {

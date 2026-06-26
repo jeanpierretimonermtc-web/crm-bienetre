@@ -14,7 +14,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Oryalis utilise l'appareil photo pour mettre à jour votre photo de profil.",
         "NSPhotoLibraryUsageDescription": "Oryalis accède à vos photos pour mettre à jour votre photo de profil.",
-        "NSPhotoLibraryAddUsageDescription": "Oryalis peut enregistrer des photos dans votre bibliothèque."
+        "NSPhotoLibraryAddUsageDescription": "Oryalis peut enregistrer des photos dans votre bibliothèque.",
+        "LSApplicationQueriesSchemes": ["whatsapp"]
       }
     },
     "android": {
