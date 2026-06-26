@@ -6,8 +6,8 @@
 
 | | |
 |---|---|
-| **Prod** | https://crm-bienetre.vercel.app |
-| **GitHub** | https://github.com/jeanpierretimonermtc-web/crm-bienetre.git |
+| **Prod** | https://oryalis.vercel.app |
+| **GitHub** | https://github.com/jeanpierretimonermtc-web/oryalis.git |
 | **Supabase** | `nhpvjfyjyculnijipzoa` (eu-west-1) |
 | **Propriétaire** | Jean-Pierre Timoner (`jeanpierre.timoner.mtc@gmail.com`) |
 | **iOS TestFlight** | https://testflight.apple.com/join/GZJxxfUU |
