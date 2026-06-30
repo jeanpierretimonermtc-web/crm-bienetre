@@ -229,6 +229,8 @@ export interface Client {
   welcome_email_sent: boolean
   doterra_id: string | null
   next_lrp_date: string | null
+  address: string | null
+  loyalty_notes: string | null
   // ── MLM réseau (migrate15) ────────────────────────────────────────────────
   sponsor_id: string | null
   contact_role: ContactRole
@@ -246,6 +248,15 @@ export interface Client {
   // ──────────────────────────────────────────────────────────────────────────
   created_at: string
   updated_at: string | null
+}
+
+export interface UplineNode {
+  id: string
+  user_id: string
+  name: string
+  member_id: string | null
+  position: number
+  created_at: string
 }
 
 export interface Note {

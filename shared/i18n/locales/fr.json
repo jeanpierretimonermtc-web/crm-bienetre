@@ -70,7 +70,9 @@
       "particularities": "Particularités",
       "medical_treatment": "Traitement médical",
       "medical_notes": "Précisions traitement",
-      "doterra_id": "Identifiant doTERRA",
+      "doterra_id": "Numéro identifiant",
+      "address": "Adresse postale",
+      "loyalty_notes": "Notes programme",
       "next_lrp_date": "Prochaine LRP",
       "welcome_email_sent": "Mail d'accueil envoyé",
       "source": "Source",
@@ -87,7 +89,7 @@
       "personal": "Identité",
       "profile": "Profil",
       "medical": "Médical",
-      "doterra": "doTERRA",
+      "doterra": "Programme fidélité",
       "status": "Statut",
       "journey": "Parcours",
       "network": "Réseau"
@@ -448,7 +450,19 @@
     "filter_network": "Distributeurs",
     "filter_customers": "Clients",
     "tap_expand": "Appuyer = plier/déplier",
-    "long_press_open": "Maintenir = ouvrir la fiche"
+    "long_press_open": "Maintenir = ouvrir la fiche",
+    "upline_title": "Ma ligne ascendante",
+    "upline_empty": "Aucun sponsor renseigné",
+    "upline_add": "Ajouter un sponsor",
+    "upline_manage": "Gérer",
+    "upline_name": "Nom du sponsor",
+    "upline_member_id": "Numéro identifiant (optionnel)",
+    "upline_position": "Niveau",
+    "upline_direct": "Sponsor direct",
+    "upline_level": "Niveau {{n}}",
+    "upline_save": "Enregistrer",
+    "upline_delete": "Supprimer",
+    "upline_edit": "Modifier"
   },
   "catalog": {
     "title": "Catalogue",
@@ -539,6 +553,7 @@
     "demo_subtitle": "Explorez toutes les fonctionnalités avec de vrais exemples de clients.",
     "demo_load": "Essayer",
     "demo_active": "Mode démo actif",
+    "demo_reset": "Réinitialiser",
     "demo_delete": "Supprimer"
   },
   "common": {
@@ -790,7 +805,20 @@
     "error_email_required": "Veuillez saisir votre adresse email",
     "error_password_required": "Veuillez saisir un mot de passe",
     "error_password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
-    "error_passwords_dont_match": "Les mots de passe ne correspondent pas"
+    "error_passwords_dont_match": "Les mots de passe ne correspondent pas",
+    "tagline": "Connectez personnes, produits et opportunités",
+    "app_name": "ORYALIS"
+  },
+  "messages": {
+    "title_ready": "✉️ Message prêt",
+    "title_for": "💬 Message pour {{name}}",
+    "no_phone": "Aucun téléphone enregistré — WhatsApp et SMS indisponibles",
+    "change_template": "← Choisir un autre message",
+    "copy": "📋 Copier le message",
+    "copied": "✓ Copié !",
+    "open_whatsapp": "💬 Ouvrir WhatsApp",
+    "open_sms": "📱 Ouvrir SMS",
+    "all_channels": "Tous"
   },
   "interactions": {
     "title": "Interactions",

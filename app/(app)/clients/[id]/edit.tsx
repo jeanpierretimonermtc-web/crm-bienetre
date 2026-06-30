@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { ScrollView, View, Text, Switch, StyleSheet, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { getClient, updateClient, deleteClient } from '@/features/clients/clientService'
+import { updateClient, deleteClient } from '@/features/clients/clientService'
+import { useClient } from '@/features/clients/useClient'
 import { Input } from '@/shared/components/ui/Input'
 import { TextArea } from '@/shared/components/ui/TextArea'
 import { Button } from '@/shared/components/ui/Button'
@@ -46,8 +47,7 @@ export default function EditClientScreen() {
   const { width } = useWindowDimensions()
   const isWide = width >= 768
 
-  const [client, setClient]             = useState<Client | null>(null)
-  const [clientLoading, setClientLoading] = useState(true)
+  const { client, loading: clientLoading } = useClient(id)
 
   const [firstName, setFirstName]           = useState('')
   const [lastName, setLastName]             = useState('')
@@ -70,6 +70,8 @@ export default function EditClientScreen() {
   const [nextActionDate, setNextActionDate] = useState('')
   const [networkPotential, setNetworkPotential] = useState<NetworkPotential | null>(null)
   const [doterraId, setDoterraId]           = useState('')
+  const [loyaltyNotes, setLoyaltyNotes]     = useState('')
+  const [address, setAddress]               = useState('')
   const [contactRole, setContactRole]       = useState<ContactRole>('customer')
 
   const [saving, setSaving]         = useState(false)
@@ -77,39 +79,35 @@ export default function EditClientScreen() {
   const [confirmDel, setConfirmDel] = useState(false)
 
   useEffect(() => {
-    if (!id) return
-    getClient(id)
-      .then(c => {
-        setClient(c)
-        const fn   = (c.first_name ?? '').trim()
-        const full = (c.full_name ?? '').trim()
-        const ln   = fn && full.startsWith(fn) ? full.slice(fn.length).trim() : full
-        setFirstName(fn)
-        setLastName(ln)
-        setEmail(c.email ?? '')
-        setPhone(c.phone ?? '')
-        setStatus(c.status)
-        setInscriptionDate(c.inscription_date ?? '')
-        setBirthDate(c.birth_date ?? '')
-        setProfession(c.profession ?? '')
-        setChildren(c.children ?? '')
-        setSource(c.source ?? '')
-        setCountry(c.country ?? '')
-        setClientType(c.client_type ?? '')
-        setInterests((c.interests ?? []).join(', '))
-        setParticularities(c.particularities ?? '')
-        setMedicalTreatment(c.medical_treatment ?? false)
-        setMedicalNotes(c.medical_notes ?? '')
-        setDoterraId(c.doterra_id ?? '')
-        setJourneyStage(c.journey_stage ?? null)
-        setNextActionType(c.next_action_type ?? null)
-        setNextActionDate(c.next_action_date ?? '')
-        setNetworkPotential(c.network_potential ?? null)
-        setContactRole(c.contact_role ?? 'customer')
-      })
-      .catch(e => console.error('[getClient]', e))
-      .finally(() => setClientLoading(false))
-  }, [id])
+    if (!client) return
+    const fn   = (client.first_name ?? '').trim()
+    const full = (client.full_name ?? '').trim()
+    const ln   = fn && full.startsWith(fn) ? full.slice(fn.length).trim() : full
+    setFirstName(fn)
+    setLastName(ln)
+    setEmail(client.email ?? '')
+    setPhone(client.phone ?? '')
+    setStatus(client.status)
+    setInscriptionDate(client.inscription_date ?? '')
+    setBirthDate(client.birth_date ?? '')
+    setProfession(client.profession ?? '')
+    setChildren(client.children ?? '')
+    setSource(client.source ?? '')
+    setCountry(client.country ?? '')
+    setClientType(client.client_type ?? '')
+    setInterests((client.interests ?? []).join(', '))
+    setParticularities(client.particularities ?? '')
+    setMedicalTreatment(client.medical_treatment ?? false)
+    setMedicalNotes(client.medical_notes ?? '')
+    setDoterraId(client.doterra_id ?? '')
+    setLoyaltyNotes(client.loyalty_notes ?? '')
+    setAddress(client.address ?? '')
+    setJourneyStage(client.journey_stage ?? null)
+    setNextActionType(client.next_action_type ?? null)
+    setNextActionDate(client.next_action_date ?? '')
+    setNetworkPotential(client.network_potential ?? null)
+    setContactRole(client.contact_role ?? 'customer')
+  }, [client])
 
   async function handleSave() {
     setErrorMsg(null)
@@ -137,6 +135,8 @@ export default function EditClientScreen() {
         medical_treatment: medicalTreatment,
         medical_notes: medicalNotes.trim() || null,
         doterra_id: doterraId.trim() || null,
+        loyalty_notes: loyaltyNotes.trim() || null,
+        address: address.trim() || null,
         journey_stage: journeyStage,
         next_action_type: nextActionType,
         next_action_date: nextActionDate || null,
@@ -208,6 +208,12 @@ export default function EditClientScreen() {
               <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </View>
           </View>
+          <Input
+            label={`${t('clients.fields.address')} (${t('common.optional')})`}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="12 rue des Lilas, 75001 Paris"
+          />
           <View style={isWide ? styles.fieldRow : undefined}>
             <View style={isWide ? styles.fieldHalf : undefined}>
               <Input label={t('clients.fields.inscription_date')} value={inscriptionDate} onChangeText={setInscriptionDate} placeholder="YYYY-MM-DD" />
@@ -370,8 +376,9 @@ export default function EditClientScreen() {
 
         {/* ── doTERRA (module renewals_lrp) ──────────────────────── */}
         {isModuleActive('renewals_lrp') && (
-          <SectionCard icon="🌿" titleKey="clients.sections.doterra">
+          <SectionCard icon="⭐" titleKey="clients.sections.doterra">
             <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
+            <TextArea label={`${t('clients.fields.loyalty_notes')} (${t('common.optional')})`} value={loyaltyNotes} onChangeText={setLoyaltyNotes} />
           </SectionCard>
         )}
 

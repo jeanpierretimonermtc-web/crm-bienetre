@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { Stack } from 'expo-router'
+import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useOrders } from '@/features/orders/useOrders'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
 import { fonts } from '@/shared/theme/fonts'
@@ -80,7 +81,12 @@ export default function OrdersScreen() {
         {loading ? (
           <ActivityIndicator style={{ marginTop: 32 }} color={colors.primary} />
         ) : sortedOrders.length === 0 ? (
-          <Text style={styles.empty}>{t('orders.empty')}</Text>
+          <EmptyState
+            message={t('orders.empty')}
+            icon="📦"
+            actionLabel={t('clients.title')}
+            onAction={() => router.push('/(app)/clients')}
+          />
         ) : (
           sortedOrders.map(order => (
             <View key={order.id} style={styles.card}>
@@ -147,8 +153,6 @@ function makeStyles(colors: ThemeColors) {
   kpiRight:    { alignItems: 'flex-end', gap: 2 },
   kpiSubLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
   kpiSubValue: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
-
-  empty: { textAlign: 'center', color: colors.textTertiary, fontSize: 14, fontFamily: fonts.body, marginTop: 40 },
 
   card: {
     backgroundColor: colors.card,

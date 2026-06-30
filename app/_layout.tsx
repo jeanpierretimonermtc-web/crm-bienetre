@@ -1,5 +1,5 @@
 import '@/shared/i18n'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Slot } from 'expo-router'
 import { AuthProvider } from '@/features/auth/AuthProvider'
@@ -14,7 +14,7 @@ import {
 } from '@expo-google-fonts/inter'
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -22,11 +22,16 @@ export default function RootLayout() {
   })
   const [splashDone, setSplashDone] = useState(false)
 
+  useEffect(() => {
+    const timeout = setTimeout(() => setSplashDone(true), 3000)
+    return () => clearTimeout(timeout)
+  }, [])
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <View style={{ flex: 1 }}>
-          {fontsLoaded && <Slot />}
+          <Slot />
           {!splashDone && <SplashAnimated onDone={() => setSplashDone(true)} />}
         </View>
       </AuthProvider>

@@ -4,6 +4,7 @@ import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useNetworkTree } from '@/features/network/useNetwork'
+import { useUpline } from '@/features/network/useUpline'
 import { MessageModal } from '@/shared/components/ui/MessageModal'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
@@ -163,6 +164,11 @@ export default function NetworkScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors])
   const { session } = useAuth()
   const { tree, totalSize, distributors, activeThisMonth, loading, error } = useNetworkTree()
+  const { nodes: uplineNodes } = useUpline()
+  const sortedUpline = useMemo(
+    () => [...uplineNodes].sort((a, b) => b.position - a.position),
+    [uplineNodes]
+  )
 
   const [collapsed,     setCollapsed]     = useState<Set<string>>(new Set())
   const [roleFilter,    setRoleFilter]    = useState<RoleFilter>('all')
@@ -270,11 +276,53 @@ export default function NetworkScreen() {
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              <View style={styles.youRow}>
-                <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.name, styles.nameStrong, { color: colors.primary, flex: 1 }]} numberOfLines={1}>
-                  {firstName ? `${firstName} · ` : ''}{t('network.you')}
-                </Text>
+              <View>
+                {/* ── Upline ──────────────────────────────── */}
+                <View style={styles.uplineHeader}>
+                  <Text style={styles.uplineTitle}>{t('network.upline_title')}</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/(app)/network/upline' as any)}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.uplineManageBtn}>{t('network.upline_manage')}</Text>
+                  </TouchableOpacity>
+                </View>
+                {sortedUpline.length === 0 ? (
+                  <TouchableOpacity
+                    style={styles.uplineEmpty}
+                    onPress={() => router.push('/(app)/network/upline' as any)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.uplineEmptyText}>+ {t('network.upline_add')}</Text>
+                  </TouchableOpacity>
+                ) : (
+                  sortedUpline.map((node, index) => (
+                    <View key={node.id} style={styles.uplineRow}>
+                      {index < sortedUpline.length && (
+                        <View style={styles.uplineLine} />
+                      )}
+                      <View style={[styles.dot, { backgroundColor: colors.textSecondary }]} />
+                      <Text style={[styles.name, { flex: 1 }]} numberOfLines={1}>{node.name}</Text>
+                      {node.member_id ? (
+                        <Text style={styles.uplineMemberId}>#{node.member_id}</Text>
+                      ) : null}
+                    </View>
+                  ))
+                )}
+
+                {/* ── Moi ─────────────────────────────────── */}
+                <View style={styles.youRow}>
+                  {sortedUpline.length > 0 && <View style={styles.uplineLine} />}
+                  <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.name, styles.nameStrong, { color: colors.primary, flex: 1 }]} numberOfLines={1}>
+                    {firstName ? `${firstName} · ` : ''}{t('network.you')}
+                  </Text>
+                </View>
+
+                {/* Séparateur downline */}
+                <View style={styles.downlineDivider}>
+                  <Text style={styles.downlineDividerText}>{t('network.subtitle')}</Text>
+                </View>
               </View>
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -320,6 +368,47 @@ function makeStyles(colors: ThemeColors) {
 
   list:      { paddingBottom: 80 },
 
+  // ── Upline ──────────────────────────────────────────────────────────────────
+  uplineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  uplineTitle:     { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  uplineManageBtn: { fontSize: 12, fontFamily: fonts.semibold, color: colors.primary },
+  uplineEmpty: {
+    marginHorizontal: 16,
+    marginBottom: 4,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderStyle: 'dashed' as const,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  uplineEmptyText: { fontSize: 13, fontFamily: fonts.medium, color: colors.textTertiary },
+  uplineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    position: 'relative',
+  },
+  uplineLine: {
+    position: 'absolute',
+    left: 20,
+    bottom: -10,
+    width: 2,
+    height: 20,
+    backgroundColor: colors.border,
+  },
+  uplineMemberId: { fontSize: 11, fontFamily: fonts.body, color: colors.textTertiary },
+
+  // ── Moi ─────────────────────────────────────────────────────────────────────
   youRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -327,9 +416,19 @@ function makeStyles(colors: ThemeColors) {
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: colors.primaryLight,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    position: 'relative',
   },
+
+  // ── Séparateur downline ──────────────────────────────────────────────────────
+  downlineDivider: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
+  downlineDividerText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8 },
 
   row: {
     flexDirection: 'row',

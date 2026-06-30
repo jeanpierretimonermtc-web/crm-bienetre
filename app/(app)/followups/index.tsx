@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { router, Stack, useFocusEffect } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { usePendingFollowups } from '@/features/followups/useFollowups'
-import { toggleFollowupDone } from '@/features/followups/followupService'
+import { toggleFollowupDone, computeFollowupPriority } from '@/features/followups/followupService'
 import { useFollowupBadge } from '@/features/notifications/useNotifications'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useTheme } from '@/shared/theme/ThemeProvider'
@@ -17,20 +17,6 @@ const TEMP_EMOJI: Record<string, string> = {
   cold: '❄️', warm: '🌤️', hot: '🔥', very_hot: '🔥',
 }
 
-// ── Scoring ───────────────────────────────────────────────────────────────────
-
-function computeScore(f: FollowupWithClient, today: string): number {
-  let score = 0
-  if (f.prospect_temperature === 'very_hot') score += 40
-  if (f.due_date < today) score += 30
-  if (f.pipeline_stage === 'follow_up' || f.pipeline_stage === 'proposal_sent') score += 20
-  if (
-    f.client?.status === 'vip' ||
-    f.client?.contact_role === 'distributor' ||
-    f.client?.contact_role === 'leader'
-  ) score += 10
-  return score
-}
 
 function getScorePalette(score: number, colors: ThemeColors) {
   if (score >= 70) return { bg: colors.dangerLight,  text: colors.danger   }
@@ -187,7 +173,7 @@ export default function FollowupsScreen() {
   // Score every followup and sort descending
   const scored = useMemo(() =>
     followups
-      .map(f => ({ ...f, _score: computeScore(f, today) }))
+      .map(f => ({ ...f, _score: computeFollowupPriority(f, today) }))
       .sort((a, b) => b._score - a._score),
     [followups, today]
   )
@@ -263,7 +249,12 @@ export default function FollowupsScreen() {
                 ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
                 contentContainerStyle={[styles.list, displayed.length === 0 && styles.listEmpty]}
                 ListEmptyComponent={
-                  <EmptyState message={t(TAB_CONFIG[activeTab].emptyKey)} icon="✅" />
+                  <EmptyState
+                    message={t(TAB_CONFIG[activeTab].emptyKey)}
+                    icon="✅"
+                    actionLabel={t('clients.title')}
+                    onAction={() => router.push('/(app)/clients')}
+                  />
                 }
                 onRefresh={refresh}
                 refreshing={loading}

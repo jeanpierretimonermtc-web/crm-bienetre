@@ -142,9 +142,6 @@ export default function ClientDetailScreen() {
             <Text style={styles.navTitle}>{t('clients.profile_title')}</Text>
           </TouchableOpacity>
           <View style={styles.navRight}>
-            <TouchableOpacity style={styles.navIconBtn} activeOpacity={0.7}>
-              <Text style={styles.navIconText}>🔍</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.userChip}
               onPress={() => router.push(`/(app)/clients/${id}/edit`)}

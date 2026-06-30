@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { supabase } from '@/shared/lib/supabase'
 import {
   fetchAppointments,
   fetchAppointmentById,
@@ -273,4 +274,31 @@ export function useUpcomingAppointments(limit = 10) {
 export function useClientAppointments(clientId: string) {
   const { appointments, loading, error, reload } = useAppointments({ client_id: clientId })
   return { appointments, loading, error, refresh: reload }
+}
+
+export function useLastRdvMap(userId: string | undefined) {
+  const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
+
+  const load = useCallback(async () => {
+    if (!userId) return
+    // Limite à 1 an pour éviter de charger tout l'historique
+    const since = new Date()
+    since.setFullYear(since.getFullYear() - 1)
+    const { data } = await supabase
+      .from('appointments')
+      .select('client_id, start_at')
+      .eq('user_id', userId)
+      .gte('start_at', since.toISOString())
+      .order('start_at', { ascending: false })
+    if (!data) return
+    const map: Record<string, string> = {}
+    for (const row of data) {
+      if (!map[row.client_id]) map[row.client_id] = row.start_at
+    }
+    setLastRdvMap(map)
+  }, [userId])
+
+  useEffect(() => { load() }, [load])
+
+  return { lastRdvMap, refresh: load }
 }

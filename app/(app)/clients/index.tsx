@@ -3,8 +3,8 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Activity
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { supabase } from '@/shared/lib/supabase'
 import { useClients, useClientSearch } from '@/features/clients/useClients'
+import { useLastRdvMap } from '@/features/appointments/useAppointments'
 import { computeProspectScore, deleteClient } from '@/features/clients/clientService'
 import { useAppConfig } from '@/features/settings/AppConfigProvider'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
@@ -142,7 +142,7 @@ export default function ClientsScreen() {
   const { clients, loading, refresh } = useClients()
   const { results, search } = useClientSearch()
   const { labels: statusLabels, getStatusLabel } = useAppConfig()
-  const [lastRdvMap, setLastRdvMap] = useState<Record<string, string>>({})
+  const { lastRdvMap } = useLastRdvMap(session?.user?.id)
   const { width } = useWindowDimensions()
   const isWide = width >= 768
 
@@ -178,23 +178,6 @@ export default function ClientsScreen() {
     if (query.length > 0) search(query, statusFilter === 'all' ? undefined : statusFilter)
   }, [query, statusFilter])
 
-  // Single query: most-recent appointment per client
-  useEffect(() => {
-    if (!session || clients.length === 0) return
-    supabase
-      .from('appointments')
-      .select('client_id, start_at')
-      .eq('user_id', session.user.id)
-      .order('start_at', { ascending: false })
-      .then(({ data }) => {
-        if (!data) return
-        const map: Record<string, string> = {}
-        for (const row of data) {
-          if (!map[row.client_id]) map[row.client_id] = row.start_at
-        }
-        setLastRdvMap(map)
-      })
-  }, [session, clients.length])
 
   const displayed: Client[] = query.length > 0
     ? results
@@ -279,7 +262,14 @@ export default function ClientsScreen() {
                   <ClientCard client={item} lastRdv={lastRdvMap[item.id]} onMenuPress={setMenuClient} />
                 </View>
               )}
-              ListEmptyComponent={<EmptyState message={t('clients.empty')} icon="👥" />}
+              ListEmptyComponent={
+                <EmptyState
+                  message={t('clients.empty')}
+                  icon="👥"
+                  actionLabel={t('clients.add')}
+                  onAction={() => router.push('/(app)/clients/new')}
+                />
+              }
               contentContainerStyle={[styles.list, isWide && styles.listWide, displayed.length === 0 && styles.listEmpty]}
               onRefresh={refresh}
               refreshing={loading}

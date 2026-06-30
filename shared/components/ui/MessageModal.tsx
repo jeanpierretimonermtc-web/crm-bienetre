@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Modal, View, Text, TouchableOpacity, ScrollView,
   StyleSheet, Linking, Platform,
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function MessageModal({ visible, onClose, client, advisorName, lastProduct }: Props) {
+  const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
 
@@ -110,7 +112,7 @@ export function MessageModal({ visible, onClose, client, advisorName, lastProduc
           <View style={styles.handle} />
           <View style={styles.header}>
             <Text style={styles.title}>
-              {selected ? '✉️ Message prêt' : `💬 Message pour ${prénom || 'ce contact'}`}
+              {selected ? t('messages.title_ready') : t('messages.title_for', { name: prénom || '…' })}
             </Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn} hitSlop={8}>
               <Text style={styles.closeIcon}>✕</Text>
@@ -147,9 +149,9 @@ export function MessageModal({ visible, onClose, client, advisorName, lastProduc
                   >
                     <View style={styles.tplTop}>
                       <Text style={styles.tplName}>{tpl.name}</Text>
-                      <View style={[styles.channelBadge, { backgroundColor: tpl.channel === 'whatsapp' ? '#D1FAE5' : tpl.channel === 'sms' ? '#DBEAFE' : colors.bgDim }]}>
-                        <Text style={[styles.channelText, { color: tpl.channel === 'whatsapp' ? '#059669' : tpl.channel === 'sms' ? '#1D4ED8' : colors.textSecondary }]}>
-                          {tpl.channel === 'whatsapp' ? 'WhatsApp' : tpl.channel === 'sms' ? 'SMS' : 'Tous'}
+                      <View style={[styles.channelBadge, { backgroundColor: tpl.channel === 'whatsapp' ? colors.successLight : tpl.channel === 'sms' ? colors.primaryLight : colors.bgDim }]}>
+                        <Text style={[styles.channelText, { color: tpl.channel === 'whatsapp' ? colors.success : tpl.channel === 'sms' ? colors.primary : colors.textSecondary }]}>
+                          {tpl.channel === 'whatsapp' ? 'WhatsApp' : tpl.channel === 'sms' ? 'SMS' : t('messages.all_channels', { defaultValue: 'Tous' })}
                         </Text>
                       </View>
                     </View>
@@ -171,27 +173,27 @@ export function MessageModal({ visible, onClose, client, advisorName, lastProduc
 
               {/* Actions */}
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.success }]} onPress={handleCopy} activeOpacity={0.85}>
-                <Text style={styles.actionBtnText}>{copied ? '✓ Copié !' : '📋 Copier le message'}</Text>
+                <Text style={styles.actionBtnText}>{copied ? t('messages.copied') : t('messages.copy')}</Text>
               </TouchableOpacity>
 
               {client?.phone ? (
                 <>
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp} activeOpacity={0.85}>
-                    <Text style={styles.actionBtnText}>💬 Ouvrir WhatsApp</Text>
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.success }]} onPress={handleWhatsApp} activeOpacity={0.85}>
+                    <Text style={styles.actionBtnText}>{t('messages.open_whatsapp')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleSMS} activeOpacity={0.85}>
-                    <Text style={styles.actionBtnText}>📱 Ouvrir SMS</Text>
+                    <Text style={styles.actionBtnText}>{t('messages.open_sms')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <View style={styles.noPhoneNote}>
-                  <Text style={styles.noPhoneText}>Aucun téléphone enregistré — WhatsApp et SMS indisponibles</Text>
+                  <Text style={styles.noPhoneText}>{t('messages.no_phone')}</Text>
                 </View>
               )}
 
               {/* Back button */}
               <TouchableOpacity style={styles.backBtn} onPress={() => setSelected(null)} activeOpacity={0.7}>
-                <Text style={styles.backBtnText}>← Choisir un autre message</Text>
+                <Text style={styles.backBtnText}>{t('messages.change_template')}</Text>
               </TouchableOpacity>
               <View style={{ height: 24 }} />
             </ScrollView>

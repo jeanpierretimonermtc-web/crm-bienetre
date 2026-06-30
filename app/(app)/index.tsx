@@ -499,6 +499,7 @@ export default function DashboardScreen() {
     checkDemo,
     handleLoadDemo,
     handleDeleteDemo,
+    handleResetDemo,
   } = useDemoState()
 
   function refreshAll() {
@@ -645,13 +646,20 @@ export default function DashboardScreen() {
           <View style={styles.demoBanner}>
             <Text style={styles.demoBannerText}>🧪 {t('dashboard.demo_active')}</Text>
 
-            <TouchableOpacity onPress={handleDeleteDemo} disabled={demoLoading} activeOpacity={0.7}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
               {demoLoading ? (
                 <ActivityIndicator size="small" color={colors.textSecondary} />
               ) : (
-                <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
+                <>
+                  <TouchableOpacity onPress={handleResetDemo} activeOpacity={0.7}>
+                    <Text style={styles.demoBannerReset}>{t('dashboard.demo_reset')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleDeleteDemo} activeOpacity={0.7}>
+                    <Text style={styles.demoBannerDelete}>{t('dashboard.demo_delete')}</Text>
+                  </TouchableOpacity>
+                </>
               )}
-            </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -1397,6 +1405,12 @@ function makeStyles(colors: ThemeColors) {
       fontSize: 13,
       fontFamily: fonts.medium,
       color: colors.textSecondary,
+    },
+
+    demoBannerReset: {
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: colors.primary,
     },
 
     demoBannerDelete: {

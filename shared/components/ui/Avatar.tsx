@@ -2,13 +2,12 @@ import { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useTheme } from '@/shared/theme/ThemeProvider'
 import type { ThemeColors } from '@/shared/theme/colors'
+import { fonts } from '@/shared/theme/fonts'
 
-const PALETTE = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#5AC8FA','#FF2D55']
-
-function colorFor(name: string) {
+function colorFor(name: string, palette: string[]) {
   let h = 0
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
-  return PALETTE[Math.abs(h) % PALETTE.length]
+  return palette[Math.abs(h) % palette.length]
 }
 
 function initials(name: string) {
@@ -28,8 +27,13 @@ export function Avatar({ name, size = 44, status }: Props) {
   const { colors, statusColors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
 
+  const palette = useMemo(() => [
+    colors.primary, colors.secondary, colors.tertiary,
+    colors.success, colors.warning, colors.danger,
+  ], [colors])
+
   const statusPalette = status ? statusColors[status as keyof typeof statusColors] : null
-  const bg        = statusPalette ? statusPalette.bg   : colorFor(name)
+  const bg        = statusPalette ? statusPalette.bg   : colorFor(name, palette)
   const textColor = statusPalette ? statusPalette.text : colors.textInverse
 
   const fontSize = size * 0.38
@@ -43,6 +47,6 @@ export function Avatar({ name, size = 44, status }: Props) {
 function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
     circle: { alignItems: 'center', justifyContent: 'center' },
-    text:   { color: colors.textInverse, fontWeight: '700' },
+    text:   { fontFamily: fonts.bold, color: colors.textInverse },
   })
 }

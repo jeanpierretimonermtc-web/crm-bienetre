@@ -70,7 +70,9 @@
       "particularities": "Particularities",
       "medical_treatment": "Medical treatment",
       "medical_notes": "Medical notes",
-      "doterra_id": "doTERRA ID",
+      "doterra_id": "Member ID",
+      "address": "Postal address",
+      "loyalty_notes": "Program notes",
       "next_lrp_date": "Next LRP date",
       "welcome_email_sent": "Welcome email sent",
       "source": "Source",
@@ -87,7 +89,7 @@
       "personal": "Identity",
       "profile": "Profile",
       "medical": "Medical",
-      "doterra": "doTERRA",
+      "doterra": "Loyalty program",
       "status": "Status",
       "journey": "Journey",
       "network": "Network"
@@ -448,7 +450,19 @@
     "filter_network": "Distributors",
     "filter_customers": "Customers",
     "tap_expand": "Tap = expand/collapse",
-    "long_press_open": "Hold = open profile"
+    "long_press_open": "Hold = open profile",
+    "upline_title": "My upline",
+    "upline_empty": "No sponsor entered",
+    "upline_add": "Add a sponsor",
+    "upline_manage": "Manage",
+    "upline_name": "Sponsor name",
+    "upline_member_id": "Member ID (optional)",
+    "upline_position": "Level",
+    "upline_direct": "Direct sponsor",
+    "upline_level": "Level {{n}}",
+    "upline_save": "Save",
+    "upline_delete": "Delete",
+    "upline_edit": "Edit"
   },
   "catalog": {
     "title": "Catalog",
@@ -539,6 +553,7 @@
     "demo_subtitle": "Discover all features with realistic client examples.",
     "demo_load": "Try it",
     "demo_active": "Demo mode active",
+    "demo_reset": "Reset",
     "demo_delete": "Delete demo"
   },
   "common": {
@@ -790,7 +805,20 @@
     "error_email_required": "Please enter your email address",
     "error_password_required": "Please enter a password",
     "error_password_too_short": "Password must be at least 8 characters",
-    "error_passwords_dont_match": "Passwords do not match"
+    "error_passwords_dont_match": "Passwords do not match",
+    "tagline": "Connect people, products and opportunities",
+    "app_name": "ORYALIS"
+  },
+  "messages": {
+    "title_ready": "✉️ Message ready",
+    "title_for": "💬 Message for {{name}}",
+    "no_phone": "No phone number — WhatsApp and SMS unavailable",
+    "change_template": "← Choose another message",
+    "copy": "📋 Copy message",
+    "copied": "✓ Copied!",
+    "open_whatsapp": "💬 Open WhatsApp",
+    "open_sms": "📱 Open SMS",
+    "all_channels": "All"
   },
   "interactions": {
     "title": "Interactions",

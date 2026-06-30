@@ -5,6 +5,8 @@ import { useTheme } from '@/shared/theme/ThemeProvider'
 import { useMemo } from 'react'
 import type { ThemeColors } from '@/shared/theme/colors'
 
+const nativeDriver = Platform.OS !== 'web'
+
 export default function SplashScreen() {
   const { colors } = useTheme()
   const styles = useMemo(() => makeStyles(colors), [colors])
@@ -18,13 +20,13 @@ export default function SplashScreen() {
       Animated.timing(opacity, {
         toValue: 1,
         duration: 400,
-        useNativeDriver: true,
+        useNativeDriver: nativeDriver,
       }),
       // 400 → 1200ms : scale 0.95 → 1.00
       Animated.timing(scale, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: nativeDriver,
       }),
     ]).start()
 

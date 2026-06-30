@@ -1,5 +1,5 @@
 import { supabase } from '@/shared/lib/supabase'
-import type { Followup } from '@/shared/lib/types'
+import type { Followup, FollowupWithClient } from '@/shared/lib/types'
 
 export type FollowupInput =
   Omit<Followup, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'auto_generated' | 'priority_score'>
@@ -47,4 +47,17 @@ export async function toggleFollowupDone(id: string, done: boolean) {
 export async function deleteFollowup(id: string) {
   const { error } = await supabase.from('followups').delete().eq('id', id)
   if (error) throw error
+}
+
+export function computeFollowupPriority(f: FollowupWithClient, today: string): number {
+  let score = 0
+  if (f.prospect_temperature === 'very_hot') score += 40
+  if (f.due_date < today) score += 30
+  if (f.pipeline_stage === 'follow_up' || f.pipeline_stage === 'proposal_sent') score += 20
+  if (
+    f.client?.status === 'vip' ||
+    f.client?.contact_role === 'distributor' ||
+    f.client?.contact_role === 'leader'
+  ) score += 10
+  return score
 }

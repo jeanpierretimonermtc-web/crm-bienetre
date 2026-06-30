@@ -99,8 +99,8 @@ export default function LoginScreen() {
         <Image source={require('@/assets/logo-icon.png')} style={styles.brandIcon} resizeMode="contain" />
         <Image source={wordmark} style={styles.brandWordmark} resizeMode="contain" />
       </View>
-      <Text style={styles.appName}>ORYALIS</Text>
-      <Text style={styles.tagline}>Connect people, products and opportunities</Text>
+      <Text style={styles.appName}>{t('auth.app_name')}</Text>
+      <Text style={styles.tagline}>{t('auth.tagline')}</Text>
     </View>
   )
 

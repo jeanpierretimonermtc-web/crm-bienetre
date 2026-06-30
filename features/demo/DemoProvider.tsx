@@ -14,6 +14,7 @@ type DemoCtx = {
   checkDemo: () => Promise<void>
   handleLoadDemo: () => Promise<void>
   handleDeleteDemo: () => Promise<void>
+  handleResetDemo: () => Promise<void>
   setHideDemoCard: (hide: boolean) => Promise<void>
 }
 
@@ -26,6 +27,7 @@ const DemoContext = createContext<DemoCtx>({
   checkDemo: async () => {},
   handleLoadDemo: async () => {},
   handleDeleteDemo: async () => {},
+  handleResetDemo: async () => {},
   setHideDemoCard: async () => {},
 })
 
@@ -93,10 +95,30 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     }
   }, [session])
 
+  const handleResetDemo = useCallback(async () => {
+    if (!session || inFlight.current) return
+    inFlight.current = true
+    setDemoLoading(true)
+    setDemoFailed(false)
+    try {
+      await deleteDemoData(session.user.id)
+      await loadDemoData(session.user.id)
+      const count = await getDemoClientsCount(session.user.id)
+      setDemoCount(count)
+      setDemoVersion(v => v + 1)
+    } catch (e) {
+      console.error('[resetDemo]', e)
+      setDemoFailed(true)
+    } finally {
+      setDemoLoading(false)
+      inFlight.current = false
+    }
+  }, [session])
+
   return (
     <DemoContext.Provider value={{
       demoCount, demoLoading, demoFailed, demoVersion,
-      hideDemoCard, checkDemo, handleLoadDemo, handleDeleteDemo, setHideDemoCard,
+      hideDemoCard, checkDemo, handleLoadDemo, handleDeleteDemo, handleResetDemo, setHideDemoCard,
     }}>
       {children}
     </DemoContext.Provider>

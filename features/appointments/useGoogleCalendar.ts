@@ -18,8 +18,9 @@ WebBrowser.maybeCompleteAuthSession()
 // Also set EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS for iOS (if different).
 // Create credentials at: https://console.cloud.google.com/apis/credentials
 
-const CLIENT_ID_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? ''
-const CLIENT_ID_IOS = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS ?? CLIENT_ID_WEB
+const CLIENT_ID_WEB     = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? ''
+const CLIENT_ID_IOS     = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS ?? CLIENT_ID_WEB
+const CLIENT_SECRET_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET ?? ''
 
 function getClientId() {
   if (Platform.OS === 'ios') return CLIENT_ID_IOS
@@ -93,14 +94,15 @@ export function useGoogleCalendar() {
       const params = new URLSearchParams({
         code,
         client_id:     getClientId(),
+        client_secret: CLIENT_SECRET_WEB,
         redirect_uri:  redirectUri,
         grant_type:    'authorization_code',
         code_verifier: request?.codeVerifier ?? '',
       })
       const res = await fetch(DISCOVERY.tokenEndpoint, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
+        body:    params.toString(),
       })
       if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`)
       const data = await res.json()
@@ -125,9 +127,10 @@ export function useGoogleCalendar() {
       setError('EXPO_PUBLIC_GOOGLE_CLIENT_ID non configuré.')
       return
     }
+    if (!request) return
     setError(null)
     await promptAsync()
-  }, [promptAsync, isConfigured])
+  }, [promptAsync, isConfigured, request])
 
   const disconnect = useCallback(async () => {
     if (!userId) return

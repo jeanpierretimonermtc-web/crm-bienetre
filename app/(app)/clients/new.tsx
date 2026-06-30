@@ -68,6 +68,8 @@ export default function NewClientScreen() {
   const [nextActionDate, setNextActionDate] = useState('')
   const [networkPotential, setNetworkPotential] = useState<NetworkPotential | null>(null)
   const [doterraId, setDoterraId]           = useState('')
+  const [loyaltyNotes, setLoyaltyNotes]     = useState('')
+  const [address, setAddress]               = useState('')
   const [contactRole, setContactRole]       = useState<ContactRole>('customer')
   const [loading, setLoading]               = useState(false)
   const [errorMsg, setErrorMsg]             = useState<string | null>(null)
@@ -99,6 +101,8 @@ export default function NewClientScreen() {
         medical_treatment: medicalTreatment,
         medical_notes: medicalNotes.trim() || null,
         doterra_id: doterraId.trim() || null,
+        loyalty_notes: loyaltyNotes.trim() || null,
+        address: address.trim() || null,
         language: 'fr',
         next_lrp_date: null,
         welcome_email_sent: false,
@@ -155,6 +159,12 @@ export default function NewClientScreen() {
               <Input label={t('clients.fields.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </View>
           </View>
+          <Input
+            label={`${t('clients.fields.address')} (${t('common.optional')})`}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="12 rue des Lilas, 75001 Paris"
+          />
           <View style={isWide ? styles.fieldRow : undefined}>
             <View style={isWide ? styles.fieldHalf : undefined}>
               <Input label={t('clients.fields.inscription_date')} value={inscriptionDate} onChangeText={setInscriptionDate} placeholder="YYYY-MM-DD" />
@@ -317,8 +327,9 @@ export default function NewClientScreen() {
 
         {/* ── doTERRA (module renewals_lrp) ──────────────────────── */}
         {isModuleActive('renewals_lrp') && (
-          <SectionCard icon="🌿" titleKey="clients.sections.doterra">
+          <SectionCard icon="⭐" titleKey="clients.sections.doterra">
             <Input label={`${t('clients.fields.doterra_id')} (${t('common.optional')})`} value={doterraId} onChangeText={setDoterraId} />
+            <TextArea label={`${t('clients.fields.loyalty_notes')} (${t('common.optional')})`} value={loyaltyNotes} onChangeText={setLoyaltyNotes} />
           </SectionCard>
         )}
 
